@@ -1,0 +1,60 @@
+<?php
+
+return [
+    'information' => [
+        'title' => 'Informações do Perfil',
+        'description' => 'Atualize as informações do seu perfil e endereço de e-mail.',
+        'photo' => 'Foto',
+        'select_new_photo' => 'Selecionar Nova Foto',
+        'remove_photo' => 'Remover Foto',
+        'name' => 'Nome',
+        'email' => 'E-mail',
+        'email_unverified' => 'Seu endereço de e-mail não está verificado.',
+        'resend_verification' => 'Clique aqui para reenviar o e-mail de verificação.',
+        'verification_sent' => 'Um novo link de verificação foi enviado para o seu e-mail.',
+        'saved' => 'Informações do perfil atualizadas com sucesso.',
+        'save' => 'Salvar',
+        'photo_deleted' => 'Foto removida com sucesso.',
+    ],
+    'password' => [
+        'title' => 'Atualizar Senha',
+        'description' => 'Certifique-se de que sua conta está usando uma senha longa e aleatória para manter a segurança.',
+        'new_password' => 'Nova Senha',
+        'confirm_password' => 'Confirmar Senha',
+        'save' => 'Salvar',
+        'updated' => 'Senha atualizada com sucesso.',
+    ],
+    'two_factor' => [
+        'title' => 'Autenticação de Dois Fatores',
+        'description' => 'Adicione segurança adicional à sua conta usando autenticação de dois fatores.',
+        'enabled' => 'Você habilitou a autenticação de dois fatores.',
+        'finish_enabling' => 'Finalize a habilitação da autenticação de dois fatores.',
+        'not_enabled' => 'Você não habilitou a autenticação de dois fatores.',
+        'explanation' => 'Quando a autenticação de dois fatores estiver habilitada, você será solicitado a fornecer um token seguro e aleatório durante a autenticação. Você pode obter este token do aplicativo Google Authenticator do seu telefone.',
+        'finish_setup' => 'Para finalizar a habilitação da autenticação de dois fatores, escaneie o seguinte código QR usando o aplicativo autenticador do seu telefone ou insira a chave de configuração e forneça o código OTP gerado.',
+        'setup_complete' => 'A autenticação de dois fatores agora está habilitada. Escaneie o seguinte código QR usando o aplicativo autenticador do seu telefone ou insira a chave de configuração.',
+        'setup_key' => 'Chave de Configuração',
+        'code' => 'Código',
+        'recovery_codes' => [
+            'title' => 'Armazene estes códigos de recuperação em um gerenciador de senhas seguro. Eles podem ser usados para recuperar o acesso à sua conta se seu dispositivo de autenticação de dois fatores for perdido.',
+            'regenerate' => 'Regenerar Códigos de Recuperação',
+            'show' => 'Mostrar Códigos de Recuperação',
+        ],
+        'buttons' => [
+            'enable' => 'Habilitar',
+            'confirm' => 'Confirmar',
+            'cancel' => 'Cancelar',
+            'disable' => 'Desabilitar',
+        ],
+    ],
+    'delete_account' => [
+        'title' => 'Excluir Conta',
+        'description' => 'Exclua permanentemente sua conta.',
+        'warning' => 'Depois que sua conta for excluída, todos os seus recursos e dados serão permanentemente excluídos. Antes de excluir sua conta, faça o download de quaisquer dados ou informações que você deseja manter.',
+        'confirmation' => [
+            'title' => 'Excluir Conta',
+            'content' => 'Tem certeza que deseja excluir sua conta? Depois que sua conta for excluída, todos os seus recursos e dados serão permanentemente excluídos. Por favor, digite sua senha para confirmar.',
+            'button' => 'Excluir Conta',
+        ],
+    ],
+]; 

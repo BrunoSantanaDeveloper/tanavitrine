@@ -1,0 +1,513 @@
+<script setup>
+import FeaturesCard from '@/Components/FeaturesCard.vue'
+import PricingCard from '@/Components/PricingCard.vue'
+import StoreCard from '@/Components/StoreCard.vue'
+import Accordion from '@/Components/shadcn/ui/accordion/Accordion.vue'
+import AccordionContent from '@/Components/shadcn/ui/accordion/AccordionContent.vue'
+import AccordionItem from '@/Components/shadcn/ui/accordion/AccordionItem.vue'
+import AccordionTrigger from '@/Components/shadcn/ui/accordion/AccordionTrigger.vue'
+import Badge from '@/Components/shadcn/ui/badge/Badge.vue'
+import Button from '@/Components/shadcn/ui/button/Button.vue'
+import Card from '@/Components/shadcn/ui/card/Card.vue'
+import Switch from '@/Components/shadcn/ui/switch/Switch.vue'
+import Terminal from '@/Components/Terminal.vue'
+import Tabs from '@/Components/shadcn/ui/tabs/Tabs.vue'
+import TabsContent from '@/Components/shadcn/ui/tabs/TabsContent.vue'
+import TabsList from '@/Components/shadcn/ui/tabs/TabsList.vue'
+import TabsTrigger from '@/Components/shadcn/ui/tabs/TabsTrigger.vue'
+import Select from '@/Components/shadcn/ui/select/Select.vue'
+import SelectContent from '@/Components/shadcn/ui/select/SelectContent.vue'
+import SelectItem from '@/Components/shadcn/ui/select/SelectItem.vue'
+import SelectTrigger from '@/Components/shadcn/ui/select/SelectTrigger.vue'
+import SelectValue from '@/Components/shadcn/ui/select/SelectValue.vue'
+import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
+import WebLayout from '@/Layouts/WebLayout.vue'
+import { Icon } from '@iconify/vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+
+const props = defineProps({
+  canLogin: {
+    type: Boolean,
+  },
+  canRegister: {
+    type: Boolean,
+  },
+  seo: {
+    type: Object,
+    default: () => null,
+  },
+  plans: {
+    type: Array,
+    default: () => [],
+  },
+  featuredStores: {
+    type: Array,
+    default: () => [],
+  },
+  recentStores: {
+    type: Array,
+    default: () => [],
+  },
+  categories: {
+    type: Array,
+    default: () => [],
+  },
+})
+
+useSeoMetaTags(props.seo)
+
+// Toggle state for pricing interval (false = monthly, true = yearly)
+const isYearly = ref(false)
+
+// Computed property to get the selected interval based on toggle
+const selectedInterval = computed(() => isYearly.value ? 'year' : 'month')
+
+// Filter plans to show only the selected interval pricing
+const plansWithSelectedInterval = computed(() => {
+  return props.plans.map(plan => ({
+    ...plan,
+    intervals: plan.intervals?.filter(interval => interval.code === selectedInterval.value) || []
+  }))
+})
+
+// Calculate average discount percentage for yearly plans
+const averageYearlyDiscount = computed(() => {
+  const plansWithBothIntervals = props.plans.filter(plan => {
+    const hasMonth = plan.intervals?.some(i => i.code === 'month')
+    const hasYear = plan.intervals?.some(i => i.code === 'year')
+    return hasMonth && hasYear && !plan.metadata?.is_default
+  })
+
+  if (plansWithBothIntervals.length === 0) return 0
+
+  const discounts = plansWithBothIntervals.map(plan => {
+    const monthlyPrice = plan.intervals.find(i => i.code === 'month')?.price || 0
+    const yearlyPrice = plan.intervals.find(i => i.code === 'year')?.price || 0
+    const yearlyMonthlyEquivalent = yearlyPrice / 12
+    const discount = ((monthlyPrice - yearlyMonthlyEquivalent) / monthlyPrice) * 100
+    return discount
+  })
+
+  const avgDiscount = discounts.reduce((sum, d) => sum + d, 0) / discounts.length
+  return Math.round(avgDiscount)
+})
+
+// Function to open WhatsApp chat
+function openWhatsAppChat() {
+  const phone = '5562991729522'
+  const message = 'Olá! Gostaria de falar com um especialista sobre a Tanavitrine.'
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+  window.open(url, '_blank')
+}
+
+// Search filters state
+const searchType = ref('atacado')
+const searchFilters = ref({
+  categoria: '',
+  tipoLoja: '',
+  cidade: '',
+  estado: '',
+  genero: ''
+})
+
+const categorias = computed(() => props.categories.map(c => c.name))
+const tiposLoja = ['Física', 'Virtual']
+const generos = ['Masculino', 'Feminino', 'Unissex']
+
+function handleSearch() {
+  // Redirecionar para a página apropriada (Atacado ou Varejo) com filtros
+  const route = searchType.value === 'atacado' ? '/atacado' : '/varejo'
+  const params = new URLSearchParams()
+
+  // Adicionar filtros preenchidos aos query parameters
+  if (searchFilters.value.categoria) params.append('categoria', searchFilters.value.categoria)
+  if (searchFilters.value.tipoLoja) params.append('tipoLoja', searchFilters.value.tipoLoja)
+  if (searchFilters.value.estado) params.append('estado', searchFilters.value.estado)
+  if (searchFilters.value.cidade) params.append('cidade', searchFilters.value.cidade)
+  if (searchFilters.value.genero) params.append('genero', searchFilters.value.genero)
+
+  const queryString = params.toString()
+  window.location.href = queryString ? `${route}?${queryString}` : route
+}
+
+// Selector state
+const selectedListingType = ref('destaques')
+const showStickySelector = ref(false)
+
+// Handle scroll to show/hide sticky selector
+const handleScroll = () => {
+  const selectorSection = document.getElementById('selector-section')
+  if (selectorSection) {
+    const rect = selectorSection.getBoundingClientRect()
+    // Show sticky selector when the section goes above the viewport (considering header height)
+    showStickySelector.value = rect.bottom < 100
+  }
+}
+
+// Lifecycle hooks for scroll listener
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+  handleScroll() // Initial check
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
+// Filter listings based on selected type
+const filteredListings = computed(() => {
+  if (selectedListingType.value === 'destaques') {
+    return props.featuredStores
+  }
+  // For 'recentes', return recent stores
+  return props.recentStores
+})
+
+</script>
+
+<template>
+  <WebLayout :can-login="canLogin" :can-register="canRegister">
+    <!-- Sticky Selector Buttons (shown only when section is out of view) -->
+    <template #sticky-selector>
+      <Transition
+        enter-active-class="transition ease-out duration-200"
+        enter-from-class="opacity-0 -translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition ease-in duration-150"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 -translate-y-2"
+      >
+        <div v-show="showStickySelector" class="py-4 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 shadow-md">
+        <div class="mx-auto max-w-3xl">
+          <div class="flex flex-row items-center justify-center gap-3 px-4">
+            <!-- Destaques Button -->
+            <div class="flex items-center">
+              <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-green-200 z-10 flex-shrink-0">
+                <Icon icon="lucide:trophy" class="size-8 sm:size-10 text-foreground" aria-hidden="true" />
+              </div>
+              <Button
+                size="lg"
+                class="-ml-4 sm:-ml-6 font-bold flex-1 min-w-0"
+                :variant="selectedListingType === 'destaques' ? 'default' : 'outline'"
+                @click="selectedListingType = 'destaques'"
+              >
+                DESTAQUES
+              </Button>
+            </div>
+
+            <!-- Recentes Button -->
+            <div class="flex items-center">
+              <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-green-200 z-10 flex-shrink-0">
+                <Icon icon="lucide:badge-plus" class="size-8 sm:size-10 text-foreground" aria-hidden="true" />
+              </div>
+              <Button
+                size="lg"
+                class="-ml-4 sm:-ml-6 font-bold flex-1 min-w-0"
+                :variant="selectedListingType === 'recentes' ? 'default' : 'outline'"
+                @click="selectedListingType = 'recentes'"
+              >
+                RECENTES
+              </Button>
+            </div>
+          </div>
+        </div>
+        </div>
+      </Transition>
+    </template>
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden border-b border-orange-200 bg-linear-to-r from-teal-900 via-teal-700 to-teal-900 py-10 sm:py-20">
+      <div class="container mx-auto px-4 text-center">
+        <!-- Badge -->
+        <div class="mb-8 inline-flex justify-center">
+          <Badge variant="outline" class="rounded-full border border-yellow-500 bg-primary/10 px-4 py-1 text-xs text-white sm:text-sm">
+            <Icon icon="lucide:award" class="size-4" aria-hidden="true" /> Fornecedores Verificados
+          </Badge>
+        </div>
+
+        <!-- Main Heading -->
+        <div class="mx-auto max-w-4xl">
+          <h1
+            class="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl"
+            :style="{ contain: 'layout paint' }"
+          >
+            <span class="block text-white">Compre direto com</span>
+            <span
+              class="mt-2 block bg-linear-to-r from-yellow-500 via-rose-400 to-amber-500 bg-clip-text text-transparent"
+            >
+              Os Melhores Fornecedores
+            </span>
+          </h1>
+        </div>
+
+        <!-- Subtitle - Add priority hint -->
+        <p
+          class="mx-auto mt-6 max-w-2xl text-center text-base text-white sm:text-lg md:text-xl"
+          :style="{ contain: 'layout paint' }"
+          fetchpriority="high"
+        >
+        Conecte-se com as melhores lojas disponíveis no maior catálogo de fornecedores atacadista de moda  do Brasil.
+        </p>
+
+        <!-- Search Tool -->
+        <div class="mt-10 mx-auto max-w-4xl">
+          <Card class="bg-white/95 backdrop-blur-sm shadow-2xl">
+            <Tabs v-model="searchType" default-value="atacado" class="w-full">
+              <TabsList class="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="atacado" class="text-base flex items-center justify-center gap-2 whitespace-nowrap">
+                  <Icon icon="lucide:shopping-cart" class="size-4" />
+                  <span>Atacado</span>
+                </TabsTrigger>
+                <TabsTrigger value="varejo" class="text-base flex items-center justify-center gap-2 whitespace-nowrap">
+                  <Icon icon="lucide:store" class="size-4" />
+                  <span>Varejo</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="atacado" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6">
+                  <!-- Categoria -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground">Categoria</label>
+                    <Select v-model="searchFilters.categoria">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="cat in categorias" :key="cat" :value="cat">
+                          {{ cat }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <!-- Tipo de Loja -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground">Tipo de Loja</label>
+                    <Select v-model="searchFilters.tipoLoja">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="tipo in tiposLoja" :key="tipo" :value="tipo">
+                          {{ tipo }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <!-- Localização -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground">Localização</label>
+                    <Select v-model="searchFilters.estado">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SP">São Paulo</SelectItem>
+                        <SelectItem value="RJ">Rio de Janeiro</SelectItem>
+                        <SelectItem value="MG">Minas Gerais</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <!-- Gênero -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground">Gênero</label>
+                    <Select v-model="searchFilters.genero">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="gen in generos" :key="gen" :value="gen">
+                          {{ gen }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div class="px-6 pb-6">
+                  <Button @click="handleSearch" size="lg" class="w-full cursor-pointer">
+                    <Icon icon="lucide:search" class="size-4 mr-2" />
+                    Buscar Fornecedores
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="varejo" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6">
+                  <!-- Categoria -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground">Categoria</label>
+                    <Select v-model="searchFilters.categoria">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="cat in categorias" :key="cat" :value="cat">
+                          {{ cat }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <!-- Tipo de Loja -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground">Tipo de Loja</label>
+                    <Select v-model="searchFilters.tipoLoja">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="tipo in tiposLoja" :key="tipo" :value="tipo">
+                          {{ tipo }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <!-- Localização -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground">Localização</label>
+                    <Select v-model="searchFilters.estado">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SP">São Paulo</SelectItem>
+                        <SelectItem value="RJ">Rio de Janeiro</SelectItem>
+                        <SelectItem value="MG">Minas Gerais</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <!-- Gênero -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground">Gênero</label>
+                    <Select v-model="searchFilters.genero">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="gen in generos" :key="gen" :value="gen">
+                          {{ gen }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div class="px-6 pb-6">
+                  <Button @click="handleSearch" size="lg" class="w-full cursor-pointer">
+                    <Icon icon="lucide:search" class="size-4 mr-2" />
+                    Buscar Lojas
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </div>
+
+        <!-- Trust Badges -->
+        <div class="mt-8 sm:mt-12">
+          <p class="text-sm text-yellow-500">
+            As Melhores marcas no atacado
+          </p>
+          <div class="mt-4 flex flex-wrap items-center justify-center gap-6 sm:gap-8">
+            <Icon
+              icon="logos:laravel"
+              class="size-8 opacity-75 brightness-0 grayscale invert transition-all hover:opacity-100 hover:brightnes-0"
+            />
+            <Icon
+              icon="logos:vue"
+              class="size-8 opacity-75 brightness-0 grayscale invert transition-all hover:opacity-100 hover:grayscale-0"
+            />
+            <Icon
+              icon="simple-icons:inertia"
+              class="size-8 opacity-75 brightness-0 grayscale invert transition-all hover:opacity-100 hover:grayscale-0 text-purple-500"
+            />
+            <Icon
+              icon="logos:tailwindcss-icon"
+              class="size-8 opacity-75 brightness-0 grayscale invert transition-all hover:opacity-100 hover:grayscale-0"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Background Effects -->
+      <div
+        class="absolute inset-0 -z-10 h-full w-full bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px]"
+      />
+      <div
+        class="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]"
+      />
+    </section>
+
+        <!-- Selector Section -->
+        <section id="selector-section" class="relative">
+      <div class="container relative z-10 mx-auto px-4 pt-16 sm:pt-24 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+          <p class="text-sm font-medium tracking-wider text-muted-foreground uppercase mb-2">
+            FORNECEDORES VERIFICADOS E SELECIONADOS
+          </p>
+          <h2 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
+            Confira as nossas Vitrines!
+          </h2>
+        </div>
+
+        <!-- Selector Buttons (in section) -->
+        <div class="py-4">
+          <div class="mx-auto max-w-3xl">
+            <div class="flex flex-row items-center justify-center gap-3 px-4">
+              <!-- Destaques Button -->
+              <div class="flex items-center">
+                <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-green-200 z-10 flex-shrink-0">
+                  <Icon icon="lucide:trophy" class="size-8 sm:size-10 text-foreground" aria-hidden="true" />
+                </div>
+                <Button
+                  size="lg"
+                  class="-ml-4 sm:-ml-6 font-bold flex-1 min-w-0"
+                  :variant="selectedListingType === 'destaques' ? 'default' : 'outline'"
+                  @click="selectedListingType = 'destaques'"
+                >
+                  DESTAQUES
+                </Button>
+              </div>
+
+              <!-- Recentes Button -->
+              <div class="flex items-center">
+                <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-green-200 z-10 flex-shrink-0">
+                  <Icon icon="lucide:badge-plus" class="size-8 sm:size-10 text-foreground" aria-hidden="true" />
+                </div>
+                <Button
+                  size="lg"
+                  class="-ml-4 sm:-ml-6 font-bold flex-1 min-w-0"
+                  :variant="selectedListingType === 'recentes' ? 'default' : 'outline'"
+                  @click="selectedListingType = 'recentes'"
+                >
+                  RECENTES
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Store Listings Section -->
+    <section class="py-16 bg-background">
+      <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
+          <StoreCard
+            v-for="store in filteredListings"
+            :key="store.id"
+            :store="store"
+          />
+        </div>
+      </div>
+    </section>
+
+  </WebLayout>
+</template>

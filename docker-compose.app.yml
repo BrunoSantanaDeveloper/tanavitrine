@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  app:
+    image: tanavitrine-app:latest # Imagem da aplicação
+    restart: unless-stopped
+    networks:
+      - minha_rede
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=minha_rede"
+        - "traefik.http.routers.tanavitrine.rule=Host(`tanavitrine.com.br`)"
+        - "traefik.http.routers.tanavitrine.entrypoints=websecure"
+        - "traefik.http.routers.tanavitrine.tls=true"
+        - "traefik.http.routers.tanavitrine.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.tanavitrine.loadbalancer.server.port=9080"
+        - "traefik.http.routers.tanavitrine-http.rule=Host(`tanavitrine.com.br`)"
+        - "traefik.http.routers.tanavitrine-http.entrypoints=web"
+        - "traefik.http.routers.tanavitrine-http.middlewares=redirect-https@docker"
+    ports:
+      - "9080:9080"
+    volumes:
+      - app_storage:/var/www/html/storage
+      - app_cache:/var/www/html/bootstrap/cache
+      - generic_media:/var/www/html/storage/app/public/generic-media
+      - media:/var/www/html/storage/app/public/media
+    environment:
+      - APP_NAME=Tanavitrine
+      - APP_ENV=production
+      - APP_DEBUG=true
+      - APP_URL=https://app.tanavitrine.com.br
+      - LOG_CHANNEL=stderr
+      - LOG_LEVEL=debug
+      - TRUST_CLOUDFLARE=true
+      - DB_CONNECTION=mysql
+      - DB_HOST=tanavitrine_db
+      - DB_PORT=3306
+      - DB_DATABASE=tanavitrine
+      - DB_USERNAME=vtf_user
+      - DB_PASSWORD=vF3tK9pL2mN4x
+      - CACHE_DRIVER=file
+      - SESSION_DRIVER=file
+      - QUEUE_CONNECTION=sync
+      - SESSION_SECURE_COOKIE=true
+      - SESSION_DOMAIN=tanavitrine.com.br
+      - SESSION_HTTPS=true
+      - FORCE_SCHEME=https
+      - TRUSTED_PROXIES=*
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - db
+
+volumes:
+  app_storage:
+    driver: local
+  app_cache:
+    driver: local
+  generic_media:
+    driver: local
+  media:
+    driver: local
+
+networks:
+  minha_rede:
+    external: true

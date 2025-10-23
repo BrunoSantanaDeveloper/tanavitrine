@@ -1,0 +1,313 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers;
+
+use App\Models\Plan;
+use App\Models\Team;
+use App\Models\Category;
+use Inertia\Inertia;
+use Inertia\Response;
+use Illuminate\Support\Facades\Route;
+
+final class WelcomeController extends Controller
+{
+    public function home(): Response
+    {
+        // Get featured stores
+        $featuredStores = Team::active()
+            ->where('personal_team', false)
+            ->featured()
+            ->with(['category', 'media'])
+            ->limit(6)
+            ->get()
+            ->map(function ($store) {
+                return $this->transformStore($store);
+            });
+
+        // Get recent stores
+        $recentStores = Team::active()
+            ->where('personal_team', false)
+            ->where('featured', false)
+            ->with(['category', 'media'])
+            ->orderBy('created_at', 'desc')
+            ->limit(6)
+            ->get()
+            ->map(function ($store) {
+                return $this->transformStore($store);
+            });
+
+        // Get categories for filters
+        $categories = Category::active()
+            ->parents()
+            ->orderBy('sort_order')
+            ->get()
+            ->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                ];
+            });
+
+        return Inertia::render('Welcome', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+            'featuredStores' => $featuredStores,
+            'recentStores' => $recentStores,
+            'categories' => $categories,
+            'plans' => Plan::where('is_active', true)
+                ->with('intervals')
+                ->orderBy('sort_order')
+                ->get()
+                ->map(function ($plan) {
+                    $intervals = $plan->intervals->map(function ($interval) {
+                        return [
+                            'id' => $interval->pivot->id,
+                            'name' => $interval->name,
+                            'code' => $interval->code,
+                            'description' => $interval->description,
+                            'price' => (float) $interval->pivot->price,
+                        ];
+                    });
+
+                    return [
+                        'id' => $plan->id,
+                        'name' => $plan->name,
+                        'description' => $plan->description,
+                        'intervals' => $intervals,
+                        'currency' => $plan->currency,
+                        'features' => $plan->features,
+                        'is_featured' => $plan->is_featured,
+                        'metadata' => $plan->metadata,
+                    ];
+                }),
+            'seo' => [
+                'title' => config('app.name') . ' - O maior catálogo de fornecedores de moda do Brasil',
+                'description' => 'Conecte-se com as melhores lojas e fornecedores de moda. Atacado e varejo com os melhores preços.',
+            ],
+        ]);
+    }
+
+    public function atacado(): Response
+    {
+        // Get all atacado stores (no limit for client-side filtering)
+        $allStores = Team::active()
+            ->where('personal_team', false)
+            ->atacado()
+            ->with(['category', 'media'])
+            ->orderByDesc('featured')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($store) {
+                return $this->transformStore($store);
+            });
+
+        // Get unique states from stores
+        $states = Team::active()
+            ->where('personal_team', false)
+            ->atacado()
+            ->whereNotNull('state')
+            ->distinct()
+            ->pluck('state')
+            ->sort()
+            ->values();
+
+        // Get unique cities from stores
+        $cities = Team::active()
+            ->where('personal_team', false)
+            ->atacado()
+            ->whereNotNull('city')
+            ->distinct()
+            ->pluck('city')
+            ->sort()
+            ->values();
+
+        $categories = Category::active()
+            ->parents()
+            ->orderBy('sort_order')
+            ->get()
+            ->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                ];
+            });
+
+        return Inertia::render('Atacado', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+            'stores' => $allStores,
+            'categories' => $categories,
+            'states' => $states,
+            'cities' => $cities,
+            'seo' => [
+                'title' => 'Atacado - ' . config('app.name'),
+                'description' => 'Encontre os melhores fornecedores atacadistas de moda do Brasil',
+            ],
+        ]);
+    }
+
+    public function varejo(): Response
+    {
+        // Get all varejo stores (no limit for client-side filtering)
+        $allStores = Team::active()
+            ->where('personal_team', false)
+            ->varejo()
+            ->with(['category', 'media'])
+            ->orderByDesc('featured')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($store) {
+                return $this->transformStore($store);
+            });
+
+        // Get unique states from stores
+        $states = Team::active()
+            ->where('personal_team', false)
+            ->varejo()
+            ->whereNotNull('state')
+            ->distinct()
+            ->pluck('state')
+            ->sort()
+            ->values();
+
+        // Get unique cities from stores
+        $cities = Team::active()
+            ->where('personal_team', false)
+            ->varejo()
+            ->whereNotNull('city')
+            ->distinct()
+            ->pluck('city')
+            ->sort()
+            ->values();
+
+        $categories = Category::active()
+            ->parents()
+            ->orderBy('sort_order')
+            ->get()
+            ->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                ];
+            });
+
+        return Inertia::render('Varejo', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+            'stores' => $allStores,
+            'categories' => $categories,
+            'states' => $states,
+            'cities' => $cities,
+            'seo' => [
+                'title' => 'Varejo - ' . config('app.name'),
+                'description' => 'Descubra as melhores lojas varejistas de moda',
+            ],
+        ]);
+    }
+
+    public function prices(): Response
+    {
+        return Inertia::render('Prices', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+            'plans' => Plan::where('is_active', true)
+                ->with('intervals')
+                ->orderBy('sort_order')
+                ->get()
+                ->map(function ($plan) {
+                    $intervals = $plan->intervals->map(function ($interval) {
+                        return [
+                            'id' => $interval->pivot->id,
+                            'name' => $interval->name,
+                            'code' => $interval->code,
+                            'description' => $interval->description,
+                            'price' => (float) $interval->pivot->price,
+                        ];
+                    });
+
+                    return [
+                        'id' => $plan->id,
+                        'name' => $plan->name,
+                        'description' => $plan->description,
+                        'intervals' => $intervals,
+                        'currency' => $plan->currency,
+                        'features' => $plan->features,
+                        'is_featured' => $plan->is_featured,
+                        'metadata' => $plan->metadata,
+                    ];
+                }),
+            'seo' => [
+                'title' => 'Planos - ' . config('app.name'),
+                'description' => 'Escolha o plano ideal para anunciar seus produtos no TanaVitrine',
+            ],
+        ]);
+    }
+
+    public function about(): Response
+    {
+        return Inertia::render('About', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+            'seo' => [
+                'title' => 'Sobre - ' . config('app.name'),
+                'description' => 'Conheça a TanaVitrine, o maior marketplace de moda atacado e varejo do Brasil. Conectando fornecedores e lojistas.',
+            ],
+        ]);
+    }
+
+    /**
+     * Transform store model to array for frontend.
+     */
+    private function transformStore($store): array
+    {
+        $photos = $store->media->map(fn($photo) => $photo->url)->toArray();
+
+        return [
+            'id' => $store->id,
+            'code' => 'TV' . str_pad((string)$store->id, 4, '0', STR_PAD_LEFT),
+            'slug' => $store->slug,
+            'badge' => ucfirst($store->sale_type),
+            'name' => $store->name,
+            'category' => $store->category?->name,
+            'subcategory' => $store->subcategory,
+            'description' => $store->description,
+            'saleType' => ucfirst($store->sale_type),
+            'minOrder' => $store->min_order,
+            'location' => $store->city && $store->state ? "{$store->city} - {$store->state}" : null,
+            'whatsapp' => $store->whatsapp,
+            'logo' => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
+            'image' => $photos[0] ?? 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
+            'images' => !empty($photos) ? $photos : ['https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800'],
+            'featured' => $store->isFeatured(),
+            'can_favorite' => auth()->check(),
+            'is_favorited' => auth()->check()
+                ? auth()->user()->favoriteStores()->where('team_id', $store->id)->exists()
+                : false,
+        ];
+    }
+
+    /**
+     * Alternate featured and recent stores.
+     */
+    private function alternateStores($featured, $recent): array
+    {
+        $result = [];
+        $maxLength = max($featured->count(), $recent->count());
+
+        for ($i = 0; $i < $maxLength; $i++) {
+            if (isset($featured[$i])) {
+                $result[] = $featured[$i];
+            }
+            if (isset($recent[$i])) {
+                $result[] = $recent[$i];
+            }
+        }
+
+        return $result;
+    }
+}
