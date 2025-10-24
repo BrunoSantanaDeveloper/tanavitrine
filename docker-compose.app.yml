@@ -7,8 +7,8 @@ services:
     networks:
       - gravit_network
     ports:
-      - target: 8000
-        published: 8000
+      - target: 8001
+        published: 8001
         protocol: tcp
         mode: ingress
     deploy:
@@ -47,7 +47,7 @@ services:
         - "traefik.http.routers.tanavitrine.entrypoints=websecure"
         - "traefik.http.routers.tanavitrine.tls=true"
         - "traefik.http.routers.tanavitrine.tls.certresolver=letsencryptresolver"
-        - "traefik.http.services.tanavitrine.loadbalancer.server.port=8000"
+        - "traefik.http.services.tanavitrine.loadbalancer.server.port=8001"
         # STICKY SESSIONS PARA CSRF TOKENS - HABILITADO
         - "traefik.http.services.tanavitrine.loadbalancer.sticky.cookie=true"
         - "traefik.http.services.tanavitrine.loadbalancer.sticky.cookie.name=tanavitrine_server"
@@ -74,6 +74,14 @@ services:
       - APP_ENV=production
       - APP_DEBUG=false
       - APP_URL=https://tanavitrine.com.br
+      - APP_KEY=${APP_KEY}
+      # BANCO DE DADOS
+      - DB_CONNECTION=mysql
+      - DB_HOST=tanavitrine_db
+      - DB_PORT=3306
+      - DB_DATABASE=tnvt_bd
+      - DB_USERNAME=usr_tnvt
+      - DB_PASSWORD=62@YhHf0EA
       # CACHE E SESSIONS DISTRIBUÍDOS
       - CACHE_STORE=redis
       - SESSION_DRIVER=redis
@@ -93,23 +101,8 @@ services:
       # AWS keys removidas para usar apenas storage local
       # QUEUE
       - QUEUE_CONNECTION=redis
-      # INTER BANK PIX
-      - INTER_CLIENT_ID=03c0ae2b-8dec-4939-b6bc-1c5b52cc31ab
-      - INTER_CLIENT_SECRET=55ef508b-8ce9-43fe-8a9b-6a3fdaff80d4
-      - INTER_PIX_KEY=6759a94e-3e05-4a24-b1d8-d5b2ae9c97bf
-      - INTER_CERTIFICATE_PATH=/app/storage/app/certificates/inter/InterAPI_Certificado.crt
-      - INTER_KEY_PATH=/app/storage/app/certificates/inter/InterAPI_Chave.key
-      - INTER_ACCOUNT_HOLDER_NAME=Eu Criei
-      - INTER_BANK_CODE=077
-      - INTER_AGENCY=0001
-      - INTER_ACCOUNT_NUMBER=
-      - INTER_MERCHANT_NAME=Eu Criei
-      - INTER_MERCHANT_CITY=São Paulo
-      - INTER_MERCHANT_CATEGORY=9999
-      - INTER_WEBHOOK_SECRET=
-      - INTER_SANDBOX=false
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/up || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/up || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -138,6 +131,14 @@ services:
       # MESMAS CONFIGURAÇÕES DO APP
       - APP_ENV=production
       - APP_DEBUG=false
+      - APP_KEY=${APP_KEY}
+      # BANCO DE DADOS
+      - DB_CONNECTION=mysql
+      - DB_HOST=tanavitrine_db
+      - DB_PORT=3306
+      - DB_DATABASE=tnvt_bd
+      - DB_USERNAME=usr_tnvt
+      - DB_PASSWORD=62@YhHf0EA
       - CACHE_STORE=redis
       - SESSION_DRIVER=redis
       - REDIS_HOST=redis

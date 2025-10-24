@@ -123,11 +123,11 @@ RUN rm -f /usr/local/etc/php-fpm.d/zz-docker.conf
 RUN chmod +x /usr/local/bin/start.sh
 
 # Expose Nginx port
-EXPOSE 9080
+EXPOSE 8001
 
 # Health check with increased timeout and start period
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:9080/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:8001/health || exit 1
 
 # Start services using supervisor
 CMD ["/usr/local/bin/start.sh"]
