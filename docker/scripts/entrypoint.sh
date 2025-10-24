@@ -57,5 +57,8 @@ echo "🎯 Iniciando aplicação com: $@"
 # Garantir que estamos no diretório correto
 cd /app
 
-# Executar comando passado como argumento
-exec "$@"
+# Desabilitar prompts interativos do Laravel
+export LARAVEL_SAIL=1
+
+# Executar comando passado como argumento com stdin fechado para evitar prompts
+exec "$@" < /dev/null

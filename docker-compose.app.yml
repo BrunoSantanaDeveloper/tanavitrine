@@ -8,7 +8,7 @@ services:
       - gravit_network
     ports:
       - target: 8000
-        published: 8000
+        published: 8001
         protocol: tcp
         mode: ingress
     deploy:
@@ -47,7 +47,7 @@ services:
         - "traefik.http.routers.tanavitrine.entrypoints=websecure"
         - "traefik.http.routers.tanavitrine.tls=true"
         - "traefik.http.routers.tanavitrine.tls.certresolver=letsencryptresolver"
-        - "traefik.http.services.tanavitrine.loadbalancer.server.port=8000"
+        - "traefik.http.services.tanavitrine.loadbalancer.server.port=8001"
         # STICKY SESSIONS PARA CSRF TOKENS - HABILITADO
         - "traefik.http.services.tanavitrine.loadbalancer.sticky.cookie=true"
         - "traefik.http.services.tanavitrine.loadbalancer.sticky.cookie.name=tanavitrine_server"
@@ -93,8 +93,11 @@ services:
       # AWS keys removidas para usar apenas storage local
       # QUEUE
       - QUEUE_CONNECTION=redis
+      # OCTANE
+      - OCTANE_SERVER=frankenphp
+      - OCTANE_HTTPS=false
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/up || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/up || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
