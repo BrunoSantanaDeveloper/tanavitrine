@@ -18,7 +18,7 @@
     "laravel/cashier": "^15.5",
     "laravel/framework": "^11.9",
     "laravel/jetstream": "^5.3",
-    "laravel/octane": "^2.5",
+    "laravel/octane": "2.12.1",
     "laravel/sanctum": "^4.0",
     "laravel/socialite": "^5.16",
     "laravel/tinker": "^2.9",

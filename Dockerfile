@@ -87,4 +87,4 @@ COPY --chown=appuser:appgroup docker/caddy/Caddyfile /etc/caddy/Caddyfile
 EXPOSE 8000
 
 ENTRYPOINT ["/app/docker/scripts/entrypoint.sh"]
-CMD ["php", "artisan", "octane:start", "--host=0.0.0.0", "--port=8000"]
+CMD ["php", "artisan", "octane:start", "--host=0.0.0.0", "--port=8000", "--no-interaction"]
