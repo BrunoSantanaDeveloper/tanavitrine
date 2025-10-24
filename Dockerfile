@@ -6,99 +6,73 @@ RUN bun install --no-frozen-lockfile || (rm -f bun.lockb && bun install)
 RUN bun run build
 
 # Stage 2: Final image
-FROM php:8.3-fpm-alpine AS base
+FROM dunglas/frankenphp:1.4.0-php8.3-alpine AS base
 
-# Install system dependencies
-RUN apk add --no-cache \
-    nginx \
-    supervisor \
-    curl \
-    wget \
-    mysql-client \
-    $PHPIZE_DEPS \
-    icu-dev \
-    libzip-dev \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev
+# Create required directories with proper permissions
+RUN mkdir -p /data/caddy /config/caddy /home/.local/share/caddy && \
+    chmod -R 755 /data /config /home/.local && \
+    # Add non-root user
+    addgroup -g 1000 appgroup && \
+    adduser -u 1000 -G appgroup -h /app -s /bin/sh -D appuser && \
+    # Give ownership of Caddy directories
+    chown -R appuser:appgroup /data /config /home/.local
 
-# Install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install -j$(nproc) \
+# Set Caddy environment variables
+ENV XDG_CONFIG_HOME=/config \
+    XDG_DATA_HOME=/data
+
+# Install composer and PHP extensions
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+RUN install-php-extensions \
+    pcntl \
+    intl \
     pdo_mysql \
-    mysqli \
     zip \
     bcmath \
-    intl \
+    redis \
     gd \
-    exif \
-    pcntl && \
-    pecl install redis && \
-    docker-php-ext-enable redis && \
-    apk del $PHPIZE_DEPS && \
+    exif && \
+    # Cleanup
     rm -rf /tmp/* /var/cache/apk/*
-
-# Install composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-# Create required directories
-RUN mkdir -p \
-    /var/www/html \
-    /run/nginx \
-    /run/php-fpm \
-    /var/log/supervisor && \
-    addgroup -g 1000 appgroup && \
-    adduser -u 1000 -G appgroup -h /var/www/html -s /bin/sh -D appuser
 
 # Environment configuration
 ENV APP_ENV=production \
-    APP_DEBUG=false
+    APP_DEBUG=false \
+    OCTANE_SERVER=frankenphp
 
 # Configure PHP for production
-RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" && \
-    echo "upload_max_filesize = 100M" >> "$PHP_INI_DIR/conf.d/uploads.ini" && \
-    echo "post_max_size = 100M" >> "$PHP_INI_DIR/conf.d/uploads.ini" && \
-    echo "memory_limit = 256M" >> "$PHP_INI_DIR/conf.d/uploads.ini" && \
-    echo "max_execution_time = 300" >> "$PHP_INI_DIR/conf.d/uploads.ini"
+COPY docker/php/production.ini $PHP_INI_DIR/conf.d/
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 # Set up application
-WORKDIR /var/www/html
+WORKDIR /app
 COPY --chown=appuser:appgroup . .
 COPY --from=node-builder --chown=appuser:appgroup /app/public/build/ ./public/build/
 
-# Create Laravel required directories
-RUN mkdir -p \
-    storage/framework/{sessions,views,cache,testing} \
-    storage/logs \
-    storage/app/public \
-    bootstrap/cache && \
-    chown -R appuser:appgroup storage bootstrap/cache && \
-    chmod -R 755 storage bootstrap/cache
-
-# Install dependencies
-RUN composer install --no-dev --prefer-dist --no-scripts && \
-    composer dump-autoload --no-scripts && \
-    chown -R appuser:appgroup /var/www/html && \
+# Install dependencies and optimize
+RUN composer install --prefer-dist --optimize-autoloader && \
+    php artisan optimize && \
+    php artisan view:cache && \
+    php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan event:cache && \
+    # Set proper permissions
+    chown -R appuser:appgroup /app && \
     chmod -R 755 storage bootstrap/cache && \
-    rm -rf tests node_modules && \
+    rm -rf tests node_modules \
     composer clear-cache
 
-# Copy Nginx configuration
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+# Copy and make entrypoint scripts executable (after cleanup)
+COPY --chown=appuser:appgroup docker/scripts/ ./docker/scripts/
+RUN chmod +x ./docker/scripts/*.sh
 
-# Copy PHP-FPM configuration
-COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
-RUN rm -f /usr/local/etc/php-fpm.d/zz-docker.conf
+# Copy custom Caddyfile
+COPY --chown=appuser:appgroup docker/caddy/Caddyfile /etc/caddy/Caddyfile
 
-# Copy supervisord configuration
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Copy start script
-COPY docker/start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
+USER appuser
 
 # Expose port
-EXPOSE 8001
+EXPOSE 8000
 
-# Start supervisor
-CMD ["/usr/local/bin/start.sh"]
+ENTRYPOINT ["/app/docker/scripts/entrypoint.sh"]
+CMD ["php", "artisan", "octane:start", "--host=0.0.0.0"]

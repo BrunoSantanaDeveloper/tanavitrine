@@ -34,7 +34,7 @@ fi
 check_directory() {
     local dir=$1
     local create_if_missing=${2:-false}
-    
+
     if [ ! -d "$dir" ]; then
         if [ "$create_if_missing" = true ]; then
             echo "📁 Criando diretório: $dir"

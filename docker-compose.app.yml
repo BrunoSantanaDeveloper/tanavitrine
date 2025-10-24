@@ -7,8 +7,8 @@ services:
     networks:
       - gravit_network
     ports:
-      - target: 8001
-        published: 8001
+      - target: 8000
+        published: 8000
         protocol: tcp
         mode: ingress
     deploy:
@@ -47,7 +47,7 @@ services:
         - "traefik.http.routers.tanavitrine.entrypoints=websecure"
         - "traefik.http.routers.tanavitrine.tls=true"
         - "traefik.http.routers.tanavitrine.tls.certresolver=letsencryptresolver"
-        - "traefik.http.services.tanavitrine.loadbalancer.server.port=8001"
+        - "traefik.http.services.tanavitrine.loadbalancer.server.port=8000"
         # STICKY SESSIONS PARA CSRF TOKENS - HABILITADO
         - "traefik.http.services.tanavitrine.loadbalancer.sticky.cookie=true"
         - "traefik.http.services.tanavitrine.loadbalancer.sticky.cookie.name=tanavitrine_server"
@@ -63,14 +63,38 @@ services:
         - "traefik.http.routers.tanavitrine-http.middlewares=redirect-https@docker"
     # VOLUMES PARA LOGS E STORAGE LOCAL
     volumes:
-      - tnvt_logs:/var/www/html/storage/logs:rw
-      - tnvt_storage:/var/www/html/storage/app:rw
+      - logs:/var/www/html/storage/logs:rw
+      - storage:/var/www/html/storage/app:rw
     environment:
+      - TRUST_CLOUDFLARE=true
       - CONTAINER_ROLE=app_tanavitrine
       - WWWUSER=1000
       - WWWGROUP=1000
+      # APLICAÇÃO BASE
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=https://tanavitrine.com.br
+      # CACHE E SESSIONS DISTRIBUÍDOS
+      - CACHE_STORE=redis
+      - SESSION_DRIVER=redis
+      # REDIS LOCAL CONFIGURATION
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_CLIENT=phpredis
+      - REDIS_PREFIX=tanavitrine_prod_
+      - REDIS_DB=0
+      - REDIS_CACHE_CONNECTION=cache
+      - REDIS_CACHE_DB=1
+      - REDIS_TIMEOUT=5
+      - REDIS_READ_TIMEOUT=10
+      # ARMAZENAMENTO LOCAL
+      - FILESYSTEM_DISK=public
+      # AWS keys removidas para usar apenas storage local
+      # QUEUE
+      - QUEUE_CONNECTION=redis
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8001/up || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/up || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -90,12 +114,29 @@ services:
         max_attempts: 3
         window: 120s
     volumes:
-      - tnvt_logs:/var/www/html/storage/logs:rw
-      - tnvt_storage:/var/www/html/storage/app:rw
+      - logs:/var/www/html/storage/logs:rw
+      - storage:/var/www/html/storage/app:rw
     environment:
       - CONTAINER_ROLE=queue_tanavitrine
       - WWWUSER=1000
       - WWWGROUP=1000
+      # MESMAS CONFIGURAÇÕES DO APP
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - CACHE_STORE=redis
+      - SESSION_DRIVER=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_CLIENT=phpredis
+      - REDIS_PREFIX=tanavitrine_prod_
+      - REDIS_DB=0
+      - REDIS_CACHE_CONNECTION=cache
+      - REDIS_CACHE_DB=1
+      - REDIS_TIMEOUT=5
+      - REDIS_READ_TIMEOUT=10
+      - QUEUE_CONNECTION=redis
+    entrypoint: ["/app/docker/scripts/entrypoint.sh"]
     command: ["php", "artisan", "queue:work", "--verbose", "--tries=3", "--timeout=90"]
     healthcheck:
       test: ["CMD-SHELL", "ps aux | grep -q '[a]rtisan queue:work' || exit 1"]
@@ -109,9 +150,9 @@ networks:
 
 # VOLUMES LOCAIS
 volumes:
-  tnvt_logs:
+  logs:
     driver: local
-  tnvt_storage:
+  storage:
     driver: local
-  tnvt_public:
+  public:
     driver: local
