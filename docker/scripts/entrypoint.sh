@@ -21,8 +21,11 @@ if [ "${CONTAINER_ROLE:-app}" = "app" ]; then
 
     # Executar cache refresh se necessário
     if [ "${APP_ENV}" = "production" ]; then
-        echo "🔄 Limpando e atualizando caches para produção..."
+        echo "🔄 Otimizando autoloader..."
         cd /app
+        composer dump-autoload --optimize --no-dev --quiet
+
+        echo "🔄 Limpando e atualizando caches para produção..."
         php artisan config:clear --quiet
         php artisan route:clear --quiet
         php artisan view:clear --quiet

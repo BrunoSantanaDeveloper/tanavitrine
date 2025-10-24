@@ -56,9 +56,8 @@ RUN mkdir -p storage/framework/{sessions,views,cache,testing} \
     chown -R appuser:appgroup storage bootstrap/cache && \
     chmod -R 755 storage bootstrap/cache
 
-# Install dependencies and optimize
-RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-scripts && \
-    composer dump-autoload --optimize && \
+# Install dependencies (optimization will happen at runtime)
+RUN composer install --no-dev --prefer-dist --no-scripts --no-autoloader && \
     # Set proper permissions
     chown -R appuser:appgroup /app && \
     chmod -R 755 storage bootstrap/cache && \
