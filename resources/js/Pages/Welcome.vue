@@ -216,8 +216,20 @@ const filteredListings = computed(() => {
     </template>
 
     <!-- Hero Section -->
-    <section class="relative overflow-hidden border-b border-orange-200 bg-linear-to-r from-teal-900 via-teal-700 to-teal-900 py-10 sm:py-20">
-      <div class="container mx-auto px-4 text-center">
+    <section class="relative overflow-hidden border-b border-orange-200 py-10 sm:py-20">
+      <!-- Background Image -->
+      <div class="absolute inset-0 -z-10">
+        <img
+          src="/images/bg-hero.png"
+          alt=""
+          class="h-full w-full object-cover"
+        />
+      </div>
+
+      <!-- Overlay with transparency -->
+      <div class="absolute inset-0 -z-10 bg-gradient-to-r from-teal-900/90 via-teal-700/80 to-teal-950/90" />
+
+      <div class="container mx-auto px-4 text-center relative z-10">
         <!-- Badge -->
         <div class="mb-8 inline-flex justify-center">
           <Badge variant="outline" class="rounded-full border border-yellow-500 bg-primary/10 px-4 py-1 text-xs text-white sm:text-sm">
