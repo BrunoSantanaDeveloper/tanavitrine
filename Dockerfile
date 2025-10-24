@@ -49,17 +49,20 @@ WORKDIR /app
 COPY --chown=appuser:appgroup . .
 COPY --from=node-builder --chown=appuser:appgroup /app/public/build/ ./public/build/
 
+# Create Laravel required directories before composer install
+RUN mkdir -p storage/framework/{sessions,views,cache,testing} \
+    storage/logs \
+    bootstrap/cache && \
+    chown -R appuser:appgroup storage bootstrap/cache && \
+    chmod -R 755 storage bootstrap/cache
+
 # Install dependencies and optimize
-RUN composer install --prefer-dist --optimize-autoloader && \
-    php artisan optimize && \
-    php artisan view:cache && \
-    php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan event:cache && \
+RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-scripts && \
+    composer dump-autoload --optimize && \
     # Set proper permissions
     chown -R appuser:appgroup /app && \
     chmod -R 755 storage bootstrap/cache && \
-    rm -rf tests node_modules \
+    rm -rf tests node_modules && \
     composer clear-cache
 
 # Copy and make entrypoint scripts executable (after cleanup)
