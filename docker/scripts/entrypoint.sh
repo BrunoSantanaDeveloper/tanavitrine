@@ -60,5 +60,11 @@ cd /app
 # Desabilitar prompts interativos do Laravel
 export LARAVEL_SAIL=1
 
+# Garantir que o binário FrankenPHP tem permissão de execução
+if [ -f /usr/local/bin/frankenphp ]; then
+    chmod +x /usr/local/bin/frankenphp
+    echo "✅ Permissões do FrankenPHP configuradas"
+fi
+
 # Executar comando passado como argumento com stdin fechado para evitar prompts
 exec "$@" < /dev/null
