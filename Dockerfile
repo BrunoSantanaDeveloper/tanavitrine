@@ -38,7 +38,8 @@ RUN install-php-extensions \
 # Environment configuration
 ENV APP_ENV=production \
     APP_DEBUG=false \
-    OCTANE_SERVER=frankenphp
+    OCTANE_SERVER=frankenphp \
+    FRANKENPHP_BINARY_PATH=/usr/local/bin/frankenphp
 
 # Configure PHP for production
 COPY docker/php/production.ini $PHP_INI_DIR/conf.d/
@@ -64,6 +65,8 @@ RUN composer install --prefer-dist --optimize-autoloader && \
     php artisan config:cache && \
     php artisan route:cache && \
     php artisan event:cache && \
+    # Publicar e modificar config do Octane para não fazer check de versão
+    php artisan vendor:publish --tag=octane-config --force && \
     # Set proper permissions
     chown -R appuser:appgroup /app && \
     chmod -R 755 storage bootstrap/cache && \
