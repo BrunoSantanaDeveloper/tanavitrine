@@ -77,7 +77,8 @@ RUN chmod +x ./docker/scripts/*.sh
 # Copy custom Caddyfile
 COPY --chown=appuser:appgroup docker/caddy/Caddyfile /etc/caddy/Caddyfile
 
-USER appuser
+# Run as root for FrankenPHP (it needs to bind to port 80/443 internally)
+# USER appuser
 
 # Expose port
 EXPOSE 8000
