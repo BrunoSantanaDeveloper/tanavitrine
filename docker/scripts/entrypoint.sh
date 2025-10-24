@@ -21,19 +21,33 @@ if [ "${CONTAINER_ROLE:-app}" = "app" ]; then
 
     # Executar cache refresh se necessário
     if [ "${APP_ENV}" = "production" ]; then
-        echo "🔄 Otimizando autoloader..."
         cd /app
+
+        echo "🔍 Verificando .env..."
+        if [ ! -f ".env" ]; then
+            echo "❌ Arquivo .env não encontrado!"
+            ls -la /app/ | grep env
+            exit 1
+        fi
+
+        echo "🔍 Verificando APP_KEY..."
+        grep "APP_KEY=" .env || echo "⚠️  APP_KEY não encontrada!"
+
+        echo "🔍 Verificando diretórios storage..."
+        ls -la /app/storage/framework/
+
+        echo "🔄 Otimizando autoloader..."
         composer dump-autoload --optimize --no-dev --classmap-authoritative --no-scripts --quiet
 
         echo "🔄 Limpando e atualizando caches para produção..."
-        php artisan config:clear --quiet
-        php artisan route:clear --quiet
-        php artisan view:clear --quiet
-        php artisan cache:clear --quiet
-        php artisan config:cache --quiet
-        php artisan route:cache --quiet
-        php artisan view:cache --quiet
-        echo "✅ Caches limpos e atualizados"
+        php artisan config:clear --quiet || echo "⚠️  Falha ao limpar config cache"
+        php artisan route:clear --quiet || echo "⚠️  Falha ao limpar route cache"
+        php artisan view:clear --quiet || echo "⚠️  Falha ao limpar view cache"
+        php artisan cache:clear --quiet || echo "⚠️  Falha ao limpar cache"
+        php artisan config:cache --quiet || echo "⚠️  Falha ao criar config cache"
+        php artisan route:cache --quiet || echo "⚠️  Falha ao criar route cache"
+        php artisan view:cache --quiet || echo "⚠️  Falha ao criar view cache"
+        echo "✅ Caches processados"
     fi
 
 elif [ "${CONTAINER_ROLE}" = "queue" ]; then
