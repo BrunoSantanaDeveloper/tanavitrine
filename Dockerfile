@@ -1,133 +1,78 @@
-FROM php:8.3-fpm-alpine AS base
-
-# Install required PHP extensions
-RUN apk add --no-cache \
-    $PHPIZE_DEPS \
-    icu-dev \
-    postgresql-dev \
-    libxml2-dev \
-    libzip-dev \
-    mysql-dev \
-    && docker-php-ext-install \
-    intl \
-    bcmath \
-    pgsql \
-    pdo_pgsql \
-    pdo_mysql \
-    mysqli \
-    dom \
-    zip \
-    && docker-php-ext-configure opcache --enable-opcache \
-    && docker-php-ext-install opcache \
-    && apk del $PHPIZE_DEPS
-
-# Install Nginx and other dependencies
-RUN apk add --no-cache \
-    nginx \
-    supervisor \
-    su-exec \
-    wget \
-    curl \
-    $PHPIZE_DEPS \
-    icu-dev \
-    postgresql-dev \
-    libxml2-dev \
-    libzip-dev \
-    mysql-dev \
-    nodejs \
-    npm \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    busybox-extras \
-    ffmpeg \
-    && docker-php-ext-install \
-    intl \
-    bcmath \
-    pgsql \
-    pdo_pgsql \
-    pdo_mysql \
-    mysqli \
-    dom \
-    zip \
-    && docker-php-ext-configure opcache --enable-opcache \
-    && docker-php-ext-install opcache \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd \
-    && apk del $PHPIZE_DEPS
-
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Set working directory
-WORKDIR /var/www/html
-
-# Create necessary directories and set permissions
-RUN mkdir -p /var/www/html/storage/logs \
-    /var/www/html/storage/framework/sessions \
-    /var/www/html/storage/framework/views \
-    /var/www/html/storage/framework/cache \
-    /run/nginx \
-    /run/supervisor \
-    /run/php-fpm \
-    /var/log/supervisor \
-    /var/log/php-fpm && \
-    touch /var/log/php-fpm/error.log && \
-    touch /var/log/php-fpm/slow.log && \
-    chown -R www-data:www-data /var/www/html && \
-    chmod -R 755 /var/www/html/storage && \
-    chown -R www-data:www-data /var/log/php-fpm && \
-    chmod -R 755 /var/log/php-fpm && \
-    chown -R www-data:www-data /run/php-fpm && \
-    chmod -R 755 /run/php-fpm
-
-# Configure PHP
-RUN echo "upload_max_filesize = 100M" >> /usr/local/etc/php/conf.d/uploads.ini && \
-    echo "post_max_size = 100M" >> /usr/local/etc/php/conf.d/uploads.ini && \
-    echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/uploads.ini && \
-    echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini && \
-    echo "max_input_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini
-
-# Configure Nginx
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
-
-# Copy composer files
-COPY composer.json composer.lock ./
-
-# Install dependencies
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
-
-# Copy application files
+# Stage 1: Frontend Assets build
+FROM oven/bun:1-slim AS node-builder
+WORKDIR /app
 COPY . .
+RUN bun install --no-frozen-lockfile || (rm -f bun.lockb && bun install)
+RUN bun run build
 
-# Generate optimized autoloader
-RUN composer dump-autoload --optimize --no-dev
+# Stage 2: Final image
+FROM dunglas/frankenphp:1.4.0-php8.3-alpine AS base
 
-# Generate Ziggy routes
-RUN php artisan ziggy:generate resources/js/ziggy.js
+# Create required directories with proper permissions
+RUN mkdir -p /data/caddy /config/caddy /home/.local/share/caddy && \
+    chmod -R 755 /data /config /home/.local && \
+    # Add non-root user
+    addgroup -g 1000 appgroup && \
+    adduser -u 1000 -G appgroup -h /app -s /bin/sh -D appuser && \
+    # Give ownership of Caddy directories
+    chown -R appuser:appgroup /data /config /home/.local
 
-# Install and build frontend assets
-RUN npm install && npm run build
+# Set Caddy environment variables
+ENV XDG_CONFIG_HOME=/config \
+    XDG_DATA_HOME=/data
 
-# Copy configuration files
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
-COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
-COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY docker/start.sh /usr/local/bin/start.sh
+# Install composer and PHP extensions
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+RUN install-php-extensions \
+    pcntl \
+    intl \
+    pdo_mysql \
+    zip \
+    bcmath \
+    redis \
+    gd \
+    exif && \
+    # Cleanup
+    rm -rf /tmp/* /var/cache/apk/*
 
-# Remove or override zz-docker.conf
-RUN rm -f /usr/local/etc/php-fpm.d/zz-docker.conf
+# Environment configuration
+ENV APP_ENV=production \
+    APP_DEBUG=false \
+    OCTANE_SERVER=frankenphp
 
-# Make start script executable
-RUN chmod +x /usr/local/bin/start.sh
+# Configure PHP for production
+COPY docker/php/production.ini $PHP_INI_DIR/conf.d/
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
-# Expose Nginx port
-EXPOSE 8001
+# Set up application
+WORKDIR /app
+COPY --chown=appuser:appgroup . .
+COPY --from=node-builder --chown=appuser:appgroup /app/public/build/ ./public/build/
 
-# Health check with increased timeout and start period
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:8001/health || exit 1
+# Install dependencies and optimize
+RUN composer install --prefer-dist --optimize-autoloader && \
+    php artisan optimize && \
+    php artisan view:cache && \
+    php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan event:cache && \
+    # Set proper permissions
+    chown -R appuser:appgroup /app && \
+    chmod -R 755 storage bootstrap/cache && \
+    rm -rf tests node_modules \
+    composer clear-cache
 
-# Start services using supervisor
-CMD ["/usr/local/bin/start.sh"]
+# Copy and make entrypoint scripts executable (after cleanup)
+COPY --chown=appuser:appgroup docker/scripts/ ./docker/scripts/
+RUN chmod +x ./docker/scripts/*.sh
+
+# Copy custom Caddyfile
+COPY --chown=appuser:appgroup docker/caddy/Caddyfile /etc/caddy/Caddyfile
+
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+ENTRYPOINT ["/app/docker/scripts/entrypoint.sh"]
+CMD ["php", "artisan", "octane:start", "--host=0.0.0.0"]
