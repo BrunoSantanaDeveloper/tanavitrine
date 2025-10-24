@@ -49,6 +49,14 @@ WORKDIR /app
 COPY --chown=appuser:appgroup . .
 COPY --from=node-builder --chown=appuser:appgroup /app/public/build/ ./public/build/
 
+# Create Laravel storage directories BEFORE composer install
+RUN mkdir -p storage/framework/{cache,sessions,views,testing}/data \
+    storage/logs \
+    storage/app/public \
+    bootstrap/cache && \
+    chown -R appuser:appgroup storage bootstrap/cache && \
+    chmod -R 755 storage bootstrap/cache
+
 # Install dependencies and optimize
 RUN composer install --prefer-dist --optimize-autoloader && \
     php artisan optimize && \
