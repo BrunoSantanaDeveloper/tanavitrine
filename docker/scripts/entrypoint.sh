@@ -23,7 +23,7 @@ if [ "${CONTAINER_ROLE:-app}" = "app" ]; then
     if [ "${APP_ENV}" = "production" ]; then
         echo "🔄 Otimizando autoloader..."
         cd /app
-        composer dump-autoload --optimize --no-dev --quiet
+        composer dump-autoload --optimize --no-dev --classmap-authoritative --no-scripts --quiet
 
         echo "🔄 Limpando e atualizando caches para produção..."
         php artisan config:clear --quiet
