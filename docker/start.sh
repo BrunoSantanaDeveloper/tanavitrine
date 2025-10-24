@@ -66,48 +66,28 @@ echo "Creating storage symlink..."
 rm -f /var/www/html/public/storage
 php artisan storage:link
 
-# Verificar conexão com o banco de dados
+# Verificar conexão com o banco de dados usando artisan
 echo "Testing database connection..."
-echo "DB_HOST: $DB_HOST"
-echo "DB_PORT: $DB_PORT"
-echo "DB_DATABASE: $DB_DATABASE"
-echo "DB_USERNAME: $DB_USERNAME"
+max_attempts=30
+attempt=0
 
-# Testar conexão com o banco usando telnet
-echo "Testing if database port is open..."
-if ! command -v telnet &> /dev/null; then
-    echo "Telnet is not available, installing..."
-    apk add --no-cache busybox-extras
-fi
+while [ $attempt -lt $max_attempts ]; do
+    echo "Attempting to connect to database (attempt $attempt/$max_attempts)..."
 
-telnet $DB_HOST $DB_PORT | grep -q "Connected"
-if [ $? -eq 0 ]; then
-    echo "Database port is open!"
-    echo "Waiting for database connection..."
-
-    max_attempts=30
-    attempt=0
-
-    while [ $attempt -lt $max_attempts ]; do
-        echo "Attempting to connect to database ($DB_HOST:$DB_PORT)..."
-        php artisan db:monitor
-
-        if [ $? -eq 0 ]; then
-            echo "Database connection established!"
-            break
-        fi
-
-        attempt=$((attempt + 1))
-        sleep 2
-    done
-
-    if [ $attempt -eq $max_attempts ]; then
-        echo "Failed to connect to database after $max_attempts attempts."
-        exit 1
+    if php artisan db:monitor --quiet 2>/dev/null; then
+        echo "Database connection established!"
+        break
     fi
-else
-    echo "Database port is not open!"
-    exit 1
+
+    attempt=$((attempt + 1))
+
+    if [ $attempt -lt $max_attempts ]; then
+        sleep 2
+    fi
+done
+
+if [ $attempt -eq $max_attempts ]; then
+    echo "Warning: Failed to connect to database after $max_attempts attempts. Continuing anyway..."
 fi
 
 # Otimizar aplicação
