@@ -10,6 +10,9 @@ mkdir -p /var/www/html/storage/logs
 mkdir -p /var/www/html/storage/framework/sessions
 mkdir -p /var/www/html/storage/framework/views
 mkdir -p /var/www/html/storage/framework/cache
+mkdir -p /var/www/html/storage/framework/testing
+mkdir -p /var/www/html/storage/app/public
+mkdir -p /var/www/html/bootstrap/cache
 mkdir -p /var/log/supervisor
 mkdir -p /run/nginx
 mkdir -p /run/supervisor
@@ -20,6 +23,13 @@ mkdir -p /var/lib/nginx/tmp/proxy
 mkdir -p /var/lib/nginx/tmp/fastcgi
 mkdir -p /var/lib/nginx/tmp/uwsgi
 mkdir -p /var/lib/nginx/tmp/scgi
+
+# Garantir permissões corretas nos diretórios críticos do Laravel
+echo "Setting Laravel critical directory permissions..."
+chown -R www-data:www-data /var/www/html/storage/framework
+chmod -R 775 /var/www/html/storage/framework
+chown -R www-data:www-data /var/www/html/bootstrap/cache
+chmod -R 775 /var/www/html/bootstrap/cache
 
 # Verificar e configurar diretório public
 echo "Setting up public directory..."
