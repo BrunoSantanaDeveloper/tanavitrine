@@ -23,7 +23,6 @@ class DefaultPlansSeeder extends Seeder
         $this->createFreePlan($stripe);
         $this->createVitrinePlan($stripe);
         $this->createDestaquePlan($stripe);
-        $this->createPremiumPlan($stripe);
     }
 
     private function createFreePlan($stripe)

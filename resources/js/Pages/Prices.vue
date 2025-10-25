@@ -307,7 +307,7 @@ const githubUrl = 'https://github.com/shipfastlabs/larasonic-vue'
         </div>
 
         <!-- Pricing Cards Grid -->
-        <div v-if="plansWithSelectedInterval.length > 0" class="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-16">
+        <div v-if="plansWithSelectedInterval.length > 0" class="grid gap-8 md:grid-cols-2 lg:grid-cols-2 mt-16 mx-auto max-w-3xl">
           <Card
             v-for="plan in plansWithSelectedInterval.filter(p => !p.metadata?.is_default)"
             :key="`${plan.id}-${selectedInterval}`"

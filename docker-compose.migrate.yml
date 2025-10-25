@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  migrate_tanavitrine:
+    image: tanavitrine-app:latest
+    entrypoint: ["/bin/sh"]
+    command:
+      - "-c"
+      - |
+        echo "🔄 Aguardando banco de dados..."
+        until php artisan tinker --execute="DB::connection()->getPdo();" 2>/dev/null; do
+          echo "⏳ Banco não disponível, aguardando 5s..."
+          sleep 5
+        done
+        echo "✅ Conexão com banco estabelecida!"
+        echo "📊 Executando migrações..."
+        php artisan migrate --force
+        echo "✅ Migrações concluídas!"
+        echo "📋 Status das migrações:"
+        php artisan migrate:status
+        echo "🌱 Executando seeders..."
+        php artisan db:seed --force
+        echo "✅ Seeders concluídos!"
+    networks:
+      - gravit_network
+    environment:
+      # Configurações básicas
+      - APP_ENV=production
+      - APP_DEBUG=false
+      # Banco de dados
+      - DB_CONNECTION=mysql
+      - DB_HOST=db_ecr
+      - DB_PORT=3306
+      - DB_DATABASE=tnvt_bd
+      - DB_USERNAME=usr_tnvt
+      - DB_PASSWORD=62@YhHf0EA
+      # Cache (usando file para migrations para evitar dependência externa)
+      - CACHE_STORE=file
+      - SESSION_DRIVER=file
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: none
+
+networks:
+  gravit_network:
+    external: true

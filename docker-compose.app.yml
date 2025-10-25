@@ -47,7 +47,7 @@ services:
         - "traefik.http.routers.tanavitrine.entrypoints=websecure"
         - "traefik.http.routers.tanavitrine.tls=true"
         - "traefik.http.routers.tanavitrine.tls.certresolver=letsencryptresolver"
-        - "traefik.http.services.tanavitrine.loadbalancer.server.port=8001"
+        - "traefik.http.services.tanavitrine.loadbalancer.server.port=8000"
         # STICKY SESSIONS PARA CSRF TOKENS - HABILITADO
         - "traefik.http.services.tanavitrine.loadbalancer.sticky.cookie=true"
         - "traefik.http.services.tanavitrine.loadbalancer.sticky.cookie.name=tanavitrine_server"
@@ -97,7 +97,7 @@ services:
       - OCTANE_SERVER=frankenphp
       - OCTANE_HTTPS=false
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8001/up || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/up || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
