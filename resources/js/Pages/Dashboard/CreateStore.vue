@@ -14,6 +14,7 @@ import AppLayout from '@/Layouts/AppLayout.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 import { Icon } from '@iconify/vue'
+import { formatPhone, formatCEP } from '@/utils/formatters'
 
 const props = defineProps({
   categories: {
@@ -125,6 +126,18 @@ const isStepValid = computed(() => {
 })
 
 const progress = computed(() => (currentStep.value / totalSteps) * 100)
+
+function handlePhoneInput(e) {
+  form.whatsapp = formatPhone(e.target.value)
+}
+
+function handlePhoneFixoInput(e) {
+  form.phone = formatPhone(e.target.value)
+}
+
+function handleCEPInput(e) {
+  form.zip_code = formatCEP(e.target.value)
+}
 </script>
 
 <template>
@@ -330,6 +343,7 @@ const progress = computed(() => (currentStep.value / totalSteps) * 100)
                   v-model="form.zip_code"
                   placeholder="00000-000"
                   maxlength="9"
+                  @input="handleCEPInput"
                 />
               </div>
             </div>
@@ -342,7 +356,9 @@ const progress = computed(() => (currentStep.value / totalSteps) * 100)
                   id="whatsapp"
                   v-model="form.whatsapp"
                   placeholder="(00) 00000-0000"
+                  maxlength="15"
                   :class="{ 'border-destructive': form.errors.whatsapp }"
+                  @input="handlePhoneInput"
                 />
               </div>
 
@@ -352,6 +368,8 @@ const progress = computed(() => (currentStep.value / totalSteps) * 100)
                   id="phone"
                   v-model="form.phone"
                   placeholder="(00) 0000-0000"
+                  maxlength="15"
+                  @input="handlePhoneFixoInput"
                 />
               </div>
 

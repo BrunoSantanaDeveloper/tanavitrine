@@ -10,6 +10,7 @@ import SelectContent from '@/Components/shadcn/ui/select/SelectContent.vue'
 import SelectItem from '@/Components/shadcn/ui/select/SelectItem.vue'
 import SelectTrigger from '@/Components/shadcn/ui/select/SelectTrigger.vue'
 import SelectValue from '@/Components/shadcn/ui/select/SelectValue.vue'
+import { formatPhone } from '@/utils/formatters'
 
 const form = defineModel()
 const emit = defineEmits(['next', 'prev'])
@@ -127,14 +128,6 @@ function handlePhotosUpload(e) {
 function removePhoto(index) {
   form.value.photos.splice(index, 1)
   photoPreviews.value.splice(index, 1)
-}
-
-function formatPhone(value) {
-  const numbers = value.replace(/\D/g, '')
-  if (numbers.length <= 10) {
-    return numbers.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3')
-  }
-  return numbers.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3')
 }
 
 function handleWhatsAppInput(e) {

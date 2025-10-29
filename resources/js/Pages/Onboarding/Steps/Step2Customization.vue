@@ -9,6 +9,7 @@ import Checkbox from '@/Components/shadcn/ui/checkbox/Checkbox.vue'
 import FileUpload from '@/Components/FileUpload.vue'
 import AddressForm from '@/Components/AddressForm.vue'
 import SocialMediaInputs from '@/Components/SocialMediaInputs.vue'
+import { formatPhone } from '@/utils/formatters'
 
 const form = defineModel()
 const emit = defineEmits(['next', 'prev'])
@@ -75,14 +76,6 @@ function toggleServiceType(type) {
   } else {
     form.value.service_types.push(type)
   }
-}
-
-function formatPhone(value) {
-  const numbers = value.replace(/\D/g, '')
-  if (numbers.length <= 10) {
-    return numbers.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3')
-  }
-  return numbers.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3')
 }
 
 function handlePhoneInput(e) {

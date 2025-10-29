@@ -8,6 +8,7 @@ import Input from '@/Components/shadcn/ui/input/Input.vue'
 import Label from '@/Components/shadcn/ui/label/Label.vue'
 import { Link } from '@inertiajs/vue3'
 import { inject } from 'vue'
+import { formatPhone, formatCPF } from '@/utils/formatters'
 
 const route = inject('route')
 const form = defineModel()
@@ -33,21 +34,8 @@ const isValid = computed(() => {
   )
 })
 
-function formatPhone(value) {
-  const numbers = value.replace(/\D/g, '')
-  if (numbers.length <= 10) {
-    return numbers.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3')
-  }
-  return numbers.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3')
-}
-
 function handlePhoneInput(e) {
   form.value.user_phone = formatPhone(e.target.value)
-}
-
-function formatCPF(value) {
-  const numbers = value.replace(/\D/g, '')
-  return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
 }
 
 function handleCPFInput(e) {

@@ -432,7 +432,9 @@ function scrollPrev() {
             <Input
               id="lead-whatsapp"
               v-model="leadForm.whatsapp"
+              type="tel"
               placeholder="(00) 00000-0000"
+              maxlength="15"
               :disabled="isSubmittingLead"
             />
           </div>

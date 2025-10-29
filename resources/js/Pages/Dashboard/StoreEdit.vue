@@ -11,6 +11,7 @@ import { Textarea } from '@/Components/shadcn/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/shadcn/ui/select'
 import { toast } from 'vue-sonner'
 import { Icon } from '@iconify/vue'
+import { formatPhone, formatCEP } from '@/utils/formatters'
 
 const props = defineProps({
   store: {
@@ -82,6 +83,18 @@ function removeLogo() {
   if (logoInput.value) {
     logoInput.value.value = ''
   }
+}
+
+function handleWhatsAppInput(e) {
+  form.whatsapp = formatPhone(e.target.value)
+}
+
+function handlePhoneInput(e) {
+  form.phone = formatPhone(e.target.value)
+}
+
+function handleCEPInput(e) {
+  form.zip_code = formatCEP(e.target.value)
 }
 
 function submit() {
@@ -268,12 +281,12 @@ function submit() {
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <Label for="whatsapp">WhatsApp *</Label>
-                  <Input id="whatsapp" v-model="form.whatsapp" placeholder="(62) 99999-9999" required />
+                  <Input id="whatsapp" v-model="form.whatsapp" placeholder="(62) 99999-9999" maxlength="15" required @input="handleWhatsAppInput" />
                 </div>
 
                 <div>
                   <Label for="phone">Telefone</Label>
-                  <Input id="phone" v-model="form.phone" placeholder="(62) 3333-3333" />
+                  <Input id="phone" v-model="form.phone" placeholder="(62) 3333-3333" maxlength="15" @input="handlePhoneInput" />
                 </div>
               </div>
 
@@ -340,7 +353,7 @@ function submit() {
 
                 <div>
                   <Label for="zip_code">CEP</Label>
-                  <Input id="zip_code" v-model="form.zip_code" placeholder="00000-000" />
+                  <Input id="zip_code" v-model="form.zip_code" placeholder="00000-000" maxlength="9" @input="handleCEPInput" />
                 </div>
               </div>
             </CardContent>
