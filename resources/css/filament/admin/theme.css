@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Fira+Code:wght@300..700&display=swap');
+
+/**
+ * Custom Filament Theme for TanaVitrine
+ * Pure CSS approach - no Tailwind processing to avoid grid conflicts
+ */
+
+:root {
+  /* Fonts */
+  --font-sans: 'Outfit', sans-serif;
+  --font-mono: 'Fira Code', monospace;
+
+  /* Primary colors matching main app (Amber/Yellow) */
+  --primary-50: #fffbeb;
+  --primary-100: #fef3c7;
+  --primary-200: #fde68a;
+  --primary-300: #fcd34d;
+  --primary-400: #fbbf24;
+  --primary-500: #f59e0b;
+  --primary-600: #d97706;
+  --primary-700: #b45309;
+  --primary-800: #92400e;
+  --primary-900: #78350f;
+  --primary-950: #451a03;
+}
+
+/* Apply Outfit font to Filament components */
+body,
+.fi-body,
+.fi-sidebar,
+.fi-main,
+.fi-section,
+.fi-form,
+.fi-table,
+.fi-header,
+.fi-panel {
+  font-family: var(--font-sans) !important;
+}
+
+/* Keep code/monospace as Fira Code */
+code,
+pre,
+.fi-code {
+  font-family: var(--font-mono) !important;
+}

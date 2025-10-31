@@ -8,9 +8,10 @@ description: "Create Laravel controllers with Inertia responses for TanaVitrine.
 ## Instructions
 
 1. **Generate controller**:
-```bash
-./vendor/bin/sail artisan make:controller [ControllerName]
-```
+
+   ```bash
+   ./vendor/bin/sail artisan make:controller [ControllerName]
+   ```
 
 2. **Structure controller**:
    - Add `declare(strict_types=1);` at top
@@ -21,18 +22,21 @@ description: "Create Laravel controllers with Inertia responses for TanaVitrine.
    - Add proper type hints
 
 3. **Return Inertia page**:
-```php
-return Inertia::render('PageName', [
-    'data' => $data,
-]);
-```
+
+   ```php
+   return Inertia::render('PageName', [
+       'data' => $data,
+   ]);
+   ```
 
 4. **Add route** in `routes/web.php`:
-```php
-Route::get('/path', [ControllerName::class, 'method'])->name('route.name');
-```
+
+   ```php
+   Route::get('/path', [ControllerName::class, 'method'])->name('route.name');
+   ```
 
 ## Project Conventions
+
 - Use invokable controllers for single-action endpoints
 - Check team ownership with policies
 - Use resource controllers for CRUD operations
@@ -42,6 +46,7 @@ Route::get('/path', [ControllerName::class, 'method'])->name('route.name');
 ## Examples
 
 ### Dashboard Controller with Team Check
+
 ```php
 <?php
 
@@ -87,6 +92,7 @@ final class StoreController extends Controller
 ```
 
 ### Invokable Controller
+
 ```php
 <?php
 

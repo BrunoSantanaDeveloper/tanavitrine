@@ -6,7 +6,9 @@ description: "Create Laravel models with migrations and factories for TanaVitrin
 # Create Laravel Model with Migration
 
 ## Instructions
+
 1. Run artisan command to create model with migration and factory:
+
    ```bash
    ./vendor/bin/sail artisan make:model [ModelName] -mf
    ```
@@ -27,11 +29,13 @@ description: "Create Laravel models with migrations and factories for TanaVitrin
 4. Update the factory in `database/factories/` with realistic fake data
 
 5. Run migration:
+
    ```bash
    ./vendor/bin/sail artisan migrate
    ```
 
 ## Project Conventions
+
 - Always use `declare(strict_types=1);` at the top
 - Use `final class` when possible
 - Add `HasFactory` trait
@@ -42,6 +46,7 @@ description: "Create Laravel models with migrations and factories for TanaVitrin
 ## Examples
 
 ### Model with team relationship
+
 ```php
 declare(strict_types=1);
 

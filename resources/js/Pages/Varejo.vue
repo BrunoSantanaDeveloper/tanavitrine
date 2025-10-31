@@ -6,7 +6,10 @@ import SelectItem from '@/Components/shadcn/ui/select/SelectItem.vue'
 import SelectTrigger from '@/Components/shadcn/ui/select/SelectTrigger.vue'
 import SelectValue from '@/Components/shadcn/ui/select/SelectValue.vue'
 import Input from '@/Components/shadcn/ui/input/Input.vue'
+import { Popover, PopoverContent, PopoverTrigger } from '@/Components/shadcn/ui/popover'
+import { Checkbox } from '@/Components/shadcn/ui/checkbox'
 import StoreCard from '@/Components/StoreCard.vue'
+import FloatingMap from '@/Components/FloatingMap.vue'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
 import WebLayout from '@/Layouts/WebLayout.vue'
 import { Icon } from '@iconify/vue'
@@ -45,8 +48,8 @@ useSeoMetaTags(props.seo)
 
 // Search filters state (more detailed than hero)
 const filters = ref({
-  categoria: '',
-  subcategoria: '',
+  categorias: [], // Changed to array for multiple selection
+  subcategorias: [], // Changed to array for multiple selection
   tipoLoja: '',
   estado: '',
   cidade: '',
@@ -58,7 +61,10 @@ const filters = ref({
 // Apply query parameters from URL on mount
 onMounted(() => {
   const urlParams = new URLSearchParams(window.location.search)
-  if (urlParams.has('categoria')) filters.value.categoria = urlParams.get('categoria')
+  // Handle multiple categories
+  if (urlParams.has('categorias[]')) {
+    filters.value.categorias = urlParams.getAll('categorias[]')
+  }
   if (urlParams.has('tipoLoja')) filters.value.tipoLoja = urlParams.get('tipoLoja')
   if (urlParams.has('estado')) filters.value.estado = urlParams.get('estado')
   if (urlParams.has('cidade')) filters.value.cidade = urlParams.get('cidade')
@@ -80,6 +86,37 @@ const cidades = computed(() => {
 const generos = ['Masculino', 'Feminino', 'Unissex']
 const faixasPreco = ['Até R$ 50', 'R$ 50 - R$ 100', 'R$ 100 - R$ 200', 'Acima de R$ 200']
 
+// Multi-select functions
+function toggleCategoria(categoria) {
+  const index = filters.value.categorias.indexOf(categoria)
+  if (index > -1) {
+    filters.value.categorias.splice(index, 1)
+  } else {
+    filters.value.categorias.push(categoria)
+  }
+}
+
+function toggleSubcategoria(subcategoria) {
+  const index = filters.value.subcategorias.indexOf(subcategoria)
+  if (index > -1) {
+    filters.value.subcategorias.splice(index, 1)
+  } else {
+    filters.value.subcategorias.push(subcategoria)
+  }
+}
+
+const selectedCategoriasText = computed(() => {
+  if (filters.value.categorias.length === 0) return 'Categoria'
+  if (filters.value.categorias.length === 1) return filters.value.categorias[0]
+  return `${filters.value.categorias.length} selecionadas`
+})
+
+const selectedSubcategoriasText = computed(() => {
+  if (filters.value.subcategorias.length === 0) return 'Subcategoria'
+  if (filters.value.subcategorias.length === 1) return filters.value.subcategorias[0]
+  return `${filters.value.subcategorias.length} selecionadas`
+})
+
 // Client-side filtering
 const alternatedListings = computed(() => {
   let filtered = props.stores
@@ -93,17 +130,19 @@ const alternatedListings = computed(() => {
     )
   }
 
-  // Filter by category
-  if (filters.value.categoria) {
+  // Filter by categories (multiple)
+  if (filters.value.categorias.length > 0) {
     filtered = filtered.filter(store =>
-      store.category === filters.value.categoria
+      filters.value.categorias.includes(store.category)
     )
   }
 
-  // Filter by subcategory
-  if (filters.value.subcategoria) {
+  // Filter by subcategories (multiple)
+  if (filters.value.subcategorias.length > 0) {
     filtered = filtered.filter(store =>
-      store.subcategory && store.subcategory.toLowerCase().includes(filters.value.subcategoria.toLowerCase())
+      store.subcategory && filters.value.subcategorias.some(sub =>
+        store.subcategory.toLowerCase().includes(sub.toLowerCase())
+      )
     )
   }
 
@@ -150,14 +189,40 @@ function handleSearch() {
 
 function clearFilters() {
   filters.value = {
-    categoria: '',
-    subcategoria: '',
+    categorias: [],
+    subcategorias: [],
     tipoLoja: '',
     estado: '',
     cidade: '',
     genero: '',
     faixaPreco: '',
     busca: ''
+  }
+}
+
+// Store hover state for map interaction
+const hoveredStoreId = ref(null)
+
+// Handle store card hover
+function handleStoreHover(storeId) {
+  hoveredStoreId.value = storeId
+}
+
+// Handle store card leave
+function handleStoreLeave() {
+  hoveredStoreId.value = null
+}
+
+// Handle marker click - scroll to store card
+function handleMarkerClick(store) {
+  const element = document.getElementById(`store-${store.id}`)
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Highlight the card briefly
+    element.classList.add('ring-2', 'ring-primary', 'transition-all')
+    setTimeout(() => {
+      element.classList.remove('ring-2', 'ring-primary')
+    }, 2000)
   }
 }
 </script>
@@ -202,28 +267,74 @@ function clearFilters() {
           </div>
 
           <!-- Categoria -->
-          <Select v-model="filters.categoria">
-            <SelectTrigger class="w-full">
-              <SelectValue placeholder="Categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="cat in categorias" :key="cat" :value="cat">
-                {{ cat }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <Popover>
+            <PopoverTrigger as-child>
+              <Button
+                variant="outline"
+                role="combobox"
+                class="w-full justify-between font-normal"
+              >
+                {{ selectedCategoriasText }}
+                <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-[200px] p-0" align="start">
+              <div class="max-h-64 overflow-y-auto p-4 space-y-2">
+                <div
+                  v-for="cat in categorias"
+                  :key="cat"
+                  class="flex items-center space-x-2 cursor-pointer hover:bg-muted p-2 rounded"
+                  @click="toggleCategoria(cat)"
+                >
+                  <Checkbox
+                    :id="`cat-${cat}`"
+                    :checked="filters.categorias.includes(cat)"
+                  />
+                  <label
+                    :for="`cat-${cat}`"
+                    class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                  >
+                    {{ cat }}
+                  </label>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <!-- Subcategoria -->
-          <Select v-model="filters.subcategoria">
-            <SelectTrigger class="w-full">
-              <SelectValue placeholder="Subcategoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="sub in subcategorias" :key="sub" :value="sub">
-                {{ sub }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <Popover>
+            <PopoverTrigger as-child>
+              <Button
+                variant="outline"
+                role="combobox"
+                class="w-full justify-between font-normal"
+              >
+                {{ selectedSubcategoriasText }}
+                <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-[200px] p-0" align="start">
+              <div class="max-h-64 overflow-y-auto p-4 space-y-2">
+                <div
+                  v-for="sub in subcategorias"
+                  :key="sub"
+                  class="flex items-center space-x-2 cursor-pointer hover:bg-muted p-2 rounded"
+                  @click="toggleSubcategoria(sub)"
+                >
+                  <Checkbox
+                    :id="`sub-${sub}`"
+                    :checked="filters.subcategorias.includes(sub)"
+                  />
+                  <label
+                    :for="`sub-${sub}`"
+                    class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                  >
+                    {{ sub }}
+                  </label>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <!-- Estado -->
           <Select v-model="filters.estado">
@@ -280,13 +391,26 @@ function clearFilters() {
     <section class="py-8 bg-muted/30">
       <div class="container mx-auto px-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
-          <StoreCard
+          <div
             v-for="store in alternatedListings"
             :key="store.id"
-            :store="store"
-          />
+            :id="`store-${store.id}`"
+            @mouseenter="handleStoreHover(store.id)"
+            @mouseleave="handleStoreLeave"
+          >
+            <StoreCard :store="store" />
+          </div>
         </div>
       </div>
     </section>
+
+    <!-- Floating Map Widget -->
+    <FloatingMap
+      :stores="alternatedListings"
+      :hovered-store-id="hoveredStoreId"
+      title="Mapa de Lojas"
+      @marker-click="handleMarkerClick"
+      @marker-hover="handleStoreHover"
+    />
   </WebLayout>
 </template>

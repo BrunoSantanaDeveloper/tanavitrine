@@ -282,14 +282,28 @@ function scrollPrev() {
               <!-- Header -->
               <div>
                 <div class="flex items-start justify-between mb-4">
-                  <div>
-                    <Badge variant="secondary" class="mb-2">
-                      {{ store.badge }}
-                    </Badge>
-                    <h1 class="text-4xl font-bold text-foreground mb-2">
-                      {{ store.name }}
-                    </h1>
-                    <p class="text-muted-foreground">Cod: {{ store.code }}</p>
+                  <div class="flex items-start gap-6">
+                    <!-- Logo -->
+                    <div v-if="store.logo" class="flex-shrink-0">
+                      <div class="w-24 h-24 rounded-lg overflow-hidden border-2 border-border bg-white shadow-sm">
+                        <img
+                          :src="store.logo"
+                          :alt="`${store.name} Logo`"
+                          class="w-full h-full object-contain p-2"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Store Info -->
+                    <div>
+                      <Badge variant="secondary" class="mb-2">
+                        {{ store.badge }}
+                      </Badge>
+                      <h1 class="text-4xl font-bold text-foreground mb-2">
+                        {{ store.name }}
+                      </h1>
+                      <p class="text-muted-foreground">Cod: {{ store.code }}</p>
+                    </div>
                   </div>
                 </div>
 

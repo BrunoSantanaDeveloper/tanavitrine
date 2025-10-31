@@ -7,6 +7,16 @@ import { Icon } from '@iconify/vue'
 import { Link, router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import axios from 'axios'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/Components/shadcn/ui/dialog'
+import { Input } from '@/Components/shadcn/ui/input'
+import { Label } from '@/Components/shadcn/ui/label'
 
 const props = defineProps({
   store: {
@@ -22,6 +32,15 @@ const props = defineProps({
 const isFavorited = ref(props.store.is_favorited || false)
 const isFavoriting = ref(false)
 const currentImageIndex = ref(0)
+
+// Lead capture modal
+const showLeadModal = ref(false)
+const leadAction = ref('whatsapp')
+const leadForm = ref({
+  name: '',
+  whatsapp: ''
+})
+const isSubmittingLead = ref(false)
 
 // Get all images from store (assuming store has an 'images' array, fallback to single 'image')
 const images = computed(() => {
@@ -66,6 +85,45 @@ async function toggleFavorite() {
     console.error('Error toggling favorite:', error)
   } finally {
     isFavoriting.value = false
+  }
+}
+
+function openWhatsApp() {
+  leadAction.value = 'whatsapp'
+  showLeadModal.value = true
+}
+
+async function submitLead() {
+  if (!leadForm.value.name || !leadForm.value.whatsapp) {
+    alert('Por favor, preencha todos os campos.')
+    return
+  }
+
+  isSubmittingLead.value = true
+
+  try {
+    await axios.post(`/loja/${props.store.slug}/lead`, {
+      name: leadForm.value.name,
+      whatsapp: leadForm.value.whatsapp,
+      action: leadAction.value
+    })
+
+    showLeadModal.value = false
+
+    // Execute the action
+    if (leadAction.value === 'whatsapp') {
+      const phone = props.store.whatsapp
+      const message = `Olá! Sou ${leadForm.value.name}. Vi a vitrine de ${props.store.name} no TanaVitrine e gostaria de saber mais.`
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+      window.open(url, '_blank')
+    }
+
+    // Reset form
+    leadForm.value = { name: '', whatsapp: '' }
+  } catch (error) {
+    alert('Erro ao enviar informações. Tente novamente.')
+  } finally {
+    isSubmittingLead.value = false
   }
 }
 
@@ -241,7 +299,7 @@ async function shareStore() {
             <Button
               size="sm"
               class="flex-1 bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-              @click="() => window.open(`https://wa.me/${store.whatsapp}`, '_blank')"
+              @click="openWhatsApp"
             >
               <Icon icon="lucide:message-circle" class="size-4 mr-1" />
               WhatsApp
@@ -251,4 +309,57 @@ async function shareStore() {
       </div>
     </div>
   </Card>
+
+  <!-- Lead Capture Modal -->
+  <Dialog v-model:open="showLeadModal">
+    <DialogContent class="sm:max-w-[425px]">
+      <DialogHeader>
+        <DialogTitle>Entrar em Contato</DialogTitle>
+        <DialogDescription>
+          Para continuar, precisamos de algumas informações suas.
+        </DialogDescription>
+      </DialogHeader>
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <Label for="lead-name">Seu Nome *</Label>
+          <Input
+            id="lead-name"
+            v-model="leadForm.name"
+            placeholder="Digite seu nome"
+            :disabled="isSubmittingLead"
+          />
+        </div>
+        <div class="grid gap-2">
+          <Label for="lead-whatsapp">Seu WhatsApp *</Label>
+          <Input
+            id="lead-whatsapp"
+            v-model="leadForm.whatsapp"
+            type="tel"
+            placeholder="(00) 00000-0000"
+            maxlength="15"
+            :disabled="isSubmittingLead"
+          />
+        </div>
+      </div>
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          @click="showLeadModal = false"
+          :disabled="isSubmittingLead"
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="button"
+          @click="submitLead"
+          :disabled="isSubmittingLead"
+          class="bg-green-600 hover:bg-green-700"
+        >
+          <Icon v-if="isSubmittingLead" icon="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
+          Abrir WhatsApp
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

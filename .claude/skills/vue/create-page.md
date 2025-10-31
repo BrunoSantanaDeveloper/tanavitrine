@@ -6,6 +6,7 @@ description: "Create Vue 3 + Inertia.js pages for TanaVitrine using shadcn/ui co
 # Create Vue Inertia Page
 
 ## Instructions
+
 1. Create Vue component in appropriate directory:
    - Public pages: `resources/js/Pages/[PageName].vue`
    - Dashboard pages: `resources/js/Pages/Dashboard/[PageName].vue`
@@ -17,6 +18,7 @@ description: "Create Vue 3 + Inertia.js pages for TanaVitrine using shadcn/ui co
    - OnboardingLayout for onboarding flow
 
 3. Follow component structure:
+
    ```vue
    <script setup>
    import { Head } from '@inertiajs/vue3'
@@ -42,6 +44,7 @@ description: "Create Vue 3 + Inertia.js pages for TanaVitrine using shadcn/ui co
 5. Create controller method to return Inertia response
 
 ## Key Conventions
+
 - **Components**: Use shadcn/ui from `@/Components/shadcn/`
 - **Forms**: Use `useForm` from Inertia for validation
 - **Formatters**: Import from `@/utils/formatters` (formatPhone, formatCPF, formatCEP)
@@ -49,11 +52,15 @@ description: "Create Vue 3 + Inertia.js pages for TanaVitrine using shadcn/ui co
 - **Styling**: TailwindCSS (mobile-first, responsive)
 
 ## shadcn/ui Components
-Button, Input, Label, Textarea, Card, CardHeader, CardTitle, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Checkbox, Dialog, Separator
+
+Button, Input, Label, Textarea, Card, CardHeader, CardTitle, CardContent,
+Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Checkbox,
+Dialog, Separator
 
 ## Examples
 
 ### Dashboard Page with Form
+
 ```vue
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3'

@@ -28,7 +28,7 @@ return new class extends Migration
 
             // Categorização
             $table->foreignId('category_id')->nullable()->constrained('categories')->onDelete('set null');
-            $table->string('subcategory')->nullable(); // Feminino, Masculino, Infantil
+            $table->json('subcategory')->nullable(); // Array de subcategorias (Camisetas, Calças, etc)
             $table->string('gender')->nullable(); // Masculino, Feminino, Unissex
 
             // Logo da Loja

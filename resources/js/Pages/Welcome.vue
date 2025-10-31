@@ -20,6 +20,8 @@ import SelectContent from '@/Components/shadcn/ui/select/SelectContent.vue'
 import SelectItem from '@/Components/shadcn/ui/select/SelectItem.vue'
 import SelectTrigger from '@/Components/shadcn/ui/select/SelectTrigger.vue'
 import SelectValue from '@/Components/shadcn/ui/select/SelectValue.vue'
+import { Popover, PopoverContent, PopoverTrigger } from '@/Components/shadcn/ui/popover'
+import { Checkbox } from '@/Components/shadcn/ui/checkbox'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
 import WebLayout from '@/Layouts/WebLayout.vue'
 import { Icon } from '@iconify/vue'
@@ -103,7 +105,7 @@ function openWhatsAppChat() {
 // Search filters state
 const searchType = ref('atacado')
 const searchFilters = ref({
-  categoria: '',
+  categorias: [], // Changed to array for multiple selection
   tipoLoja: '',
   cidade: '',
   estado: '',
@@ -114,13 +116,30 @@ const categorias = computed(() => props.categories.map(c => c.name))
 const tiposLoja = ['Física', 'Virtual']
 const generos = ['Masculino', 'Feminino', 'Unissex']
 
+function toggleCategoria(categoria) {
+  const index = searchFilters.value.categorias.indexOf(categoria)
+  if (index > -1) {
+    searchFilters.value.categorias.splice(index, 1)
+  } else {
+    searchFilters.value.categorias.push(categoria)
+  }
+}
+
+const selectedCategoriasText = computed(() => {
+  if (searchFilters.value.categorias.length === 0) return 'Selecione'
+  if (searchFilters.value.categorias.length === 1) return searchFilters.value.categorias[0]
+  return `${searchFilters.value.categorias.length} selecionadas`
+})
+
 function handleSearch() {
   // Redirecionar para a página apropriada (Atacado ou Varejo) com filtros
   const route = searchType.value === 'atacado' ? '/atacado' : '/varejo'
   const params = new URLSearchParams()
 
   // Adicionar filtros preenchidos aos query parameters
-  if (searchFilters.value.categoria) params.append('categoria', searchFilters.value.categoria)
+  if (searchFilters.value.categorias.length > 0) {
+    searchFilters.value.categorias.forEach(cat => params.append('categorias[]', cat))
+  }
   if (searchFilters.value.tipoLoja) params.append('tipoLoja', searchFilters.value.tipoLoja)
   if (searchFilters.value.estado) params.append('estado', searchFilters.value.estado)
   if (searchFilters.value.cidade) params.append('cidade', searchFilters.value.cidade)
@@ -281,16 +300,39 @@ const filteredListings = computed(() => {
                   <!-- Categoria -->
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Categoria</label>
-                    <Select v-model="searchFilters.categoria">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="cat in categorias" :key="cat" :value="cat">
-                          {{ cat }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Popover>
+                      <PopoverTrigger as-child>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          class="w-full justify-between font-normal"
+                        >
+                          {{ selectedCategoriasText }}
+                          <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent class="w-full p-0" align="start">
+                        <div class="max-h-64 overflow-y-auto p-4 space-y-2">
+                          <div
+                            v-for="cat in categorias"
+                            :key="cat"
+                            class="flex items-center space-x-2 cursor-pointer hover:bg-muted p-2 rounded"
+                            @click="toggleCategoria(cat)"
+                          >
+                            <Checkbox
+                              :id="`cat-atacado-${cat}`"
+                              :checked="searchFilters.categorias.includes(cat)"
+                            />
+                            <label
+                              :for="`cat-atacado-${cat}`"
+                              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                            >
+                              {{ cat }}
+                            </label>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   <!-- Tipo de Loja -->
@@ -352,16 +394,39 @@ const filteredListings = computed(() => {
                   <!-- Categoria -->
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Categoria</label>
-                    <Select v-model="searchFilters.categoria">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="cat in categorias" :key="cat" :value="cat">
-                          {{ cat }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Popover>
+                      <PopoverTrigger as-child>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          class="w-full justify-between font-normal"
+                        >
+                          {{ selectedCategoriasText }}
+                          <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent class="w-full p-0" align="start">
+                        <div class="max-h-64 overflow-y-auto p-4 space-y-2">
+                          <div
+                            v-for="cat in categorias"
+                            :key="cat"
+                            class="flex items-center space-x-2 cursor-pointer hover:bg-muted p-2 rounded"
+                            @click="toggleCategoria(cat)"
+                          >
+                            <Checkbox
+                              :id="`cat-varejo-${cat}`"
+                              :checked="searchFilters.categorias.includes(cat)"
+                            />
+                            <label
+                              :for="`cat-varejo-${cat}`"
+                              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                            >
+                              {{ cat }}
+                            </label>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   <!-- Tipo de Loja -->

@@ -124,6 +124,7 @@ final class Team extends JetstreamTeam
             'views_count' => 'integer',
             'whatsapp_clicks' => 'integer',
             'website_clicks' => 'integer',
+            'subcategory' => 'array',
         ];
     }
 
