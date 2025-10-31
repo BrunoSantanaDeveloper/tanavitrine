@@ -56,7 +56,7 @@ function toggleWhatsApp() {
 }
 
 function sendWhatsApp() {
-  const phone = '5562991729522'
+  const phone = '556231900204'
   const message = whatsappMessage.value || 'Olá! Gostaria de saber mais sobre a TanaVitrine.'
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
   window.open(url, '_blank')
@@ -108,6 +108,19 @@ function sendWhatsApp() {
               Acessar Painel
             </Button>
           </div>
+
+          <!-- Mobile Anunciar Button (visible only on mobile) -->
+          <div class="sm:hidden">
+            <template v-if="!$page.props.auth.user">
+              <Button size="sm" :as="Link" href="/prices/#pricing" prefetch="mount" class="text-xs px-3">
+                Anunciar
+              </Button>
+            </template>
+            <Button v-else size="sm" variant="outline" :as="Link" href="/dashboard" prefetch="mount" class="text-xs px-3">
+              Painel
+            </Button>
+          </div>
+
           <Button
             variant="ghost" size="icon" aria-label="Toggle Theme"
             @click="mode = mode === 'dark' ? 'light' : 'dark'"
@@ -118,8 +131,8 @@ function sendWhatsApp() {
               :icon="mode === 'dark' ? 'lucide:sun' : 'lucide:moon'"
             />
           </Button>
-          <Button class="md:hidden" variant="ghost" size="icon" aria-label="Toggle menu" @click="toggleMenu">
-            <Icon :icon="isMenuOpen ? 'lucide:x' : 'lucide:menu'" class="h-6 w-6" aria-hidden="true" />
+          <Button class="md:hidden text-white hover:text-yellow-500" variant="ghost" size="icon" aria-label="Toggle menu" @click="toggleMenu">
+            <Icon :icon="isMenuOpen ? 'lucide:x' : 'lucide:menu'" class="h-6 w-6 text-white" aria-hidden="true" />
           </Button>
         </div>
       </div>
@@ -158,7 +171,7 @@ function sendWhatsApp() {
                   @click="toggleMenu"
                 >
                   <Icon icon="lucide:rocket" class="size-4 mr-2" aria-hidden="true" />
-                  Contratar
+                  Anunciar
                 </Button>
               </template>
               <Button
@@ -262,7 +275,7 @@ function sendWhatsApp() {
               </li>
               <li class="flex items-center gap-2">
                 <Icon icon="lucide:phone" class="size-4" aria-hidden="true" />
-                <a href="tel:+5562991729522" class="hover:text-foreground transition-colors">
+                <a href="tel:+556231900204" class="hover:text-foreground transition-colors">
                   (62) 9 9172-9522
                 </a>
               </li>

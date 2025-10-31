@@ -171,7 +171,7 @@ Contribuições são bem-vindas! Sinta-se à vontade para abrir issues e pull re
 ## 📞 Suporte
 
 - **Email**: suporte@tanavitrine.com.br
-- **WhatsApp**: [Clique aqui](https://wa.me/5562991729522?text=Preciso%20de%20ajuda%20com%20o%20TanaVitrine)
+- **WhatsApp**: [Clique aqui](https://wa.me/556231900204?text=Preciso%20de%20ajuda%20com%20o%20TanaVitrine)
 
 ---
 

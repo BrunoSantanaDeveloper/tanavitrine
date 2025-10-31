@@ -96,7 +96,7 @@ const averageYearlyDiscount = computed(() => {
 
 // Function to open WhatsApp chat
 function openWhatsAppChat() {
-  const phone = '5562991729522'
+  const phone = '556231900204'
   const message = 'Olá! Gostaria de falar com um especialista sobre a Tanavitrine.'
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
   window.open(url, '_blank')
