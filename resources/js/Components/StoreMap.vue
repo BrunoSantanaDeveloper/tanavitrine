@@ -165,42 +165,70 @@ watch(() => validStores.value.length, () => {
         @click="handleMarkerClick(store)"
         @mouseover="handleMarkerHover(store)"
       >
-        <LPopup>
-          <div class="min-w-[200px] max-w-[250px]">
-            <!-- Store Image -->
-            <div v-if="store.logo || store.primaryPhoto" class="mb-2">
-              <img
-                :src="store.logo || store.primaryPhoto"
-                :alt="store.name"
-                class="w-full h-32 object-cover rounded"
+        <LPopup :options="{ maxWidth: 220, minWidth: 180 }">
+          <div class="w-[180px] py-4 -mt-3">
+            <!-- Store Image/Logo -->
+            <div v-if="store.logo || store.image" class="relative">
+              <div class="w-full aspect-square bg-white rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center">
+                <img
+                  :src="store.logo || store.image"
+                  :alt="store.name"
+                  class="w-full h-full object-contain p-2"
+                >
+              </div>
+              <!-- Featured Badge -->
+              <div
+                v-if="store.featured"
+                class="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1"
               >
+                <Icon icon="lucide:star" class="size-3" />
+                Destaque
+              </div>
             </div>
 
-            <!-- Store Name -->
-            <h3 class="font-bold text-base mb-1">
-              {{ store.name }}
-            </h3>
+            <!-- Store Info -->
+            <div class="space-y-2">
+              <!-- Store Name -->
+              <h3 class="font-bold text-base text-gray-900 leading-tight">
+                {{ store.name }}
+              </h3>
 
-            <!-- Category -->
-            <p v-if="store.category" class="text-sm text-gray-600 mb-1">
-              <Icon icon="lucide:tag" class="inline-block size-3 mr-1" />
-              {{ store.category }}
-            </p>
+              <!-- Store Code -->
+              <div class="flex items-center gap-1 text-xs text-gray-500">
+                <Icon icon="lucide:hash" class="size-3" />
+                <span>{{ store.code }}</span>
+              </div>
 
-            <!-- Location -->
-            <p v-if="store.location" class="text-sm text-gray-600 mb-2">
-              <Icon icon="lucide:map-pin" class="inline-block size-3 mr-1" />
-              {{ store.location }}
-            </p>
+              <!-- Category -->
+              <div v-if="store.category" class="flex items-center gap-1.5 text-sm text-gray-700">
+                <Icon icon="lucide:tag" class="size-4 text-teal-600" />
+                <span>{{ store.category }}</span>
+              </div>
 
-            <!-- View Store Link -->
-            <a
-              :href="store.url"
-              class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
-            >
-              Ver Vitrine
-              <Icon icon="lucide:arrow-right" class="ml-1 size-3" />
-            </a>
+              <!-- Location -->
+              <div v-if="store.location" class="flex items-center gap-1.5 text-sm text-gray-700">
+                <Icon icon="lucide:map-pin" class="size-4 text-red-500" />
+                <span>{{ store.location }}</span>
+              </div>
+
+              <!-- Description Preview -->
+              <p v-if="store.description" class="text-xs text-gray-600 line-clamp-2">
+                {{ store.description }}
+              </p>
+
+              <!-- Divider -->
+              <div class="border-t border-gray-200 my-3" />
+
+              <!-- Action Button -->
+              <a
+                :href="store.url"
+                style="color:#fff"
+                class="block w-full text-center bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm"
+                _target
+              >
+                Ver Vitrine
+              </a>
+            </div>
           </div>
         </LPopup>
       </LMarker>

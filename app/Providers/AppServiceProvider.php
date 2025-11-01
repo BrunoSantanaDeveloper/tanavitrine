@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\User;
+use App\Models\Team;
+use App\Observers\TeamObserver;
 use EchoLabs\Prism\Prism;
 use Carbon\CarbonImmutable;
 use Knuckles\Scribe\Scribe;
@@ -59,6 +61,7 @@ final class AppServiceProvider extends ServiceProvider
         $this->configurePrisms();
         $this->configureScribeDocumentation();
         $this->configureRateLimiting();
+        $this->configureObservers();
     }
 
     /**
@@ -169,5 +172,13 @@ final class AppServiceProvider extends ServiceProvider
     private function configureRateLimiting(): void
     {
         RateLimiter::for('login-link', fn (Request $request) => $request->email ? Limit::perHour(5)->by($request->email) : Limit::perHour(5)->by($request->ip()));
+    }
+
+    /**
+     * Configure the application's model observers.
+     */
+    private function configureObservers(): void
+    {
+        Team::observe(TeamObserver::class);
     }
 }

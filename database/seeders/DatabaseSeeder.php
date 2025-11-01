@@ -19,7 +19,7 @@ final class DatabaseSeeder extends Seeder
             DefaultIntervalsSeeder::class,
             CategorySeeder::class,
             DefaultPlansSeeder::class,
-            DemoStoresSeeder::class,
+            CouponSeeder::class,
         ]);
     }
 }

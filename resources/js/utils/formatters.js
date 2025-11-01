@@ -4,7 +4,7 @@
  * @returns {string} Telefone formatado (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
  */
 export function formatPhone(value) {
-  const numbers = value.replace(/\D/g, '')
+  const numbers = value.replace(/\D/g, '').slice(0, 11) // Limita a 11 dígitos
   if (numbers.length <= 10) {
     return numbers.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3')
   }

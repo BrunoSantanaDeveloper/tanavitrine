@@ -19,7 +19,7 @@ final class WelcomeController extends Controller
         $featuredStores = Team::active()
             ->where('personal_team', false)
             ->featured()
-            ->with(['category', 'media'])
+            ->with(['category', 'media', 'plan'])
             ->limit(6)
             ->get()
             ->map(function ($store) {
@@ -30,7 +30,7 @@ final class WelcomeController extends Controller
         $recentStores = Team::active()
             ->where('personal_team', false)
             ->where('featured', false)
-            ->with(['category', 'media'])
+            ->with(['category', 'media', 'plan'])
             ->orderBy('created_at', 'desc')
             ->limit(6)
             ->get()
@@ -96,7 +96,7 @@ final class WelcomeController extends Controller
         $allStores = Team::active()
             ->where('personal_team', false)
             ->atacado()
-            ->with(['category', 'media'])
+            ->with(['category', 'media', 'plan'])
             ->orderByDesc('featured')
             ->orderBy('created_at', 'desc')
             ->get()
@@ -104,7 +104,7 @@ final class WelcomeController extends Controller
                 return $this->transformStore($store);
             });
 
-        // Get unique states from stores
+        // Get unique states from atacado stores
         $states = Team::active()
             ->where('personal_team', false)
             ->atacado()
@@ -114,7 +114,7 @@ final class WelcomeController extends Controller
             ->sort()
             ->values();
 
-        // Get unique cities from stores
+        // Get unique cities from atacado stores
         $cities = Team::active()
             ->where('personal_team', false)
             ->atacado()
@@ -156,7 +156,7 @@ final class WelcomeController extends Controller
         $allStores = Team::active()
             ->where('personal_team', false)
             ->varejo()
-            ->with(['category', 'media'])
+            ->with(['category', 'media', 'plan'])
             ->orderByDesc('featured')
             ->orderBy('created_at', 'desc')
             ->get()
@@ -164,7 +164,7 @@ final class WelcomeController extends Controller
                 return $this->transformStore($store);
             });
 
-        // Get unique states from stores
+        // Get unique states from varejo stores
         $states = Team::active()
             ->where('personal_team', false)
             ->varejo()
@@ -174,7 +174,7 @@ final class WelcomeController extends Controller
             ->sort()
             ->values();
 
-        // Get unique cities from stores
+        // Get unique cities from varejo stores
         $cities = Team::active()
             ->where('personal_team', false)
             ->varejo()
@@ -271,6 +271,7 @@ final class WelcomeController extends Controller
             'id' => $store->id,
             'code' => 'TV' . str_pad((string)$store->id, 4, '0', STR_PAD_LEFT),
             'slug' => $store->slug,
+            'url' => route('store.show', $store->slug),
             'badge' => ucfirst($store->sale_type),
             'name' => $store->name,
             'category' => $store->category?->name,
@@ -279,11 +280,16 @@ final class WelcomeController extends Controller
             'saleType' => ucfirst($store->sale_type),
             'minOrder' => $store->min_order,
             'location' => $store->city && $store->state ? "{$store->city} - {$store->state}" : null,
+            'city' => $store->city,
+            'state' => $store->state,
+            'latitude' => $store->latitude ? (float) $store->latitude : null,
+            'longitude' => $store->longitude ? (float) $store->longitude : null,
             'whatsapp' => $store->whatsapp,
             'logo' => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
-            'image' => $photos[0] ?? 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
-            'images' => !empty($photos) ? $photos : ['https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800'],
+            'image' => $photos[0] ?? null,
+            'images' => $photos,
             'featured' => $store->isFeatured(),
+            'show_on_map' => $store->plan?->show_on_map ?? false,
             'can_favorite' => auth()->check(),
             'is_favorited' => auth()->check()
                 ? auth()->user()->favoriteStores()->where('team_id', $store->id)->exists()

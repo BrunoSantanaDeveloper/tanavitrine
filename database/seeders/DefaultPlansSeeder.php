@@ -6,58 +6,25 @@ namespace Database\Seeders;
 
 use App\Models\Plan;
 use Illuminate\Database\Seeder;
-use Laravel\Cashier\Cashier;
-use Stripe\Stripe;
 
 class DefaultPlansSeeder extends Seeder
 {
     public function run(): void
     {
-        // Configurar chave do Stripe explicitamente
-        Stripe::setApiKey(config('cashier.secret'));
-
-        // Criar produto no Stripe
-        $stripe = Cashier::stripe();
-
         // Criar planos
-        $this->createFreePlan($stripe);
-        $this->createVitrinePlan($stripe);
-        $this->createDestaquePlan($stripe);
+        $this->createFreePlan();
+        $this->createVitrinePlan();
+        $this->createDestaquePlan();
     }
 
-    private function createFreePlan($stripe)
+    private function createFreePlan()
     {
-        $stripeProduct = $stripe->products->create([
-            'name' => 'Plano Gratuito',
-            'description' => 'Plano básico gratuito para começar na TanaVitrine',
-            'metadata' => [
-                'features' => json_encode([
-                    '1 vitrine ativa',
-                    'Até 3 fotos',
-                    'Informações básicas',
-                    'Aparece em buscas',
-                    'Suporte via email',
-                ]),
-                'is_default' => true,
-            ],
-        ]);
-
-        // Criar preço gratuito no Stripe
-        $stripePrice = $stripe->prices->create([
-            'unit_amount' => 0,
-            'currency' => 'brl',
-            'product' => $stripeProduct->id,
-            'recurring' => [
-                'interval' => 'month',
-            ],
-        ]);
-
         // Criar plano gratuito no banco
         $plan = Plan::create([
             'name' => 'Gratuito',
             'description' => 'Plano básico para começar',
-            'stripe_product_id' => $stripeProduct->id,
-            'stripe_price_id' => $stripePrice->id,
+            'stripe_product_id' => null,
+            'stripe_price_id' => null,
             'currency' => 'brl',
             'features' => [
                 '1 vitrine ativa',
@@ -65,8 +32,10 @@ class DefaultPlansSeeder extends Seeder
                 'Informações básicas',
                 'Aparece em buscas (sem destaque)',
                 'Suporte via email',
+                'analytics' => [], // Plano gratuito NÃO tem analytics
             ],
             'is_featured' => false,
+            'show_on_map' => false, // Plano gratuito NÃO aparece no mapa
             'sort_order' => 999,
             'metadata' => [
                 'is_default' => true,
@@ -77,13 +46,10 @@ class DefaultPlansSeeder extends Seeder
             'is_default' => true,
         ]);
 
-        // Criar limites para o plano gratuito
+        // Criar limites para o plano gratuito (apenas limites numéricos reais)
         $limits = [
             ['module' => 'store', 'resource' => 'vitrines_count', 'limit_value' => 1],
             ['module' => 'store', 'resource' => 'photos_per_vitrine', 'limit_value' => 3],
-            ['module' => 'store', 'resource' => 'featured_listing', 'limit_value' => 0],
-            ['module' => 'store', 'resource' => 'analytics_access', 'limit_value' => 0],
-            ['module' => 'store', 'resource' => 'priority_support', 'limit_value' => 0],
         ];
 
         foreach ($limits as $limitData) {
@@ -102,67 +68,57 @@ class DefaultPlansSeeder extends Seeder
         }
     }
 
-    private function createVitrinePlan($stripe)
+    private function createVitrinePlan()
     {
-        // Criar produto Vitrine no Stripe
-        $stripeProduct = $stripe->products->create([
-            'name' => 'Plano Vitrine',
-            'description' => 'Plano completo para divulgar sua loja',
-            'metadata' => [
-                'plan_type' => 'vitrine',
-            ],
-        ]);
-
         // Criar plano Vitrine
         $plan = Plan::create([
             'name' => 'Vitrine',
             'description' => 'Plano completo para divulgar sua loja',
-            'stripe_product_id' => $stripeProduct->id,
+            'stripe_product_id' => null,
             'currency' => 'brl',
             'features' => [
+                'analytics' => [
+                    'views',
+                    'whatsapp_clicks',
+                    'leads',
+                ],
                 'Até 10 fotos',
                 'Galeria completa',
                 'Informações detalhadas',
                 'Badge de verificado',
-                'Analytics básico',
+                'Analytics básico (visualizações, WhatsApp e leads)',
             ],
             'is_featured' => false,
+            'show_on_map' => false, // Plano Vitrine NÃO aparece no mapa (apenas Destaque)
             'sort_order' => 1,
             'is_active' => true,
             'is_default' => false,
+
+            // Automatic new user discount: 3 months free trial
+            'new_user_discount_type' => 'trial',
+            'new_user_discount_value' => null,
+            'new_user_discount_duration_value' => 3,
+            'new_user_discount_duration_unit' => 'months',
         ]);
 
-        // Criar preços para diferentes intervalos
+        // Criar preço para intervalo mensal
         $intervals = [
             ['name' => 'Mensal', 'price' => 49.90, 'interval' => 'month'],
-            ['name' => 'Anual', 'price' => 479.04, 'interval' => 'year'], // 20% off
         ];
 
         foreach ($intervals as $intervalData) {
-            $stripePrice = $stripe->prices->create([
-                'unit_amount' => (int)($intervalData['price'] * 100),
-                'currency' => 'brl',
-                'product' => $stripeProduct->id,
-                'recurring' => [
-                    'interval' => $intervalData['interval'],
-                ],
-            ]);
-
             // Buscar o intervalo no banco
-            $interval = \App\Models\Interval::where('code', $intervalData['interval'] === 'year' ? 'year' : 'month')->firstOrFail();
+            $interval = \App\Models\Interval::where('code', 'month')->firstOrFail();
 
             $plan->intervals()->attach($interval->id, [
                 'price' => $intervalData['price'],
-                'stripe_price_id' => $stripePrice->id,
+                'stripe_price_id' => null,
             ]);
         }
 
-        // Criar limites para o plano Vitrine
+        // Criar limites para o plano Vitrine (apenas limites numéricos reais)
         $limits = [
             ['module' => 'store', 'resource' => 'photos_per_vitrine', 'limit_value' => 10],
-            ['module' => 'store', 'resource' => 'featured_listing', 'limit_value' => 0],
-            ['module' => 'store', 'resource' => 'analytics_access', 'limit_value' => 1],
-            ['module' => 'store', 'resource' => 'verified_badge', 'limit_value' => 1],
         ];
 
         foreach ($limits as $limitData) {
@@ -180,69 +136,66 @@ class DefaultPlansSeeder extends Seeder
         }
     }
 
-    private function createDestaquePlan($stripe)
+    private function createDestaquePlan()
     {
-        // Criar produto Destaque no Stripe
-        $stripeProduct = $stripe->products->create([
-            'name' => 'Plano Destaque',
-            'description' => 'Apareça nos destaques e tenha mais visibilidade',
-            'metadata' => [
-                'plan_type' => 'destaque',
-            ],
-        ]);
-
         // Criar plano Destaque
         $plan = Plan::create([
             'name' => 'Destaque',
             'description' => 'Apareça nos destaques e tenha mais visibilidade',
-            'stripe_product_id' => $stripeProduct->id,
+            'stripe_product_id' => null,
             'currency' => 'brl',
             'features' => [
+                'analytics' => [
+                    'views',
+                    'whatsapp_clicks',
+                    'website_clicks',
+                    'phone_clicks',
+                    'map_clicks',
+                    'shares',
+                    'leads',
+                    'instagram_clicks',
+                    'facebook_clicks',
+                    'tiktok_clicks',
+                ],
                 'Todos os recursos do Vitrine',
+                '🗺️ Aparece no mapa de anunciantes',
                 '⭐ Aparece nos destaques da home',
                 'Badge "Destaque" visual',
                 'Até 20 fotos',
                 'Posicionamento premium nas buscas',
-                'Analytics avançado'
+                'Analytics completo (todas as métricas + gráficos)',
             ],
             'is_featured' => true, // Plano em destaque
+            'show_on_map' => true, // Plano Destaque APARECE no mapa
             'sort_order' => 2,
             'is_active' => true,
             'is_default' => false,
+
+            // Automatic new user discount: 1 month free trial
+            'new_user_discount_type' => 'trial',
+            'new_user_discount_value' => null,
+            'new_user_discount_duration_value' => 1,
+            'new_user_discount_duration_unit' => 'months',
         ]);
 
-        // Criar preços para diferentes intervalos
+        // Criar preço para intervalo mensal
         $intervals = [
             ['name' => 'Mensal', 'price' => 99.90, 'interval' => 'month'],
-            ['name' => 'Anual', 'price' => 958.08, 'interval' => 'year'], // 20% off
         ];
 
         foreach ($intervals as $intervalData) {
-            $stripePrice = $stripe->prices->create([
-                'unit_amount' => (int)($intervalData['price'] * 100),
-                'currency' => 'brl',
-                'product' => $stripeProduct->id,
-                'recurring' => [
-                    'interval' => $intervalData['interval'],
-                ],
-            ]);
-
             // Buscar o intervalo no banco
-            $interval = \App\Models\Interval::where('code', $intervalData['interval'] === 'year' ? 'year' : 'month')->firstOrFail();
+            $interval = \App\Models\Interval::where('code', 'month')->firstOrFail();
 
             $plan->intervals()->attach($interval->id, [
                 'price' => $intervalData['price'],
-                'stripe_price_id' => $stripePrice->id,
+                'stripe_price_id' => null,
             ]);
         }
 
-        // Criar limites para o plano Destaque
+        // Criar limites para o plano Destaque (apenas limites numéricos reais)
         $limits = [
             ['module' => 'store', 'resource' => 'photos_per_vitrine', 'limit_value' => 20],
-            ['module' => 'store', 'resource' => 'featured_listing', 'limit_value' => 1],
-            ['module' => 'store', 'resource' => 'analytics_access', 'limit_value' => 1],
-            ['module' => 'store', 'resource' => 'verified_badge', 'limit_value' => 1],
-            ['module' => 'store', 'resource' => 'premium_position', 'limit_value' => 1],
         ];
 
         foreach ($limits as $limitData) {

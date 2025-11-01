@@ -86,7 +86,6 @@ final class PhotosRelationManager extends RelationManager
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('pivot.order', 'asc')
             ->filters([
                 Tables\Filters\TernaryFilter::make('pivot.is_primary')
                     ->label('Foto Principal')

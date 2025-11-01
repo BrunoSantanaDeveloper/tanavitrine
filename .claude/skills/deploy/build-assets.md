@@ -1,6 +1,6 @@
 ---
 name: build-assets
-description: "Build and optimize frontend assets for TanaVitrine. Use when deploying, compiling Vue/Vite assets, Filament theme, or preparing for production."
+description: "Build and optimize frontend assets for TanaVitrine. Use when deploying, compiling Vue/Vite assets, or preparing for production."
 ---
 
 # Build Frontend Assets
@@ -25,8 +25,7 @@ Build optimized assets for production:
 
 This compiles:
 - Main Vue 3 + Inertia.js app
-- Filament admin theme CSS
-- All TailwindCSS styles
+- All TailwindCSS v4 styles
 
 ### Linting
 
@@ -42,9 +41,7 @@ Check and fix code style:
 - **Vite config**: `vite.config.js`
 - **Dev server port**: 5174 (not default 5173)
 - **Output**: `public/build/`
-- **Entry points**:
-  - `resources/js/app.js` (main app)
-  - `resources/css/filament/admin/theme.css` (Filament admin theme)
+- **Entry point**: `resources/js/app.js`
 
 ## Build Outputs
 
@@ -55,9 +52,16 @@ public/build/
 ├── manifest.json
 ├── assets/
 │   ├── app-[hash].js        # Main Vue app
-│   ├── app-[hash].css       # Main app styles
-│   └── theme-[hash].css     # Filament admin theme
+│   └── app-[hash].css       # Main app styles
 ```
+
+## Filament Admin
+
+**Filament uses its own asset compilation.** It does NOT use the Vite build process.
+
+Filament styling is handled internally and configured via:
+- `app/Providers/Filament/AdminPanelProvider.php`
+- No custom CSS files needed
 
 ## Common Issues
 
@@ -75,21 +79,17 @@ rm -rf node_modules public/build
 ./vendor/bin/sail npm run build
 ```
 
-### Filament theme not updating
+### Filament admin styles not updating
 
-1. Clear Laravel caches:
+Filament compiles its own assets. If admin styles seem cached:
+
 ```bash
+# Clear Laravel caches
 php artisan view:clear
 php artisan config:clear
-```
 
-2. Force rebuild without cache:
-```bash
-rm -rf public/build
-./vendor/bin/sail npm run build
+# Hard refresh browser (Ctrl+Shift+R or Cmd+Shift+R)
 ```
-
-3. Hard refresh browser (Ctrl+Shift+R or Cmd+Shift+R)
 
 ## Related Skills
 

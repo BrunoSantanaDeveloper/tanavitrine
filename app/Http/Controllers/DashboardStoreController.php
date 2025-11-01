@@ -54,7 +54,8 @@ class DashboardStoreController extends Controller
             'sale_type' => ['required', 'in:atacado,varejo,ambos'],
             'store_type' => ['required', 'in:fisica,virtual,ambos'],
             'category_id' => ['required', 'exists:categories,id'],
-            'subcategory' => ['required', 'string', 'max:255'],
+            'subcategory' => ['required', 'array'],
+            'subcategory.*' => ['string', 'max:255'],
             'gender' => ['nullable', 'in:masculino,feminino,unissex'],
             'min_order' => ['nullable', 'string', 'max:255'],
             'whatsapp' => ['required', 'string', 'max:20'],
@@ -68,6 +69,7 @@ class DashboardStoreController extends Controller
             'city' => ['required', 'string', 'max:255'],
             'state' => ['required', 'string', 'size:2'],
             'zip_code' => ['nullable', 'string', 'max:10'],
+            'video_url' => ['nullable', 'string', 'max:500'],
         ]);
 
         // Generate unique slug
@@ -162,6 +164,7 @@ class DashboardStoreController extends Controller
                 'state' => $store->state,
                 'zip_code' => $store->zip_code,
                 'logo_url' => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
+                'video_url' => $store->video_url,
                 'photos' => $store->photos->map(function ($photo) {
                     return [
                         'id' => $photo->id,
@@ -190,7 +193,8 @@ class DashboardStoreController extends Controller
             'sale_type' => ['required', 'in:atacado,varejo,ambos'],
             'store_type' => ['required', 'in:fisica,virtual,ambos'],
             'category_id' => ['nullable', 'exists:categories,id'],
-            'subcategory' => ['nullable', 'string', 'max:255'],
+            'subcategory' => ['nullable', 'array'],
+            'subcategory.*' => ['string', 'max:255'],
             'gender' => ['nullable', 'in:masculino,feminino,unissex'],
             'min_order' => ['nullable', 'string', 'max:255'],
             'whatsapp' => ['nullable', 'string', 'max:20'],
@@ -219,7 +223,7 @@ class DashboardStoreController extends Controller
             $validated['logo_path'] = $logoPath;
         }
 
-        // Remove logo file from validated data (only logo_path should be saved)
+        // Remove logo file from validated data (only paths should be saved)
         unset($validated['logo']);
 
         $store->update($validated);
@@ -258,6 +262,7 @@ class DashboardStoreController extends Controller
                 'photos_count' => $currentPhotos,
                 'max_photos' => $maxPhotos,
                 'can_upload_more' => $currentPhotos < $maxPhotos,
+                'video_url' => $store->video_url,
             ],
         ]);
     }
@@ -275,12 +280,15 @@ class DashboardStoreController extends Controller
             ->firstOrFail();
 
         // Check if plan has analytics access
-        $hasAnalyticsAccess = $store->plan && $store->plan->getModuleLimit('store', 'analytics_access') > 0;
+        $hasAnalyticsAccess = $store->plan && $store->plan->hasAnalytics();
 
         if (!$hasAnalyticsAccess) {
             return redirect()->route('dashboard')
                 ->with('error', 'Seu plano atual não inclui acesso a analytics. Faça upgrade para visualizar suas métricas.');
         }
+
+        // Get available metrics for this plan
+        $availableMetrics = $store->plan->getAnalyticsMetrics();
 
         return Inertia::render('Dashboard/StoreAnalytics', [
             'store' => [
@@ -293,8 +301,12 @@ class DashboardStoreController extends Controller
                 'phone_clicks' => $store->phone_clicks,
                 'map_clicks' => $store->map_clicks,
                 'shares_count' => $store->shares_count,
+                'instagram_clicks' => $store->instagram_clicks,
+                'facebook_clicks' => $store->facebook_clicks,
+                'tiktok_clicks' => $store->tiktok_clicks,
                 'featured' => $store->isFeatured(),
             ],
+            'availableMetrics' => $availableMetrics,
             'leads' => $store->leads->map(function ($lead) {
                 return [
                     'id' => $lead->id,
@@ -364,5 +376,41 @@ class DashboardStoreController extends Controller
         $media->delete();
 
         return redirect()->back()->with('success', 'Foto removida com sucesso!');
+    }
+
+    /**
+     * Update video for the store.
+     */
+    public function updateVideo(Request $request, string $slug): RedirectResponse
+    {
+        $store = Team::where('slug', $slug)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'video_url' => ['nullable', 'string', 'max:500'],
+            'video' => ['nullable', 'file', 'mimes:mp4,mov,webm,avi', 'max:102400'], // 100MB
+        ]);
+
+        // Process video upload if provided
+        if ($request->hasFile('video')) {
+            // Delete old video if exists and is a file (not a URL)
+            if ($store->video_url && !filter_var($store->video_url, FILTER_VALIDATE_URL)) {
+                if (\Storage::disk('public')->exists($store->video_url)) {
+                    \Storage::disk('public')->delete($store->video_url);
+                }
+            }
+
+            $video = $request->file('video');
+            $videoPath = $video->store("stores/store_{$store->id}/videos", 'public');
+            $validated['video_url'] = $videoPath;
+        }
+
+        // Remove video file from validated data (only paths should be saved)
+        unset($validated['video']);
+
+        $store->update($validated);
+
+        return redirect()->back()->with('success', 'Vídeo atualizado com sucesso!');
     }
 }

@@ -3,20 +3,11 @@ import { Button } from '@/Components/shadcn/ui/button'
 import Separator from '@/Components/shadcn/ui/separator/Separator.vue'
 import SidebarTrigger from '@/Components/shadcn/ui/sidebar/SidebarTrigger.vue'
 import { useToast } from '@/Components/shadcn/ui/toast/use-toast'
-import { useOnboarding } from '@/Composables/useOnboarding'
-import { Icon } from '@iconify/vue'
-import { Link } from '@inertiajs/vue3'
+import { usePage } from '@inertiajs/vue3'
 import { Bell, HelpCircle, Search } from 'lucide-vue-next'
-import { ref, watch } from 'vue'
 
 const { toast } = useToast()
-const { showTutorial } = useOnboarding()
-
-// Adicionar um listener para o evento show-tutorial
-const emit = defineEmits(['show-tutorial'])
-watch(() => emit('show-tutorial'), () => {
-  showTutorial()
-})
+const page = usePage()
 
 function handleNotificationClick() {
   toast({
@@ -25,8 +16,18 @@ function handleNotificationClick() {
   })
 }
 
-function handleTutorialClick() {
-  showTutorial()
+function handleHelpClick() {
+  // Pega o nome da loja do usuário atual (se existir)
+  const storeName = page.props.auth?.user?.current_team?.name || 'Minha Loja'
+
+  // Cria a mensagem de suporte
+  const message = `Olá! Preciso de suporte.\n\nLoja: ${storeName}\nUsuário: ${page.props.auth?.user?.name}`
+
+  // Codifica a mensagem para URL
+  const encodedMessage = encodeURIComponent(message)
+
+  // Abre o WhatsApp em uma nova aba
+  window.open(`https://wa.me/556231900204?text=${encodedMessage}`, '_blank')
 }
 </script>
 
@@ -37,23 +38,15 @@ function handleTutorialClick() {
         <SidebarTrigger class="-ml-1" />
         <Separator orientation="vertical" class="mr-2 h-4 hidden md:block" />
 
-        
+
       </div>
 
       <div class="flex items-center space-x-4">
-        <div class="relative hidden md:block">
-          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar conteúdo..."
-            class="pl-10 pr-4 py-2 rounded-full bg-gray-100 border-none focus:outline-none focus:ring-2 focus:ring-primary/20 w-64"
-          >
-        </div>
         <Button
          variant="outline"
           class="relative"
-          @click="handleTutorialClick"
-          title="Ver tutorial"
+          @click="handleHelpClick"
+          title="Solicitar suporte via WhatsApp"
         >
           <HelpCircle class="h-5 w-5" />
           Ajuda

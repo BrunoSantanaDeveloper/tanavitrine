@@ -143,6 +143,8 @@ final class OnboardingController extends Controller
             // Localização e Contato
             'city' => ['required', 'string', 'max:255'],
             'state' => ['required', 'string', 'size:2'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'whatsapp' => ['required', 'string', 'max:20'],
             'email' => ['required', 'string', 'email', 'max:255'],
         ]);
@@ -172,6 +174,8 @@ final class OnboardingController extends Controller
                 'store_type' => $validated['store_type'],
                 'city' => $validated['city'],
                 'state' => $validated['state'],
+                'latitude' => $validated['latitude'] ?? null,
+                'longitude' => $validated['longitude'] ?? null,
                 'whatsapp' => $validated['whatsapp'],
                 'email' => $validated['email'],
                 'status' => 'ativo', // Ativo quando plano é contratado

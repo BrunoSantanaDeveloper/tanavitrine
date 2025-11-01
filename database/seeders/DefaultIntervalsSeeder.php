@@ -16,12 +16,6 @@ class DefaultIntervalsSeeder extends Seeder
                 'description' => 'Cobrança mensal',
                 'is_active' => true,
             ],
-            [
-                'name' => 'Anual',
-                'code' => 'year',
-                'description' => 'Cobrança anual',
-                'is_active' => true,
-            ],
         ];
 
         foreach ($intervals as $interval) {

@@ -50,6 +50,17 @@ const isYearly = ref(false)
 // Computed property to get the selected interval based on toggle
 const selectedInterval = computed(() => isYearly.value ? 'year' : 'month')
 
+// Check if there are multiple intervals available
+const hasMultipleIntervals = computed(() => {
+  const allIntervals = new Set()
+  props.plans.forEach(plan => {
+    plan.intervals?.forEach(interval => {
+      allIntervals.add(interval.code)
+    })
+  })
+  return allIntervals.size > 1
+})
+
 // Filter plans to show only the selected interval pricing
 const plansWithSelectedInterval = computed(() => {
   return props.plans.map(plan => ({
@@ -277,8 +288,8 @@ const githubUrl = 'https://github.com/shipfastlabs/larasonic-vue'
             Selecione o plano que melhor atende às necessidades da sua clínica ou petshop
           </p>
 
-          <!-- Billing Toggle -->
-          <div class="mt-8 flex items-center justify-center gap-4 flex-wrap">
+          <!-- Billing Toggle - Only show if multiple intervals exist -->
+          <div v-if="hasMultipleIntervals" class="mt-8 flex items-center justify-center gap-4 flex-wrap">
             <span :class="!isYearly ? 'font-semibold text-foreground' : 'text-muted-foreground'">
               Mensal
             </span>
@@ -295,14 +306,6 @@ const githubUrl = 'https://github.com/shipfastlabs/larasonic-vue'
                 {{ averageYearlyDiscount }}% OFF
               </Badge>
             </div>
-          </div>
-
-          <!-- Implementation Fee Notice -->
-          <div class="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Icon icon="lucide:info" class="size-4 flex-shrink-0" aria-hidden="true" />
-            <p>
-              Taxa única de implementação de <span class="font-semibold text-foreground">R$ 500,00</span> no primeiro pagamento
-            </p>
           </div>
         </div>
 

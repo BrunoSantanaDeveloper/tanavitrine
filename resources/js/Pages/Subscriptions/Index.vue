@@ -1,11 +1,7 @@
 <script setup>
-import Separator from '@/Components/shadcn/ui/separator/Separator.vue'
 import { __ } from '@/Composables/useTranslations.js'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import SubscriptionManager from '@/Pages/Subscriptions/Partials/SubscriptionManager.vue'
-import { Icon } from '@iconify/vue'
-import { Deferred } from '@inertiajs/vue3'
-import InvoiceManager from './Partials/InvoiceManager.vue'
 
 defineProps({
   activeSubscriptions: {

@@ -183,6 +183,11 @@ const alternatedListings = computed(() => {
   return filtered
 })
 
+// Stores for map - only those with show_on_map = true
+const storesForMap = computed(() => {
+  return alternatedListings.value.filter(store => store.show_on_map === true)
+})
+
 function handleSearch() {
   // Filters are reactive, no need to do anything
 }
@@ -406,7 +411,7 @@ function handleMarkerClick(store) {
 
     <!-- Floating Map Widget -->
     <FloatingMap
-      :stores="alternatedListings"
+      :stores="storesForMap"
       :hovered-store-id="hoveredStoreId"
       title="Mapa de Fornecedores"
       @marker-click="handleMarkerClick"

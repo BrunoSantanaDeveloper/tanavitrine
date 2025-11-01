@@ -11,7 +11,7 @@ use Inertia\Response;
 class SubscriptionSuccessController extends Controller
 {
     /**
-     * Exibir página de sucesso após pagamento
+     * Exibir página de sucesso após assinatura
      */
     public function show(Request $request): Response|RedirectResponse
     {
@@ -19,38 +19,28 @@ class SubscriptionSuccessController extends Controller
 
         if (!$sessionId) {
             return redirect()->route('dashboard')
-                ->with('error', 'Sessão de checkout inválida');
+                ->with('error', 'Sessão inválida');
         }
 
         $user = auth()->user();
 
-        try {
-            // Verificar se a sessão de checkout é válida
-            $session = $user->stripe()->checkout->sessions->retrieve($sessionId);
+        // Get subscription from user
+        $subscription = $user->subscriptions()->latest()->first();
 
-            if ($session->payment_status !== 'paid') {
-                return redirect()->route('dashboard')
-                    ->with('error', 'Pagamento ainda não confirmado');
-            }
-
-            return Inertia::render('Onboarding/OnboardingSuccess', [
-                'user' => $user,
-                'subscription' => [
-                    'plan_name' => $session->metadata->plan_name ?? 'N/A',
-                    'price' => ($session->amount_total / 100) - 500, // Subtract implementation fee
-                    'interval' => $session->metadata->interval ?? 'mês',
-                ],
-                'clinic_address' => $user->onboarding_data['address'] ?? null,
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error retrieving checkout session', [
-                'session_id' => $sessionId,
-                'error' => $e->getMessage(),
-            ]);
-
+        if (!$subscription) {
             return redirect()->route('dashboard')
-                ->with('error', 'Erro ao verificar pagamento');
+                ->with('error', 'Assinatura não encontrada');
         }
+
+        return Inertia::render('Onboarding/OnboardingSuccess', [
+            'user' => $user,
+            'subscription' => [
+                'plan_name' => $subscription->type,
+                'price' => 0,
+                'interval' => 'mês',
+            ],
+            'clinic_address' => $user->onboarding_data['address'] ?? null,
+        ]);
     }
 
     /**

@@ -16,7 +16,7 @@ import {
 } from '@/Components/shadcn/ui/dropdown-menu'
 import SidebarMenuButton from '@/Components/shadcn/ui/sidebar/SidebarMenuButton.vue'
 import { Icon } from '@iconify/vue'
-import { Link, router } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 import { inject, ref } from 'vue'
 
 const route = inject('route')
@@ -77,19 +77,26 @@ function switchToTeam(team) {
         </CommandList>
         <CommandSeparator v-if="$page.props.auth.user.all_teams.length > 1" />
         <CommandGroup heading="Gerenciar Conta">
-          <CommandItem value="team-settings">
-            <Link :href="route('teams.show', $page.props.auth.user.current_team)">
-              Minha Conta
-            </Link>
+          <CommandItem
+            v-if="$page.props.auth.user.current_team?.slug"
+            value="team-settings"
+            @select="() => {
+              router.visit(route('dashboard.stores.edit', $page.props.auth.user.current_team.slug));
+              open = false;
+            }"
+          >
+            <Icon icon="lucide:settings" class="mr-2 h-4 w-4" />
+            Editar Vitrine
           </CommandItem>
           <CommandItem
-            v-if="$page.props.jetstream.canCreateTeams"
-            value="create-new-team"
-            class="hidden"
+            value="dashboard"
+            @select="() => {
+              router.visit(route('dashboard'));
+              open = false;
+            }"
           >
-            <Link :href="route('teams.create')">
-              Create New Team
-            </Link>
+            <Icon icon="lucide:layout-dashboard" class="mr-2 h-4 w-4" />
+            Dashboard
           </CommandItem>
         </CommandGroup>
       </Command>

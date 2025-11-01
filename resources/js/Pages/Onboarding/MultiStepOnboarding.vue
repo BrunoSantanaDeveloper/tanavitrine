@@ -1,18 +1,17 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useForm } from '@inertiajs/vue3'
+import { useColorMode } from '@vueuse/core'
 import Card from '@/Components/shadcn/ui/card/Card.vue'
 import CardContent from '@/Components/shadcn/ui/card/CardContent.vue'
 import { Progress } from '@/Components/shadcn/ui/progress'
-// Step components para TanaVitrine
 import Step1StoreName from './Steps/Step1StoreName.vue'
 import Step2Category from './Steps/Step2Category.vue'
-import Step3Contact from './Steps/Step3Contact.vue'
-import Step4PlanConfirmation from './Steps/Step4PlanConfirmation.vue'
-import Step5UserData from './Steps/Step5UserData.vue'
-import { inject } from 'vue'
-import { useColorMode } from '@vueuse/core'
+import Step3Media from './Steps/Step3Media.vue'
+import Step4Contact from './Steps/Step4Contact.vue'
+import Step5PlanConfirmation from './Steps/Step5PlanConfirmation.vue'
+import Step6UserData from './Steps/Step6UserData.vue'
 
 const route = inject('route')
 
@@ -45,7 +44,7 @@ const props = defineProps({
   },
 })
 const currentStep = ref(1)
-const totalSteps = 5 // Step 1: Nome da Loja | Step 2: Categoria | Step 3: Logo/Fotos/Contato | Step 4: Confirmar Plano | Step 5: Dados do Usuário
+const totalSteps = 6 // Step 1: Nome | Step 2: Categoria | Step 3: Mídia | Step 4: Contato | Step 5: Plano | Step 6: Dados do Usuário
 const currentPlan = ref(props.plan)
 
 const form = useForm({
@@ -55,14 +54,18 @@ const form = useForm({
 
   // Step 2 - Categoria e Produtos
   category_id: '',
-  subcategory: '',
+  subcategory: [], // Array para seleção múltipla
   gender: '',
   description: '',
   min_order: '',
 
-  // Step 3 - Logo, Fotos e Contato
+  // Step 3 - Logo, Fotos e Vídeo
   logo: null,
   photos: [],
+  video_url: null,
+  video_file: null,
+
+  // Step 4 - Contato e Localização
   address: {
     cep: '',
     street: '',
@@ -80,18 +83,21 @@ const form = useForm({
     tiktok: '',
     website: '',
   },
+  // Coordenadas geográficas (preenchidas automaticamente via geocoding)
+  latitude: null,
+  longitude: null,
 
   // Step 5 - Dados do Usuário
   name: '',
   email: '',
   user_phone: '',
-  cpf: '',
   password: '',
   password_confirmation: '',
   terms: false,
 
   // Metadata
   plan_interval_id: props.plan?.id,
+  coupon_code: null, // Coupon code if applied
 })
 
 // Converter arquivos para base64 para salvar no localStorage
@@ -119,14 +125,16 @@ watch(form, async (newForm) => {
     gender: newForm.gender,
     description: newForm.description,
     min_order: newForm.min_order,
+    video_url: newForm.video_url,
     address: newForm.address,
     whatsapp: newForm.whatsapp,
     phone: newForm.phone,
     social_media: newForm.social_media,
+    latitude: newForm.latitude,
+    longitude: newForm.longitude,
     name: newForm.name,
     email: newForm.email,
     user_phone: newForm.user_phone,
-    cpf: newForm.cpf,
     currentStep: currentStep.value,
   }
 
@@ -183,17 +191,31 @@ onMounted(() => {
       Object.keys(savedData).forEach(key => {
         if (key === 'currentStep') {
           currentStep.value = savedData[key]
-        } else if (key === 'logo' && savedData[key]) {
+        }
+        else if (key === 'logo' && savedData[key]) {
           // Restaurar logo de base64
           form.logo = base64ToFile(savedData[key])
-        } else if (key === 'photos' && savedData[key]) {
+        }
+        else if (key === 'photos' && savedData[key]) {
           // Restaurar fotos de base64
           form.photos = savedData[key].map(photo => base64ToFile(photo)).filter(Boolean)
-        } else if (form[key] !== undefined) {
+        }
+        else if (key === 'category_id' && savedData[key]) {
+          // Garantir que category_id seja String para compatibilidade com Select
+          form.category_id = String(savedData[key])
+        }
+        else if (key === 'subcategory') {
+          // Garantir que subcategory seja Array
+          form.subcategory = Array.isArray(savedData[key])
+            ? savedData[key]
+            : (savedData[key] ? [savedData[key]] : [])
+        }
+        else if (form[key] !== undefined) {
           form[key] = savedData[key]
         }
       })
-    } catch (e) {
+    }
+    catch (e) {
       console.error('Erro ao restaurar dados salvos:', e)
       localStorage.removeItem('onboarding_progress_tanavitrine')
     }
@@ -208,9 +230,10 @@ const currentStepComponent = computed(() => {
   const components = {
     1: Step1StoreName,
     2: Step2Category,
-    3: Step3Contact,
-    4: Step4PlanConfirmation,
-    5: Step5UserData,
+    3: Step3Media,
+    4: Step4Contact,
+    5: Step5PlanConfirmation,
+    6: Step6UserData,
   }
   return components[currentStep.value]
 })
@@ -250,13 +273,23 @@ function submitForm() {
   formData.append('terms', form.terms ? '1' : '0')
   formData.append('plan', form.plan_interval_id)
 
-  if (form.cpf) formData.append('cpf', form.cpf)
+  // Coupon code if applied
+  if (form.coupon_code) {
+    formData.append('coupon_code', form.coupon_code)
+  }
 
   // Dados da loja
   formData.append('store_name', form.store_name)
   formData.append('sale_type', form.sale_type)
   formData.append('category_id', form.category_id)
-  formData.append('subcategory', form.subcategory)
+
+  // Subcategory as array
+  if (form.subcategory && form.subcategory.length > 0) {
+    form.subcategory.forEach((sub, index) => {
+      formData.append(`subcategory[${index}]`, sub)
+    })
+  }
+
   if (form.gender) formData.append('gender', form.gender)
   formData.append('description', form.description)
   if (form.min_order) formData.append('min_order', form.min_order)
@@ -267,13 +300,26 @@ function submitForm() {
   if (form.phone) formData.append('phone', form.phone)
   formData.append('social_media', JSON.stringify(form.social_media))
 
+  // Coordenadas geográficas
+  if (form.latitude)
+    formData.append('latitude', form.latitude)
+  if (form.longitude)
+    formData.append('longitude', form.longitude)
+
   // Logo
-  if (form.logo) formData.append('logo', form.logo)
+  if (form.logo)
+    formData.append('logo', form.logo)
 
   // Fotos
   form.photos.forEach((photo, index) => {
     formData.append(`photos[${index}]`, photo)
   })
+
+  // Vídeo
+  if (form.video_url)
+    formData.append('video_url', form.video_url)
+  if (form.video_file)
+    formData.append('video', form.video_file)
 
   form
     .transform(() => formData)
@@ -285,14 +331,16 @@ function submitForm() {
       onError: (errors) => {
         console.error('Erros no registro:', errors)
         // Se houver erros, voltar para a etapa correspondente
-        if (errors.email || errors.password || errors.name) {
-          currentStep.value = 4
+        if (errors.email || errors.password || errors.name || errors.user_phone) {
+          currentStep.value = 6 // Step 6: User Data
         } else if (errors.store_name || errors.sale_type) {
-          currentStep.value = 1
-        } else if (errors.category_id || errors.description) {
-          currentStep.value = 2
-        } else if (errors.whatsapp || errors.address) {
-          currentStep.value = 3
+          currentStep.value = 1 // Step 1: Store Name
+        } else if (errors.category_id || errors.description || errors.subcategory) {
+          currentStep.value = 2 // Step 2: Category
+        } else if (errors.logo || errors.photos || errors.video) {
+          currentStep.value = 3 // Step 3: Media
+        } else if (errors.whatsapp || errors.address || errors.phone || errors.social_media) {
+          currentStep.value = 4 // Step 4: Contact
         }
       },
     })

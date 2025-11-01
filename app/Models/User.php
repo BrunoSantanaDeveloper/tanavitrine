@@ -8,7 +8,6 @@ use Filament\Panel;
 use Carbon\CarbonImmutable;
 use Laravel\Cashier\Billable;
 use Laravel\Jetstream\HasTeams;
-use Laravel\Cashier\Subscription;
 use Laravel\Sanctum\HasApiTokens;
 use Database\Factories\UserFactory;
 use Laravel\Jetstream\HasProfilePhoto;
@@ -56,7 +55,7 @@ use function Illuminate\Events\queueable;
  * @property-read Collection<int, Team> $ownedTeamsBase
  * @property-read int|null $owned_teams_base_count
  * @property-read string $profile_photo_url
- * @property-read Collection<int, Subscription> $subscriptions
+ * @property-read Collection<int, \App\Models\Subscription> $subscriptions
  * @property-read int|null $subscriptions_count
  * @property-read Membership|null $membership
  * @property-read Collection<int, Team> $teams
@@ -115,7 +114,8 @@ final class User extends Authenticatable implements FilamentUser
         'name', 'email', 'password',
         'stripe_id', 'pm_type', 'pm_last_four', 'trial_ends_at',
         'onboarding_completed', 'onboarding_data',
-        'player_order_status', 'player_tracking_code', 'delivery_address'
+        'player_order_status', 'player_tracking_code', 'delivery_address',
+        'is_superadmin'
     ];
 
     /**
@@ -166,11 +166,31 @@ final class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Get all of the subscriptions for the user.
+     * Override Billable trait to use our custom Subscription model.
+     *
+     * @return HasMany<\App\Models\Subscription, covariant $this>
+     */
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(\App\Models\Subscription::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Get a subscription instance by name.
+     * Override Billable trait to use our custom Subscription model.
+     */
+    public function subscription(?string $name = 'default'): ?\App\Models\Subscription
+    {
+        return $this->subscriptions->where('name', $name)->first();
+    }
+
+    /**
      * Configure the panel access.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->currentTeam && $this->hasTeamRole($this->currentTeam, 'admin');
+        return $this->is_superadmin === true;
     }
 
     /**
@@ -203,6 +223,7 @@ final class User extends Authenticatable implements FilamentUser
             'onboarding_data' => 'array',
             'delivery_address' => 'array',
             'onboarding_completed' => 'boolean',
+            'is_superadmin' => 'boolean',
         ];
     }
 }

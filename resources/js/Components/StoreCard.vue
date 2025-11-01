@@ -17,6 +17,7 @@ import {
 } from '@/Components/shadcn/ui/dialog'
 import { Input } from '@/Components/shadcn/ui/input'
 import { Label } from '@/Components/shadcn/ui/label'
+import { formatPhone } from '@/utils/formatters'
 
 const props = defineProps({
   store: {
@@ -47,8 +48,12 @@ const images = computed(() => {
   if (props.store.images && props.store.images.length > 0) {
     return props.store.images
   }
-  // Fallback to single image
-  return [props.store.image || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800']
+  // Fallback to single image or placeholder
+  if (props.store.image) {
+    return [props.store.image]
+  }
+  // Return placeholder
+  return [null]
 })
 
 const currentImage = computed(() => images.value[currentImageIndex.value])
@@ -91,6 +96,11 @@ async function toggleFavorite() {
 function openWhatsApp() {
   leadAction.value = 'whatsapp'
   showLeadModal.value = true
+}
+
+function handlePhoneInput(event) {
+  const formatted = formatPhone(event.target.value)
+  leadForm.value.whatsapp = formatted
 }
 
 async function submitLead() {
@@ -157,8 +167,18 @@ async function shareStore() {
     <div class="grid grid-cols-1 sm:grid-cols-5 gap-0">
       <!-- Image Section with Carousel -->
       <div class="sm:col-span-2 relative group">
+        <!-- Placeholder quando não houver imagem -->
+        <div
+          v-if="!currentImage"
+          class="w-full h-64 sm:h-full bg-muted flex flex-col items-center justify-center"
+        >
+          <Icon icon="lucide:image-off" class="size-12 text-muted-foreground mb-2" />
+          <p class="text-muted-foreground text-sm">Sem imagem</p>
+        </div>
+
         <!-- Main Image -->
         <img
+          v-else
           :src="currentImage"
           :alt="store.name"
           class="w-full h-64 sm:h-full object-cover transition-opacity duration-300"
@@ -338,6 +358,7 @@ async function shareStore() {
             placeholder="(00) 00000-0000"
             maxlength="15"
             :disabled="isSubmittingLead"
+            @input="handlePhoneInput"
           />
         </div>
       </div>

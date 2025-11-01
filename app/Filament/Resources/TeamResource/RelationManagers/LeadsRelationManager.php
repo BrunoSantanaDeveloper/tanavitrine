@@ -36,10 +36,10 @@ final class LeadsRelationManager extends RelationManager
                 Forms\Components\Select::make('action')
                     ->label('Ação')
                     ->options([
-                        'whatsapp_click' => 'Clique no WhatsApp',
-                        'website_click' => 'Clique no Website',
-                        'contact_form' => 'Formulário de Contato',
-                        'phone_call' => 'Ligação Telefônica',
+                        'whatsapp' => 'WhatsApp',
+                        'website' => 'Website',
+                        'phone' => 'Telefone',
+                        'map' => 'Mapa/Localização',
                         'other' => 'Outro',
                     ])
                     ->required(),
@@ -75,17 +75,17 @@ final class LeadsRelationManager extends RelationManager
                     ->label('Ação')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'whatsapp_click' => 'success',
-                        'website_click' => 'info',
-                        'contact_form' => 'warning',
-                        'phone_call' => 'primary',
+                        'whatsapp' => 'success',
+                        'website' => 'info',
+                        'phone' => 'warning',
+                        'map' => 'primary',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'whatsapp_click' => 'WhatsApp',
-                        'website_click' => 'Website',
-                        'contact_form' => 'Formulário',
-                        'phone_call' => 'Ligação',
+                        'whatsapp' => 'WhatsApp',
+                        'website' => 'Website',
+                        'phone' => 'Telefone',
+                        'map' => 'Mapa',
                         default => ucfirst($state),
                     }),
                 Tables\Columns\TextColumn::make('ip_address')
@@ -103,10 +103,10 @@ final class LeadsRelationManager extends RelationManager
                 Tables\Filters\SelectFilter::make('action')
                     ->label('Ação')
                     ->options([
-                        'whatsapp_click' => 'WhatsApp',
-                        'website_click' => 'Website',
-                        'contact_form' => 'Formulário',
-                        'phone_call' => 'Ligação',
+                        'whatsapp' => 'WhatsApp',
+                        'website' => 'Website',
+                        'phone' => 'Telefone',
+                        'map' => 'Mapa/Localização',
                         'other' => 'Outro',
                     ]),
                 Tables\Filters\Filter::make('created_at')

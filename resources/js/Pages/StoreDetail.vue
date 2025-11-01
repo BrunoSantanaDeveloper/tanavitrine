@@ -2,11 +2,6 @@
 import Badge from '@/Components/shadcn/ui/badge/Badge.vue'
 import Button from '@/Components/shadcn/ui/button/Button.vue'
 import Card from '@/Components/shadcn/ui/card/Card.vue'
-import WebLayout from '@/Layouts/WebLayout.vue'
-import { Icon } from '@iconify/vue'
-import { router } from '@inertiajs/vue3'
-import { ref, computed } from 'vue'
-import axios from 'axios'
 import {
   Dialog,
   DialogContent,
@@ -17,11 +12,17 @@ import {
 } from '@/Components/shadcn/ui/dialog'
 import { Input } from '@/Components/shadcn/ui/input'
 import { Label } from '@/Components/shadcn/ui/label'
+import WebLayout from '@/Layouts/WebLayout.vue'
+import { formatPhone } from '@/utils/formatters'
+import { Icon } from '@iconify/vue'
+import { router } from '@inertiajs/vue3'
+import axios from 'axios'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   store: {
     type: Object,
-    required: true
+    required: true,
   },
   canLogin: {
     type: Boolean,
@@ -31,23 +32,106 @@ const props = defineProps({
   },
 })
 
-// Use images from store or fallback
-const images = computed(() => {
-  if (props.store.images && props.store.images.length > 0) {
-    return props.store.images.map(img => img.url)
+// Função para extrair ID do vídeo do YouTube/Vimeo
+function extractVideoId(url) {
+  if (!url)
+    return null
+
+  // YouTube regex
+  const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+  const youtubeMatch = url.match(youtubeRegex)
+  if (youtubeMatch && youtubeMatch[1]) {
+    return { platform: 'youtube', id: youtubeMatch[1] }
   }
-  // Fallback images
-  return [
-    props.store.image || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
-    'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800',
-    'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800',
-  ]
+
+  // Vimeo regex
+  const vimeoRegex = /vimeo\.com\/(?:.*\/)?(\d+)/
+  const vimeoMatch = url.match(vimeoRegex)
+  if (vimeoMatch && vimeoMatch[1]) {
+    return { platform: 'vimeo', id: vimeoMatch[1] }
+  }
+
+  return null
+}
+
+function getVideoEmbedUrl(url) {
+  if (!url)
+    return null
+
+  // Se for uma URL externa (YouTube/Vimeo)
+  if (url.startsWith('http')) {
+    const videoData = extractVideoId(url)
+    if (videoData) {
+      if (videoData.platform === 'youtube') {
+        return `https://www.youtube.com/embed/${videoData.id}`
+      } else if (videoData.platform === 'vimeo') {
+        return `https://player.vimeo.com/video/${videoData.id}`
+      }
+    }
+  }
+
+  return null
+}
+
+// Combina vídeo + imagens na galeria
+const mediaItems = computed(() => {
+  const items = []
+
+  // Adiciona vídeo como primeiro item se existir
+  if (props.store.video_url) {
+    const embedUrl = getVideoEmbedUrl(props.store.video_url)
+
+    if (embedUrl) {
+      // Vídeo do YouTube/Vimeo
+      items.push({
+        type: 'video-embed',
+        url: embedUrl,
+      })
+    } else if (!props.store.video_url.startsWith('http')) {
+      // Vídeo hospedado
+      items.push({
+        type: 'video-upload',
+        url: `/storage/${props.store.video_url}`,
+      })
+    }
+  }
+
+  // Adiciona imagens
+  if (props.store.images && props.store.images.length > 0) {
+    props.store.images.forEach(img => {
+      items.push({
+        type: 'image',
+        url: img.url,
+      })
+    })
+  }
+
+  // Placeholder se não tiver nenhuma mídia
+  if (items.length === 0) {
+    return [{ type: 'placeholder' }]
+  }
+
+  return items
 })
 
 const scrollPosition = ref(0)
 const carouselContainer = ref(null)
 const isFavorited = ref(props.store.is_favorited || false)
 const isFavoriting = ref(false)
+
+// Format subcategories
+const formattedSubcategories = computed(() => {
+  const subcategory = props.store.subcategory
+  if (!subcategory) return ''
+
+  // If it's an array, join with ", "
+  if (Array.isArray(subcategory)) {
+    return subcategory.join(', ')
+  }
+
+  // If it's a string, return it directly
+  return subcategory
+})
 
 // Lead capture modal
 const showLeadModal = ref(false)
@@ -58,7 +142,10 @@ const leadForm = ref({
 })
 const isSubmittingLead = ref(false)
 
-function openLocation() {
+async function openLocation() {
+  // Track map click
+  await trackMapClick()
+
   leadAction.value = 'map'
   showLeadModal.value = true
 }
@@ -71,6 +158,11 @@ function openWhatsApp() {
 function openWebsite() {
   leadAction.value = 'website'
   showLeadModal.value = true
+}
+
+function handlePhoneInput(event) {
+  const formatted = formatPhone(event.target.value)
+  leadForm.value.whatsapp = formatted
 }
 
 async function submitLead() {
@@ -155,6 +247,78 @@ async function shareStore() {
   }
 }
 
+async function shareOnFacebook() {
+  await trackShare()
+  const url = encodeURIComponent(window.location.href)
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'width=600,height=400')
+}
+
+async function shareOnTwitter() {
+  await trackShare()
+  const url = encodeURIComponent(window.location.href)
+  const text = encodeURIComponent(`Confira ${props.store.name} no TanaVitrine!`)
+  window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank', 'width=600,height=400')
+}
+
+async function copyLink() {
+  await trackShare()
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+    alert('Link copiado para a área de transferência!')
+  } catch (error) {
+    console.error('Error copying to clipboard:', error)
+    alert('Erro ao copiar link. Tente novamente.')
+  }
+}
+
+async function trackShare() {
+  try {
+    await axios.post(`/loja/${props.store.slug}/track/share`)
+  } catch (error) {
+    // Continue even if tracking fails
+  }
+}
+
+async function trackPhoneClick() {
+  try {
+    await axios.post(`/loja/${props.store.slug}/track/phone`)
+  } catch (error) {
+    // Continue even if tracking fails
+  }
+}
+
+async function trackMapClick() {
+  try {
+    await axios.post(`/loja/${props.store.slug}/track/map`)
+  } catch (error) {
+    // Continue even if tracking fails
+  }
+}
+
+async function trackInstagramClick() {
+  try {
+    await axios.post(`/loja/${props.store.slug}/track/instagram`)
+  } catch (error) {
+    // Continue even if tracking fails
+  }
+}
+
+async function trackFacebookClick() {
+  try {
+    await axios.post(`/loja/${props.store.slug}/track/facebook`)
+  } catch (error) {
+    // Continue even if tracking fails
+  }
+}
+
+async function trackTikTokClick() {
+  try {
+    await axios.post(`/loja/${props.store.slug}/track/tiktok`)
+  } catch (error) {
+    // Continue even if tracking fails
+  }
+}
+
 function scrollNext() {
   if (carouselContainer.value) {
     const containerWidth = carouselContainer.value.offsetWidth
@@ -199,21 +363,53 @@ function scrollPrev() {
         <div class="w-full">
           <!-- Carousel Container -->
           <div class="relative">
-            <!-- Images Grid (1 column on mobile, 3 on desktop) -->
+            <!-- Media Grid (1 column on mobile, 3 on desktop) -->
             <div
               ref="carouselContainer"
               class="flex gap-2 overflow-x-hidden scroll-smooth"
               style="scroll-snap-type: x mandatory;"
             >
               <div
-                v-for="(image, index) in images"
+                v-for="(item, index) in mediaItems"
                 :key="index"
                 class="flex-shrink-0 relative w-full md:w-[calc(33.333%-0.5rem)]"
                 style="scroll-snap-align: start;"
               >
                 <div class="aspect-[4/3] rounded-lg overflow-hidden bg-black">
+                  <!-- Placeholder -->
+                  <div
+                    v-if="item.type === 'placeholder'"
+                    class="w-full h-full flex flex-col items-center justify-center bg-muted"
+                  >
+                    <Icon icon="lucide:image-off" class="size-16 text-muted-foreground mb-3" />
+                    <p class="text-muted-foreground text-sm">Sem mídia cadastrada</p>
+                  </div>
+
+                  <!-- Vídeo Embed (YouTube/Vimeo) -->
+                  <iframe
+                    v-else-if="item.type === 'video-embed'"
+                    :src="item.url"
+                    class="w-full h-full"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  />
+
+                  <!-- Vídeo Upload -->
+                  <video
+                    v-else-if="item.type === 'video-upload'"
+                    :src="item.url"
+                    class="w-full h-full object-cover"
+                    controls
+                    preload="metadata"
+                  >
+                    Seu navegador não suporta a reprodução de vídeos.
+                  </video>
+
+                  <!-- Imagem -->
                   <img
-                    :src="image"
+                    v-else
+                    :src="item.url"
                     :alt="`${store.name} - Foto ${index + 1}`"
                     class="w-full h-full object-cover"
                   />
@@ -254,10 +450,10 @@ function scrollPrev() {
                 />
               </button>-->
 
-              <!-- Photo Count Badge -->
+              <!-- Media Count Badge -->
               <div class="bg-black/70 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                <Icon icon="lucide:image" class="size-4" />
-                <span>{{ images.length }} fotos</span>
+                <Icon icon="lucide:images" class="size-4" />
+                <span>{{ mediaItems.length }} {{ mediaItems.length === 1 ? 'mídia' : 'mídias' }}</span>
               </div>
             </div>
 
@@ -311,7 +507,7 @@ function scrollPrev() {
                 <div class="flex flex-wrap gap-4 mt-4">
                   <div class="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="lucide:tag" class="size-5 text-primary" />
-                    <span>{{ store.category }} - {{ store.subcategory }}</span>
+                    <span>{{ store.category }}<template v-if="formattedSubcategories"> - {{ formattedSubcategories }}</template></span>
                   </div>
                   <div class="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="lucide:map-pin" class="size-5 text-primary" />
@@ -351,7 +547,7 @@ function scrollPrev() {
                     <Icon icon="lucide:check-circle" class="size-5 text-primary mt-1" />
                     <div>
                       <p class="font-medium">Categoria</p>
-                      <p class="text-sm text-muted-foreground">{{ store.category }} - {{ store.subcategory }}</p>
+                      <p class="text-sm text-muted-foreground">{{ store.category }}<template v-if="formattedSubcategories"> - {{ formattedSubcategories }}</template></p>
                     </div>
                   </div>
                   <div class="flex items-start gap-3">
@@ -372,12 +568,25 @@ function scrollPrev() {
 
                 <!-- WhatsApp Button -->
                 <Button
+                  v-if="store.whatsapp"
                   @click="openWhatsApp"
                   size="lg"
-                  class="w-full mb-4 bg-green-600 hover:bg-green-700 text-white"
+                  class="w-full mb-3 bg-green-600 hover:bg-green-700 text-white"
                 >
                   <Icon icon="lucide:message-circle" class="size-5 mr-2" />
                   WhatsApp
+                </Button>
+
+                <!-- Website Button -->
+                <Button
+                  v-if="store.website"
+                  @click="openWebsite"
+                  size="lg"
+                  variant="outline"
+                  class="w-full mb-3"
+                >
+                  <Icon icon="lucide:globe" class="size-5 mr-2" />
+                  Visitar Site
                 </Button>
 
                 <!-- Location Button -->
@@ -391,7 +600,27 @@ function scrollPrev() {
                   Ver no Mapa
                 </Button>
 
-                <div class="border-t pt-4">
+                <!-- Contact Info -->
+                <div v-if="store.email || store.phone" class="border-t pt-4 mb-4 space-y-2">
+                  <h4 class="font-semibold mb-3">Informações de Contato</h4>
+
+                  <div v-if="store.email" class="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Icon icon="lucide:mail" class="size-4 flex-shrink-0" />
+                    <a :href="`mailto:${store.email}`" class="hover:text-primary transition-colors break-all">
+                      {{ store.email }}
+                    </a>
+                  </div>
+
+                  <div v-if="store.phone" class="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Icon icon="lucide:phone" class="size-4 flex-shrink-0" />
+                    <a :href="`tel:${store.phone}`" @click="trackPhoneClick" class="hover:text-primary transition-colors">
+                      {{ store.phone }}
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Location -->
+                <div class="border-t pt-4 mb-4">
                   <h4 class="font-semibold mb-3">Localização</h4>
                   <p class="text-sm text-muted-foreground flex items-start gap-2">
                     <Icon icon="lucide:map-pin" class="size-4 mt-1 flex-shrink-0" />
@@ -399,17 +628,73 @@ function scrollPrev() {
                   </p>
                 </div>
 
-                <div class="border-t pt-4 mt-4">
+                <!-- Social Media -->
+                <div v-if="store.instagram || store.facebook || store.tiktok" class="border-t pt-4 mb-4">
+                  <h4 class="font-semibold mb-3">Redes Sociais</h4>
+                  <div class="flex gap-2">
+                    <a
+                      v-if="store.instagram"
+                      :href="`https://instagram.com/${store.instagram}`"
+                      target="_blank"
+                      class="p-2 rounded-lg hover:bg-muted transition-colors"
+                      aria-label="Instagram"
+                      title="Instagram"
+                      @click="trackInstagramClick"
+                    >
+                      <Icon icon="lucide:instagram" class="size-5 text-pink-600" />
+                    </a>
+                    <a
+                      v-if="store.facebook"
+                      :href="`https://facebook.com/${store.facebook}`"
+                      target="_blank"
+                      class="p-2 rounded-lg hover:bg-muted transition-colors"
+                      aria-label="Facebook"
+                      title="Facebook"
+                      @click="trackFacebookClick"
+                    >
+                      <Icon icon="lucide:facebook" class="size-5 text-blue-600" />
+                    </a>
+                    <a
+                      v-if="store.tiktok"
+                      :href="`https://tiktok.com/@${store.tiktok}`"
+                      target="_blank"
+                      class="p-2 rounded-lg hover:bg-muted transition-colors"
+                      aria-label="TikTok"
+                      title="TikTok"
+                      @click="trackTikTokClick"
+                    >
+                      <Icon icon="bi:tiktok" class="size-5 text-foreground" />
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Share -->
+                <div class="border-t pt-4">
                   <h4 class="font-semibold mb-3">Compartilhar</h4>
                   <div class="flex gap-2">
-                    <button class="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Compartilhar no Facebook">
-                      <Icon icon="lucide:facebook" class="size-5 text-muted-foreground" />
+                    <button
+                      @click="shareOnFacebook"
+                      class="p-2 rounded-lg hover:bg-muted transition-colors"
+                      aria-label="Compartilhar no Facebook"
+                      title="Compartilhar no Facebook"
+                    >
+                      <Icon icon="lucide:facebook" class="size-5 text-muted-foreground hover:text-foreground" />
                     </button>
-                    <button class="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Compartilhar no Twitter">
-                      <Icon icon="lucide:twitter" class="size-5 text-muted-foreground" />
+                    <button
+                      @click="shareOnTwitter"
+                      class="p-2 rounded-lg hover:bg-muted transition-colors"
+                      aria-label="Compartilhar no Twitter"
+                      title="Compartilhar no Twitter"
+                    >
+                      <Icon icon="lucide:twitter" class="size-5 text-muted-foreground hover:text-foreground" />
                     </button>
-                    <button class="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Copiar link">
-                      <Icon icon="lucide:link" class="size-5 text-muted-foreground" />
+                    <button
+                      @click="copyLink"
+                      class="p-2 rounded-lg hover:bg-muted transition-colors"
+                      aria-label="Copiar link"
+                      title="Copiar link"
+                    >
+                      <Icon icon="lucide:link" class="size-5 text-muted-foreground hover:text-foreground" />
                     </button>
                   </div>
                 </div>
@@ -450,6 +735,7 @@ function scrollPrev() {
               placeholder="(00) 00000-0000"
               maxlength="15"
               :disabled="isSubmittingLead"
+              @input="handlePhoneInput"
             />
           </div>
         </div>

@@ -60,6 +60,11 @@ Route::get('/loja/{slug}', [StoreController::class, 'show'])->name('store.show')
 Route::post('/loja/{slug}/lead', [StoreController::class, 'captureLead'])->name('store.lead');
 Route::post('/loja/{slug}/track/whatsapp', [StoreController::class, 'trackWhatsAppClick'])->name('store.track.whatsapp');
 Route::post('/loja/{slug}/track/website', [StoreController::class, 'trackWebsiteClick'])->name('store.track.website');
+Route::post('/loja/{slug}/track/phone', [StoreController::class, 'trackPhoneClick'])->name('store.track.phone');
+Route::post('/loja/{slug}/track/map', [StoreController::class, 'trackMapClick'])->name('store.track.map');
+Route::post('/loja/{slug}/track/instagram', [StoreController::class, 'trackInstagramClick'])->name('store.track.instagram');
+Route::post('/loja/{slug}/track/facebook', [StoreController::class, 'trackFacebookClick'])->name('store.track.facebook');
+Route::post('/loja/{slug}/track/tiktok', [StoreController::class, 'trackTikTokClick'])->name('store.track.tiktok');
 Route::post('/loja/{slug}/track/share', [StoreController::class, 'trackShare'])->name('store.track.share');
 
 // Favorite routes (requires authentication)
@@ -126,6 +131,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         Route::get('/{slug}/photos', [DashboardStoreController::class, 'photos'])->name('photos');
         Route::post('/{slug}/photos', [DashboardStoreController::class, 'uploadPhoto'])->name('photos.upload');
         Route::delete('/{slug}/photos/{photo}', [DashboardStoreController::class, 'deletePhoto'])->name('photos.delete');
+        Route::put('/{slug}/video', [DashboardStoreController::class, 'updateVideo'])->name('video.update');
         Route::get('/{slug}/analytics', [DashboardStoreController::class, 'analytics'])->name('analytics');
     });
 

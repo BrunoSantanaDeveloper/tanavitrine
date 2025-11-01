@@ -18,7 +18,11 @@ class IntervalResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';
 
-    protected static ?string $navigationGroup = 'Subscription Management';
+    protected static ?string $navigationGroup = 'Configurações';
+
+    protected static ?string $navigationLabel = 'Intervalos';
+
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {

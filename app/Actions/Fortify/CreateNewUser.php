@@ -8,13 +8,11 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Plan;
 use App\Models\Media;
-use Stripe\Customer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Laravel\Jetstream\Jetstream;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
@@ -41,9 +39,14 @@ final class CreateNewUser implements CreatesNewUsers
             'store_name' => ['nullable', 'string', 'max:255'],
             'sale_type' => ['nullable', 'in:atacado,varejo,ambos'],
             'category_id' => ['nullable', 'exists:categories,id'],
-            'subcategory' => ['nullable', 'string', 'max:255'],
+            'subcategory' => ['nullable', 'array'],
+            'subcategory.*' => ['string', 'max:255'],
             'gender' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'video_url' => ['nullable', 'string', 'max:500'],
+            'video' => ['nullable', 'file', 'mimes:mp4,mov,webm,avi', 'max:102400'], // 100MB
         ])->validate();
 
         return DB::transaction(fn () => tap(User::query()->create([
@@ -52,12 +55,13 @@ final class CreateNewUser implements CreatesNewUsers
             'password' => Arr::get($input, 'password') ? Hash::make($input['password']) : Str::random(12),
         ]), function (User $user) use ($input): void {
             $team = $this->createTeam($user, $input);
-            $this->createCustomer($user);
-            $this->processOnboardingData($user, $team, $input);
 
-            // Se tem dados da loja, criar vitrine imediatamente
+            // Se tem dados da loja, atualizar a personal team (vitrine)
             if (isset($input['store_name']) && !empty($input['store_name'])) {
-                $this->createStoreFromOnboarding($user, $input);
+                // Marcar onboarding como completo ANTES de processar para evitar redirecionamento
+                $user->update(['onboarding_completed' => true]);
+
+                $this->updateTeamWithStoreData($user, $team, $input);
             }
         }));
     }
@@ -71,7 +75,8 @@ final class CreateNewUser implements CreatesNewUsers
         $defaultPlan = Plan::where('is_default', true)->first();
         $planId = $defaultPlan ? $defaultPlan->id : null;
 
-        $teamName = $input['establishment_name'] ?? explode(' ', $user->name, 2)[0]."'s Team";
+        // Use store_name if available, otherwise use user's first name
+        $teamName = $input['store_name'] ?? explode(' ', $user->name, 2)[0]."'s Team";
 
         $team = $user->ownedTeams()->save(Team::query()->forceCreate([
             'user_id' => $user->id,
@@ -80,29 +85,22 @@ final class CreateNewUser implements CreatesNewUsers
             'plan_id' => $planId,
         ]));
 
+        // Set this team as the user's current team
+        $user->forceFill([
+            'current_team_id' => $team->id,
+        ])->save();
+
         // Store selected plan in session for checkout after registration
         if (!empty($input['plan'])) {
             session(['selected_plan' => $input['plan']]);
         }
 
-        return $team;
-    }
-
-    /**
-     * Create a billing customer for the user.
-     */
-    private function createCustomer(User $user): void
-    {
-        if (! Config::get('cashier.billing_enabled')) {
-            return;
+        // Store coupon code in session if provided
+        if (!empty($input['coupon_code'])) {
+            session(['applied_coupon' => $input['coupon_code']]);
         }
 
-        /** @var Customer $stripeCustomer */
-        $stripeCustomer = $user->createOrGetStripeCustomer();
-
-        $user->update([
-            'stripe_id' => $stripeCustomer->id,
-        ]);
+        return $team;
     }
 
     /**
@@ -170,14 +168,14 @@ final class CreateNewUser implements CreatesNewUsers
     }
 
     /**
-     * Create store vitrine from onboarding data (TanaVitrine)
+     * Update personal team with store vitrine data (TanaVitrine)
      */
-    private function createStoreFromOnboarding(User $user, array $input): void
+    private function updateTeamWithStoreData(User $user, Team $team, array $input): void
     {
         // Gerar slug único para a loja
         $slug = Str::slug($input['store_name']);
         $count = 1;
-        while (Team::where('slug', $slug)->exists()) {
+        while (Team::where('slug', $slug)->where('id', '!=', $team->id)->exists()) {
             $slug = Str::slug($input['store_name']) . '-' . $count;
             $count++;
         }
@@ -198,36 +196,63 @@ final class CreateNewUser implements CreatesNewUsers
                 : $input['social_media'];
         }
 
-        // Criar a vitrine do usuário
-        $store = Team::create([
-            'user_id' => $user->id,
+        // Processar subcategory se presente como string JSON
+        $subcategory = $input['subcategory'] ?? null;
+        if (is_string($subcategory)) {
+            $subcategory = json_decode($subcategory, true);
+        }
+
+        // Preparar endereço formatado como string para geocoding
+        $addressString = null;
+        if ($address) {
+            $parts = array_filter([
+                $address['street'] ?? null,
+                $address['number'] ?? null,
+                $address['neighborhood'] ?? null,
+                $address['city'] ?? null,
+                $address['state'] ?? null,
+                $address['cep'] ?? null,
+            ]);
+            $addressString = implode(', ', $parts);
+        }
+
+        // Atualizar a personal team com os dados da vitrine e converter para vitrine pública
+        $team->update([
             'name' => $input['store_name'],
             'slug' => $slug,
+            'personal_team' => false, // Converter para vitrine pública
             'sale_type' => $input['sale_type'] ?? 'varejo',
             'category_id' => $input['category_id'] ?? null,
-            'subcategory' => $input['subcategory'] ?? null,
+            'subcategory' => $subcategory,
             'gender' => $input['gender'] ?? null,
             'description' => $input['description'] ?? '',
             'min_order' => $input['min_order'] ?? null,
             'store_type' => 'virtual', // Default
             'city' => $address['city'] ?? null,
             'state' => $address['state'] ?? null,
+            'address' => $addressString,
+            'zip_code' => $address['cep'] ?? null,
+            'instagram' => $socialMedia['instagram'] ?? null,
+            'facebook' => $socialMedia['facebook'] ?? null,
+            'tiktok' => $socialMedia['tiktok'] ?? null,
+            'website' => $socialMedia['website'] ?? null,
+            'latitude' => $input['latitude'] ?? null,
+            'longitude' => $input['longitude'] ?? null,
             'whatsapp' => $input['whatsapp'] ?? null,
             'phone' => $input['phone'] ?? null,
             'email' => $user->email,
-            'status' => 'ativo', // Aguardando aprovação
-            'personal_team' => false,
+            'status' => 'ativo',
         ]);
 
-        $teamPath = "stores/store_{$store->id}";
+        $teamPath = "stores/store_{$team->id}";
 
         // Processar upload de logo se houver
         if (request()->hasFile('logo')) {
             $logoFile = request()->file('logo');
             $logoPath = $logoFile->store($teamPath . '/logo', 'public');
 
-            // Atualizar store com o logo
-            $store->update([
+            // Atualizar team com o logo
+            $team->update([
                 'logo_path' => $logoPath,
             ]);
         }
@@ -238,22 +263,36 @@ final class CreateNewUser implements CreatesNewUsers
                 $photoPath = $photo->store($teamPath . '/photos', 'public');
 
                 // Criar registro de mídia
-                Media::create([
-                    'team_id' => $store->id,
+                $media = Media::create([
+                    'team_id' => $team->id,
                     'name' => $photo->getClientOriginalName(),
                     'path' => $photoPath,
                     'type' => 'image',
-                    'size' => $photo->getSize(),
+                    'size' => $photo->getSize() / 1024, // Converter para KB
+                ]);
+
+                // Vincular na tabela pivot team_media
+                $team->photos()->attach($media->id, [
+                    'order' => $index,
+                    'is_primary' => $index === 0, // Primeira foto é a principal
                 ]);
             }
         }
 
-        // Marcar onboarding como completo
-        $user->update([
-            'onboarding_completed' => true,
-            'onboarding_data' => array_merge($user->onboarding_data ?? [], [
-                'store_id' => $store->id,
-            ]),
-        ]);
+        // Processar vídeo (upload ou URL)
+        if (request()->hasFile('video')) {
+            $videoFile = request()->file('video');
+            $videoPath = $videoFile->store($teamPath . '/videos', 'public');
+
+            // Atualizar team com o caminho do vídeo
+            $team->update([
+                'video_url' => $videoPath,
+            ]);
+        } elseif (isset($input['video_url']) && !empty($input['video_url'])) {
+            // Se não tem upload mas tem URL (YouTube/Vimeo), salvar a URL
+            $team->update([
+                'video_url' => $input['video_url'],
+            ]);
+        }
     }
 }

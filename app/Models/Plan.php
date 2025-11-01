@@ -6,7 +6,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Laravel\Cashier\Subscription;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -25,19 +24,27 @@ class Plan extends Model
         'trial_days',
         'features',
         'is_featured',
+        'show_on_map',
         'sort_order',
         'metadata',
         'is_active',
         'is_default',
+        'new_user_discount_type',
+        'new_user_discount_value',
+        'new_user_discount_duration_value',
+        'new_user_discount_duration_unit',
     ];
 
     protected $casts = [
         'features' => 'array',
         'metadata' => 'array',
         'is_featured' => 'boolean',
+        'show_on_map' => 'boolean',
         'is_active' => 'boolean',
         'is_default' => 'boolean',
         'stripe_price_id' => 'string',
+        'new_user_discount_value' => 'decimal:2',
+        'new_user_discount_duration_value' => 'integer',
     ];
 
     public static function getDefaultPlan(): ?self
@@ -123,8 +130,8 @@ class Plan extends Model
      */
     public function subscriptions(): HasMany
     {
-        // Usando o model do Cashier diretamente
-        return $this->hasMany(Subscription::class, 'stripe_price', 'stripe_price_id');
+        // Usando nosso model customizado que tem o relacionamento coupon
+        return $this->hasMany(\App\Models\Subscription::class, 'stripe_price', 'stripe_price_id');
     }
 
     /**
@@ -418,5 +425,139 @@ class Plan extends Model
                 'metadata' => $limit->metadata,
             ];
         })->toArray();
+    }
+
+    /**
+     * Check if plan has new user discount
+     */
+    public function hasNewUserDiscount(): bool
+    {
+        return $this->new_user_discount_type !== 'none' && $this->new_user_discount_type !== null;
+    }
+
+    /**
+     * Get new user discount text for display
+     */
+    public function getNewUserDiscountText(): ?string
+    {
+        if (!$this->hasNewUserDiscount()) {
+            return null;
+        }
+
+        $durationText = '';
+        if ($this->new_user_discount_duration_value && $this->new_user_discount_duration_unit) {
+            $unit = match($this->new_user_discount_duration_unit) {
+                'days' => $this->new_user_discount_duration_value == 1 ? 'dia' : 'dias',
+                'months' => $this->new_user_discount_duration_value == 1 ? 'mês' : 'meses',
+                'years' => $this->new_user_discount_duration_value == 1 ? 'ano' : 'anos',
+                default => '',
+            };
+            $durationText = " por {$this->new_user_discount_duration_value} {$unit}";
+        }
+
+        return match($this->new_user_discount_type) {
+            'percentage' => "{$this->new_user_discount_value}% de desconto{$durationText}",
+            'fixed' => "R$ {$this->new_user_discount_value} de desconto{$durationText}",
+            'trial' => "{$this->new_user_discount_duration_value} {$unit} grátis",
+            default => null,
+        };
+    }
+
+    /**
+     * Calculate trial days for new user discount
+     */
+    public function getNewUserTrialDays(): ?int
+    {
+        if ($this->new_user_discount_type !== 'trial') {
+            return null;
+        }
+
+        if (!$this->new_user_discount_duration_value || !$this->new_user_discount_duration_unit) {
+            return null;
+        }
+
+        return match($this->new_user_discount_duration_unit) {
+            'days' => $this->new_user_discount_duration_value,
+            'months' => $this->new_user_discount_duration_value * 30,
+            'years' => $this->new_user_discount_duration_value * 365,
+            default => null,
+        };
+    }
+
+    /**
+     * Check if plan has analytics access
+     */
+    public function hasAnalytics(): bool
+    {
+        $features = $this->features;
+
+        if (!is_array($features)) {
+            return false;
+        }
+
+        return isset($features['analytics']) && is_array($features['analytics']) && !empty($features['analytics']);
+    }
+
+    /**
+     * Check if plan has access to a specific analytics metric
+     */
+    public function hasAnalyticsMetric(string $metric): bool
+    {
+        $features = $this->features;
+
+        if (!is_array($features) || !isset($features['analytics'])) {
+            return false;
+        }
+
+        $analytics = $features['analytics'];
+
+        // Se analytics for true (acesso total), permite tudo
+        if ($analytics === true) {
+            return true;
+        }
+
+        // Se for array, verifica se a métrica específica está incluída
+        if (is_array($analytics)) {
+            return in_array($metric, $analytics, true);
+        }
+
+        return false;
+    }
+
+    /**
+     * Get all available analytics metrics for this plan
+     */
+    public function getAnalyticsMetrics(): array
+    {
+        $features = $this->features;
+
+        if (!is_array($features) || !isset($features['analytics'])) {
+            return [];
+        }
+
+        $analytics = $features['analytics'];
+
+        // Se for true, retorna todas as métricas disponíveis
+        if ($analytics === true) {
+            return [
+                'views',
+                'whatsapp_clicks',
+                'website_clicks',
+                'phone_clicks',
+                'map_clicks',
+                'shares',
+                'leads',
+                'instagram_clicks',
+                'facebook_clicks',
+                'tiktok_clicks',
+            ];
+        }
+
+        // Se for array, retorna as métricas configuradas
+        if (is_array($analytics)) {
+            return $analytics;
+        }
+
+        return [];
     }
 }

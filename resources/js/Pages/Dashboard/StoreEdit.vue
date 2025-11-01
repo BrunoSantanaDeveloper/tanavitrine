@@ -1,31 +1,47 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3'
-import { ref, computed } from 'vue'
-import AppLayout from '@/Layouts/AppLayout.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { computed, ref, watch } from 'vue'
+import { Head, Link, useForm } from '@inertiajs/vue3'
 import { Button } from '@/Components/shadcn/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/shadcn/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/shadcn/ui/card'
 import { Input } from '@/Components/shadcn/ui/input'
 import { Label } from '@/Components/shadcn/ui/label'
-import { Textarea } from '@/Components/shadcn/ui/textarea'
+import { MultiSelect } from '@/Components/shadcn/ui/multi-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/shadcn/ui/select'
-import { toast } from 'vue-sonner'
+import { Textarea } from '@/Components/shadcn/ui/textarea'
+import AppLayout from '@/Layouts/AppLayout.vue'
+import { formatCEP, formatPhone } from '@/utils/formatters'
 import { Icon } from '@iconify/vue'
-import { formatPhone, formatCEP } from '@/utils/formatters'
+import { toast } from 'vue-sonner'
+import axios from 'axios'
 
 const props = defineProps({
   store: {
     type: Object,
-    required: true
+    required: true,
   },
   categories: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
 })
 
 const logoPreview = ref(props.store.logo_url || null)
 const logoInput = ref(null)
+
+// CEP lookup state
+const isCepLoading = ref(false)
+const cepError = ref(null)
+const cepSuccess = ref(false)
+
+// Geocoding state
+const isGeocodingLoading = ref(false)
+const geocodingError = ref(null)
+const geocodingSuccess = ref(false)
+
+// Ensure subcategory is always an array
+const initialSubcategory = Array.isArray(props.store.subcategory)
+  ? props.store.subcategory
+  : (props.store.subcategory ? [props.store.subcategory] : [])
 
 const form = useForm({
   name: props.store.name,
@@ -33,26 +49,41 @@ const form = useForm({
   sale_type: props.store.sale_type,
   store_type: props.store.store_type,
   category_id: props.store.category_id ? String(props.store.category_id) : null,
-  subcategory: props.store.subcategory,
-  gender: props.store.gender,
-  min_order: props.store.min_order,
-  whatsapp: props.store.whatsapp,
-  phone: props.store.phone,
-  email: props.store.email,
-  website: props.store.website,
-  instagram: props.store.instagram,
-  facebook: props.store.facebook,
-  tiktok: props.store.tiktok,
-  address: props.store.address,
-  city: props.store.city,
-  state: props.store.state,
-  zip_code: props.store.zip_code,
+  subcategory: initialSubcategory,
+  gender: props.store.gender || null,
+  min_order: props.store.min_order || '',
+  whatsapp: props.store.whatsapp || '',
+  phone: props.store.phone || '',
+  email: props.store.email || '',
+  website: props.store.website || '',
+  instagram: props.store.instagram || '',
+  facebook: props.store.facebook || '',
+  tiktok: props.store.tiktok || '',
+  address: props.store.address || '',
+  city: props.store.city || '',
+  state: props.store.state || '',
+  zip_code: props.store.zip_code || '',
   logo: null,
 })
 
 const subcategories = computed(() => {
-  const category = props.categories.find(c => c.id === parseInt(form.category_id))
+  const category = props.categories.find(c => c.id === Number.parseInt(form.category_id))
   return category?.children || []
+})
+
+// Converte subcategories para o formato do MultiSelect
+const subcategoryOptions = computed(() => {
+  return subcategories.value.map(sub => ({
+    value: sub.name,
+    label: sub.name,
+  }))
+})
+
+// Limpa subcategorias quando a categoria principal mudar
+watch(() => form.category_id, (newCategoryId, oldCategoryId) => {
+  if (oldCategoryId !== undefined && newCategoryId !== oldCategoryId) {
+    form.subcategory = []
+  }
 })
 
 function handleLogoUpload(e) {
@@ -95,21 +126,146 @@ function handlePhoneInput(e) {
 
 function handleCEPInput(e) {
   form.zip_code = formatCEP(e.target.value)
+
+  // Clear previous states when CEP is being edited
+  cepError.value = null
+  cepSuccess.value = false
+  geocodingError.value = null
+  geocodingSuccess.value = false
+
+  // Trigger CEP lookup only when 8 digits are complete
+  const cepNumbers = e.target.value.replace(/\D/g, '')
+  if (cepNumbers.length === 8) {
+    lookupCep(cepNumbers)
+  }
+}
+
+// CEP lookup function using ViaCEP API
+async function lookupCep(cep) {
+  isCepLoading.value = true
+  cepError.value = null
+  cepSuccess.value = false
+
+  try {
+    const response = await axios.get(`https://viacep.com.br/ws/${cep}/json/`)
+
+    if (response.data.erro) {
+      cepError.value = 'CEP não encontrado. Verifique o número digitado.'
+      return
+    }
+
+    // Fill address fields automatically
+    form.address = response.data.logradouro || ''
+    form.city = response.data.localidade || ''
+    form.state = response.data.uf || ''
+
+    cepSuccess.value = true
+
+    console.log('CEP lookup success:', response.data)
+
+    // Trigger geocoding after CEP lookup
+    geocodeAddress()
+  }
+  catch (error) {
+    console.error('CEP lookup error:', error)
+    cepError.value = 'Erro ao buscar CEP. Tente novamente.'
+  }
+  finally {
+    isCepLoading.value = false
+  }
+}
+
+// Geocoding function using Nominatim (OpenStreetMap)
+async function geocodeAddress() {
+  const { zip_code, address, city, state } = form
+
+  // Check if at least city and state are filled
+  if (!city || !state) {
+    return
+  }
+
+  isGeocodingLoading.value = true
+  geocodingError.value = null
+  geocodingSuccess.value = false
+
+  try {
+    // Build address query with maximum detail available
+    let query = ''
+
+    if (zip_code && address) {
+      // Most precise: use CEP and address
+      query = `${address}, ${zip_code}, ${city}, ${state}, Brazil`
+    }
+    else if (address) {
+      // Use address with city and state
+      query = `${address}, ${city}, ${state}, Brazil`
+    }
+    else {
+      // Fallback: city and state only (less precise)
+      query = `${city}, ${state}, Brazil`
+    }
+
+    // Call Nominatim API
+    const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+      params: {
+        q: query,
+        format: 'json',
+        limit: 1,
+        countrycodes: 'br',
+        addressdetails: 1,
+      },
+      headers: {
+        'User-Agent': 'TanaVitrine/1.0',
+      },
+    })
+
+    if (response.data && response.data.length > 0) {
+      geocodingSuccess.value = true
+
+      toast.success('Localização atualizada! Sua loja aparecerá no mapa.')
+
+      console.log('Geocoding success:', {
+        query,
+        lat: response.data[0].lat,
+        lng: response.data[0].lon,
+        precision: address ? 'street-level' : 'city-level',
+      })
+    }
+    else {
+      geocodingError.value = 'Localização não encontrada no mapa.'
+    }
+  }
+  catch (error) {
+    console.error('Geocoding error:', error)
+    geocodingError.value = 'Erro ao buscar localização no mapa.'
+  }
+  finally {
+    isGeocodingLoading.value = false
+  }
 }
 
 function submit() {
   // Inertia requires using POST with _method for file uploads
   form.transform((data) => ({
     ...data,
+    // Convert empty strings and undefined to null for optional fields
+    gender: data.gender || null,
+    min_order: data.min_order || null,
+    phone: data.phone || null,
+    website: data.website || null,
+    instagram: data.instagram || null,
+    facebook: data.facebook || null,
+    tiktok: data.tiktok || null,
+    address: data.address || null,
+    zip_code: data.zip_code || null,
     _method: 'PUT'
   })).post(route('dashboard.stores.update', props.store.slug), {
     preserveScroll: true,
     onSuccess: () => {
-      form.reset()
       toast.success('Salvo com Sucesso!')
     },
     onError: () => {
-        toast.success('Erro ao salvar, entre em contato com o suporte!')
+        toast.error('Erro ao salvar, verifique os campos e tente novamente!')
     },
   })
 
@@ -121,17 +277,26 @@ function submit() {
 
   <AppLayout :title="`Editar ${store.name}`">
     <div class="min-h-screen bg-gray-50 p-6">
-      <div class="max-w-4xl mx-auto">
+      <div class="max-w-6xl mx-auto">
         <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900">Editar Vitrine</h1>
-            <p class="text-muted-foreground">{{ store.name }}</p>
+        <div class="mb-6">
+          <div class="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            <Link :href="route('dashboard')" class="hover:text-teal-600 transition-colors">
+              Dashboard
+            </Link>
+            <Icon icon="lucide:chevron-right" class="h-4 w-4" />
+            <span class="text-gray-900 font-medium">Editar Vitrine</span>
           </div>
-          <Button :as="Link" :href="route('dashboard')" variant="outline">
-            <Icon icon="lucide:arrow-left" class="mr-2 h-4 w-4" />
-            Voltar
-          </Button>
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900">Editar Vitrine</h1>
+              <p class="text-muted-foreground mt-1">{{ store.name }}</p>
+            </div>
+            <Button :as="Link" :href="route('dashboard')" variant="outline">
+              <Icon icon="lucide:arrow-left" class="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+          </div>
         </div>
 
         <form @submit.prevent="submit" class="space-y-6">
@@ -243,18 +408,30 @@ function submit() {
                   </Select>
                 </div>
 
-                <div>
-                  <Label for="subcategory">Subcategoria</Label>
-                  <Input id="subcategory" v-model="form.subcategory" />
+                <div class="col-span-2">
+                  <Label for="subcategory">Subcategorias</Label>
+                  <MultiSelect
+                    v-if="subcategories.length > 0"
+                    id="subcategory"
+                    v-model="form.subcategory"
+                    :options="subcategoryOptions"
+                    placeholder="Selecione uma ou mais subcategorias..."
+                  />
+                  <p v-else class="text-sm text-muted-foreground mt-2">
+                    Selecione uma categoria para ver as subcategorias disponíveis
+                  </p>
+                  <p v-if="subcategories.length > 0" class="text-xs text-muted-foreground mt-2">
+                    Selecione as subcategorias que representam seus produtos
+                  </p>
                 </div>
               </div>
 
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <Label for="gender">Gênero</Label>
+                  <Label for="gender">Gênero (Opcional)</Label>
                   <Select v-model="form.gender">
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder="Não informado" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="masculino">Masculino</SelectItem>
@@ -333,27 +510,76 @@ function submit() {
           <Card>
             <CardHeader>
               <CardTitle>Localização</CardTitle>
+              <CardDescription>Preencha o CEP para carregar automaticamente o endereço e atualizar a localização no mapa</CardDescription>
             </CardHeader>
             <CardContent class="space-y-4">
+              <!-- CEP Field (First) -->
               <div>
-                <Label for="address">Endereço</Label>
-                <Input id="address" v-model="form.address" />
+                <Label for="zip_code">
+                  CEP *
+                  <span class="text-xs text-teal-600 font-medium">(Digite o CEP para preenchimento automático)</span>
+                </Label>
+                <Input id="zip_code" v-model="form.zip_code" placeholder="00000-000" maxlength="9" required @input="handleCEPInput" />
+
+                <!-- CEP Lookup Feedback -->
+                <div class="mt-2">
+                  <!-- CEP Loading -->
+                  <div v-if="isCepLoading" class="flex items-center gap-2 text-xs text-blue-600">
+                    <Icon icon="lucide:loader-2" class="h-3 w-3 animate-spin" />
+                    <span>Buscando endereço...</span>
+                  </div>
+
+                  <!-- CEP Success -->
+                  <div v-else-if="cepSuccess" class="flex items-center gap-2 text-xs text-green-600">
+                    <Icon icon="lucide:check-circle" class="h-3 w-3" />
+                    <span>Endereço encontrado!</span>
+                  </div>
+
+                  <!-- CEP Error -->
+                  <div v-else-if="cepError" class="flex items-center gap-2 text-xs text-red-600">
+                    <Icon icon="lucide:alert-circle" class="h-3 w-3" />
+                    <span>{{ cepError }}</span>
+                  </div>
+                </div>
               </div>
 
-              <div class="grid grid-cols-3 gap-4">
+              <!-- Address -->
+              <div>
+                <Label for="address">Endereço (Rua, Número) *</Label>
+                <Input id="address" v-model="form.address" placeholder="Ex: Rua Augusta, 123" required />
+              </div>
+
+              <!-- City and State -->
+              <div class="grid grid-cols-2 gap-4">
                 <div>
                   <Label for="city">Cidade *</Label>
-                  <Input id="city" v-model="form.city" required />
+                  <Input id="city" v-model="form.city" placeholder="Ex: São Paulo" required />
                 </div>
 
                 <div>
-                  <Label for="state">Estado *</Label>
-                  <Input id="state" v-model="form.state" maxlength="2" required />
+                  <Label for="state">Estado (UF) *</Label>
+                  <Input id="state" v-model="form.state" maxlength="2" placeholder="SP" required />
+                </div>
+              </div>
+
+              <!-- Geocoding Feedback -->
+              <div v-if="isGeocodingLoading || geocodingSuccess || geocodingError" class="mt-2">
+                <!-- Geocoding Loading -->
+                <div v-if="isGeocodingLoading" class="flex items-center gap-2 text-sm text-blue-600">
+                  <Icon icon="lucide:loader-2" class="h-4 w-4 animate-spin" />
+                  <span>Localizando no mapa...</span>
                 </div>
 
-                <div>
-                  <Label for="zip_code">CEP</Label>
-                  <Input id="zip_code" v-model="form.zip_code" placeholder="00000-000" maxlength="9" @input="handleCEPInput" />
+                <!-- Geocoding Success -->
+                <div v-else-if="geocodingSuccess" class="flex items-center gap-2 text-sm text-green-600">
+                  <Icon icon="lucide:map-pin" class="h-4 w-4" />
+                  <span>Sua loja aparecerá no mapa com localização {{ cepSuccess && form.zip_code && form.address ? 'precisa' : 'aproximada' }}!</span>
+                </div>
+
+                <!-- Geocoding Error -->
+                <div v-else-if="geocodingError" class="flex items-center gap-2 text-sm text-red-600">
+                  <Icon icon="lucide:alert-circle" class="h-4 w-4" />
+                  <span>{{ geocodingError }}</span>
                 </div>
               </div>
             </CardContent>

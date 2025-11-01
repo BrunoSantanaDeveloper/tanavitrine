@@ -5,8 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/Components/shadcn/ui
 import { Badge } from '@/Components/shadcn/ui/badge'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { ref, computed } from 'vue'
+import { computed, inject, ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/Components/shadcn/ui/dialog'
+
+const route = inject('route')
 
 const props = defineProps({
   store: {
@@ -34,6 +44,20 @@ const props = defineProps({
       features: []
     })
   },
+  welcomeDiscount: {
+    type: Object,
+    default: null
+  },
+})
+
+const showWelcomeModal = ref(false)
+
+onMounted(() => {
+  if (props.welcomeDiscount) {
+    setTimeout(() => {
+      showWelcomeModal.value = true
+    }, 800)
+  }
 })
 
 const statCards = computed(() => [
@@ -133,11 +157,24 @@ function getStatusColor(status) {
           <Card class="hover:shadow-lg transition-shadow">
             <CardHeader class="pb-3">
               <div class="flex items-start justify-between">
-                <div>
+                <div class="flex-1">
                   <CardTitle class="text-xl">{{ store.name }}</CardTitle>
-                  <p class="text-sm text-muted-foreground mt-1">
-                    {{ store.category }} • {{ store.subcategory }} • {{ store.sale_type }}
-                  </p>
+                  <div class="flex flex-wrap items-center gap-2 mt-2">
+                    <Badge variant="outline" class="text-xs">
+                      {{ store.category }}
+                    </Badge>
+                    <Badge
+                      v-for="(subcategory, index) in (Array.isArray(store.subcategory) ? store.subcategory : [])"
+                      :key="index"
+                      variant="secondary"
+                      class="text-xs"
+                    >
+                      {{ subcategory }}
+                    </Badge>
+                    <Badge variant="outline" class="text-xs">
+                      {{ store.sale_type }}
+                    </Badge>
+                  </div>
                 </div>
                 <Badge :variant="getStatusColor(store.status)">
                   {{ store.status }}
@@ -180,32 +217,148 @@ function getStatusColor(status) {
         </div>
 
         <!-- Plan Info -->
-        <Card class="bg-gradient-to-r from-teal-50 to-orange-50">
-          <CardContent class="p-6">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-              <div>
-                <h2 class="text-lg font-semibold">
-                  Plano {{ plan.name }}
-                </h2>
-                <p class="text-muted-foreground mt-1">
-                  Máximo de {{ plan.max_photos }} fotos por vitrine
-                </p>
-                <div v-if="store && store.photos_count" class="text-sm text-gray-600 mt-1">
-                  Você está usando {{ store.photos_count }} de {{ plan.max_photos }} fotos
+        <Card class="border-2 border-teal-200 bg-gradient-to-br from-white via-teal-50/30 to-orange-50/30 shadow-md hover:shadow-lg transition-all">
+          <CardContent class="p-4">
+            <div class="space-y-3">
+              <!-- Header com título e botão -->
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-md">
+                    <Icon icon="lucide:crown" class="h-5 w-5 text-white" />
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <h2 class="text-lg font-bold text-gray-900">
+                      Plano {{ plan.name }}
+                    </h2>
+                    <Badge
+                      v-if="plan.subscription?.is_active"
+                      :variant="plan.subscription?.is_trial ? 'default' : 'secondary'"
+                      class="text-xs"
+                    >
+                      {{ plan.subscription?.is_trial ? 'Trial Grátis' : 'Ativo' }}
+                    </Badge>
+                  </div>
                 </div>
-              </div>
-              <div class="mt-4 md:mt-0">
+
                 <Link :href="route('subscriptions.index')">
-                  <Button class="bg-teal-600 hover:bg-teal-700">
+                  <Button class="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-md hover:shadow-lg transition-all">
                     <Icon icon="lucide:sparkles" class="mr-2 h-4 w-4" />
                     Fazer Upgrade
                   </Button>
                 </Link>
+              </div>
+
+              <!-- Special Trial Message (100% Coupon) -->
+              <div
+                v-if="plan.subscription?.is_trial && plan.subscription?.trial_days_remaining > 0"
+                class="p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg"
+              >
+                <div class="flex items-start gap-2">
+                  <Icon icon="lucide:sparkles" class="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p class="text-sm font-semibold text-yellow-900">
+                      Você está com acesso especial grátis! 🎉
+                    </p>
+                    <p class="text-xs text-yellow-800 mt-1">
+                      Seu período gratuito termina em
+                      <strong>{{ plan.subscription.trial_ends_at }}</strong>
+                      ({{ Math.ceil(plan.subscription.trial_days_remaining) }} dias restantes)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Usage Info -->
+              <div class="bg-white/80 rounded-lg p-3 border border-gray-200">
+                <div class="flex items-center justify-between mb-1.5">
+                  <p class="text-sm font-medium text-gray-700">
+                    Fotos por vitrine
+                  </p>
+                  <Badge variant="outline" class="text-xs">
+                    {{ store?.photos_count || 0 }} / {{ plan.max_photos }}
+                  </Badge>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div
+                    class="h-full rounded-full transition-all duration-300"
+                    :class="{
+                      'bg-teal-500': (store?.photos_count || 0) / plan.max_photos < 0.8,
+                      'bg-orange-500': (store?.photos_count || 0) / plan.max_photos >= 0.8 && (store?.photos_count || 0) / plan.max_photos < 1,
+                      'bg-red-500': (store?.photos_count || 0) / plan.max_photos >= 1
+                    }"
+                    :style="{ width: `${Math.min(100, ((store?.photos_count || 0) / plan.max_photos) * 100)}%` }"
+                  />
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                  Você está usando {{ store?.photos_count || 0 }} de {{ plan.max_photos }} fotos disponíveis
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
+
+    <!-- Welcome Discount Modal -->
+    <Dialog v-model:open="showWelcomeModal">
+      <DialogContent class="max-w-md max-h-[90vh]">
+        <DialogHeader class="space-y-1 pb-2">
+          <div class="flex items-center justify-center mb-2">
+            <div class="w-12 h-12 bg-gradient-to-br from-teal-400 to-orange-500 rounded-full flex items-center justify-center">
+              <Icon icon="lucide:sparkles" class="h-6 w-6 text-white" />
+            </div>
+          </div>
+          <DialogTitle class="text-center text-lg font-bold bg-gradient-to-r from-teal-600 to-orange-600 bg-clip-text text-transparent">
+            Parabéns! Desconto Especial Ativo
+          </DialogTitle>
+          <DialogDescription class="text-center text-sm mt-1">
+            Como novo usuário, você ganhou <span class="font-bold text-teal-600">{{ welcomeDiscount?.text }}</span> no plano <span class="font-bold">{{ welcomeDiscount?.plan_name }}</span>!
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="py-3 space-y-3">
+          <!-- Discount Info -->
+          <div class="bg-gradient-to-br from-teal-50 to-orange-50 p-3 rounded-lg border border-teal-200">
+            <div class="text-center mb-2">
+              <p class="text-xl font-bold text-teal-700">
+                {{ welcomeDiscount?.text }}
+              </p>
+            </div>
+            <ul class="space-y-1.5 text-xs">
+              <li class="flex items-start gap-2">
+                <Icon icon="lucide:check-circle" class="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                <span class="text-gray-700">Acesso completo a todos os recursos</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <Icon icon="lucide:check-circle" class="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                <span class="text-gray-700">Sem compromisso - cancele quando quiser</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <Icon icon="lucide:check-circle" class="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                <span class="text-gray-700">Configure sua vitrine e comece a vender!</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Call to Action -->
+          <div class="bg-white border border-teal-200 rounded-lg p-2.5 text-center">
+            <p class="text-xs text-gray-600">
+              Seu desconto já está ativo e aplicado à sua assinatura! Aproveite este período especial para explorar todos os recursos.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter class="flex justify-center pt-2">
+          <Button
+            size="sm"
+            class="bg-gradient-to-r from-teal-500 to-orange-500 hover:from-teal-600 hover:to-orange-600 text-white font-semibold"
+            @click="showWelcomeModal = false"
+          >
+            <Icon icon="lucide:rocket" class="mr-1.5 h-4 w-4" />
+            Começar Agora!
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </AppLayout>
 </template>

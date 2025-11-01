@@ -23,6 +23,7 @@ return new class extends Migration
 
             // Informações Básicas da Loja
             $table->text('description')->nullable();
+            $table->string('video_url')->nullable(); // URL do vídeo (YouTube, Vimeo, etc) ou caminho do upload
             $table->enum('sale_type', ['atacado', 'varejo', 'ambos'])->default('atacado');
             $table->enum('store_type', ['fisica', 'virtual', 'ambos'])->default('ambos');
 
@@ -64,6 +65,9 @@ return new class extends Migration
             $table->unsignedBigInteger('phone_clicks')->default(0);
             $table->unsignedBigInteger('map_clicks')->default(0);
             $table->unsignedBigInteger('shares_count')->default(0);
+            $table->unsignedBigInteger('instagram_clicks')->default(0);
+            $table->unsignedBigInteger('facebook_clicks')->default(0);
+            $table->unsignedBigInteger('tiktok_clicks')->default(0);
 
             $table->timestamps();
         });

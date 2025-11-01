@@ -1,21 +1,22 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
-import Label from '@/Components/shadcn/ui/label/Label.vue'
-import Textarea from '@/Components/shadcn/ui/textarea/Textarea.vue'
-import Input from '@/Components/shadcn/ui/input/Input.vue'
 import Button from '@/Components/shadcn/ui/button/Button.vue'
+import Input from '@/Components/shadcn/ui/input/Input.vue'
+import Label from '@/Components/shadcn/ui/label/Label.vue'
+import { MultiSelect } from '@/Components/shadcn/ui/multi-select'
 import Select from '@/Components/shadcn/ui/select/Select.vue'
 import SelectContent from '@/Components/shadcn/ui/select/SelectContent.vue'
 import SelectItem from '@/Components/shadcn/ui/select/SelectItem.vue'
 import SelectTrigger from '@/Components/shadcn/ui/select/SelectTrigger.vue'
 import SelectValue from '@/Components/shadcn/ui/select/SelectValue.vue'
+import Textarea from '@/Components/shadcn/ui/textarea/Textarea.vue'
 
 const props = defineProps({
   categories: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
 })
 
 const form = defineModel()
@@ -29,16 +30,39 @@ const genders = [
 ]
 
 const subcategories = computed(() => {
-  const category = props.categories.find(c => c.id === form.value.category_id)
+  const categoryId = Number.parseInt(form.value.category_id)
+  const category = props.categories.find(c => c.id === categoryId)
   return category?.children || []
+})
+
+// Converte subcategories para o formato do MultiSelect
+const subcategoryOptions = computed(() => {
+  return subcategories.value.map(sub => ({
+    value: sub.name,
+    label: sub.name,
+  }))
+})
+
+// Inicializa subcategories como array se não existir
+if (!Array.isArray(form.value.subcategory)) {
+  form.value.subcategory = form.value.subcategory ? [form.value.subcategory] : []
+}
+
+// Limpa subcategorias quando a categoria principal mudar
+watch(() => form.value.category_id, (newCategoryId, oldCategoryId) => {
+  // Só limpa se realmente mudou de categoria (não na primeira carga)
+  if (oldCategoryId !== undefined && newCategoryId !== oldCategoryId) {
+    form.value.subcategory = []
+  }
 })
 
 const isValid = computed(() => {
   return (
-    form.value.category_id &&
-    form.value.subcategory &&
-    form.value.description &&
-    form.value.description.trim().length >= 50
+    form.value.category_id
+    && Array.isArray(form.value.subcategory)
+    && form.value.subcategory.length > 0
+    && form.value.description
+    && form.value.description.trim().length >= 50
   )
 })
 </script>
@@ -63,7 +87,7 @@ const isValid = computed(() => {
             <SelectValue placeholder="Selecione a categoria" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem v-for="category in categories" :key="category.id" :value="category.id">
+            <SelectItem v-for="category in categories" :key="category.id" :value="String(category.id)">
               {{ category.name }}
             </SelectItem>
           </SelectContent>
@@ -71,17 +95,17 @@ const isValid = computed(() => {
       </div>
 
       <div v-if="subcategories.length > 0">
-        <Label for="subcategory" class="text-base">Subcategoria *</Label>
-        <Select v-model="form.subcategory">
-          <SelectTrigger class="mt-2 h-12">
-            <SelectValue placeholder="Selecione a subcategoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="sub in subcategories" :key="sub.name" :value="sub.name">
-              {{ sub.name }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <Label for="subcategory" class="text-base">Subcategorias *</Label>
+        <MultiSelect
+          id="subcategory"
+          v-model="form.subcategory"
+          :options="subcategoryOptions"
+          placeholder="Selecione uma ou mais subcategorias..."
+          class="mt-2"
+        />
+        <p class="text-xs text-muted-foreground mt-2">
+          Selecione pelo menos uma subcategoria que representa seus produtos
+        </p>
       </div>
 
       <div>

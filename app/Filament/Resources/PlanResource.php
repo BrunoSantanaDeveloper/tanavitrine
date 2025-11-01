@@ -25,7 +25,11 @@ class PlanResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationGroup = 'Subscription Management';
+    protected static ?string $navigationGroup = 'Configurações';
+
+    protected static ?string $navigationLabel = 'Planos';
+
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
@@ -41,9 +45,9 @@ class PlanResource extends Resource
                         Forms\Components\Select::make('currency')
                             ->required()
                             ->options([
+                                'brl' => 'BRL',
                                 'usd' => 'USD',
                                 'eur' => 'EUR',
-                                'brl' => 'BRL',
                             ])
                             ->default('brl'),
                         Forms\Components\TextInput::make('trial_days')
@@ -52,12 +56,16 @@ class PlanResource extends Resource
                             ->helperText('Number of days for trial period'),
                         Forms\Components\Textarea::make('features')
                             ->label('Features')
-                            ->helperText('Enter one feature per line')
+                            ->helperText('Enter one feature per line (analytics metrics are configured below)')
                             ->rows(8)
                             ->columnSpanFull()
                             ->formatStateUsing(function ($state) {
                                 if (is_array($state)) {
-                                    return implode("\n", $state);
+                                    // Filter out analytics array and keep only string features
+                                    $stringFeatures = array_filter($state, function ($value) {
+                                        return is_string($value);
+                                    });
+                                    return implode("\n", $stringFeatures);
                                 }
                                 return $state;
                             })
@@ -161,10 +169,89 @@ class PlanResource extends Resource
                             ->columnSpanFull(),
                     ]),
 
+                Forms\Components\Section::make('New User Discount')
+                    ->description('Configure automatic discounts for new users subscribing to this plan')
+                    ->schema([
+                        Forms\Components\Select::make('new_user_discount_type')
+                            ->label('Discount Type')
+                            ->options([
+                                'none' => 'No Discount',
+                                'percentage' => 'Percentage Discount',
+                                'fixed' => 'Fixed Amount Discount',
+                                'trial' => 'Free Trial',
+                            ])
+                            ->default('none')
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set) {
+                                if ($state === 'none') {
+                                    $set('new_user_discount_value', null);
+                                    $set('new_user_discount_duration_value', null);
+                                    $set('new_user_discount_duration_unit', null);
+                                }
+                                if ($state === 'trial') {
+                                    $set('new_user_discount_value', null);
+                                }
+                            }),
+                        Forms\Components\TextInput::make('new_user_discount_value')
+                            ->label('Discount Value')
+                            ->numeric()
+                            ->suffix(fn (callable $get) => $get('new_user_discount_type') === 'percentage' ? '%' : 'R$')
+                            ->helperText('For percentage: enter number (e.g., 50 for 50%). For fixed: enter amount in BRL.')
+                            ->visible(fn (callable $get) => in_array($get('new_user_discount_type'), ['percentage', 'fixed']))
+                            ->required(fn (callable $get) => in_array($get('new_user_discount_type'), ['percentage', 'fixed'])),
+                        Forms\Components\TextInput::make('new_user_discount_duration_value')
+                            ->label('Duration Value')
+                            ->numeric()
+                            ->helperText('Number of days/months/years for the discount')
+                            ->visible(fn (callable $get) => $get('new_user_discount_type') !== 'none')
+                            ->required(fn (callable $get) => $get('new_user_discount_type') !== 'none'),
+                        Forms\Components\Select::make('new_user_discount_duration_unit')
+                            ->label('Duration Unit')
+                            ->options([
+                                'days' => 'Days',
+                                'months' => 'Months',
+                                'years' => 'Years',
+                            ])
+                            ->default('months')
+                            ->visible(fn (callable $get) => $get('new_user_discount_type') !== 'none')
+                            ->required(fn (callable $get) => $get('new_user_discount_type') !== 'none'),
+                    ])->columns(2)
+                    ->collapsible()
+                    ->collapsed(fn ($record) => !$record?->hasNewUserDiscount()),
+
+                Forms\Components\Section::make('Analytics Settings')
+                    ->description('Configure which analytics metrics are available for this plan')
+                    ->schema([
+                        Forms\Components\CheckboxList::make('analytics_metrics')
+                            ->label('Available Analytics Metrics')
+                            ->options([
+                                'views' => 'Page Views (Visualizações)',
+                                'whatsapp_clicks' => 'WhatsApp Clicks',
+                                'website_clicks' => 'Website Clicks',
+                                'phone_clicks' => 'Phone Clicks',
+                                'map_clicks' => 'Map/Location Clicks',
+                                'shares' => 'Shares (Compartilhamentos)',
+                                'leads' => 'Lead Captures (Leads Capturados)',
+                                'instagram_clicks' => 'Instagram Clicks',
+                                'facebook_clicks' => 'Facebook Clicks',
+                                'tiktok_clicks' => 'TikTok Clicks',
+                            ])
+                            ->columns(2)
+                            ->helperText('Select which analytics metrics this plan can track. These will be saved separately from text features.')
+                            ->dehydrated(false),
+                    ])
+                    ->columns(1)
+                    ->collapsible(),
+
                 Forms\Components\Section::make('Plan Settings')
                     ->schema([
                         Forms\Components\Toggle::make('is_featured')
                             ->label('Featured Plan')
+                            ->default(false),
+                        Forms\Components\Toggle::make('show_on_map')
+                            ->label('Show on Map')
+                            ->helperText('If enabled, stores with this plan will appear on the map')
                             ->default(false),
                         Forms\Components\Toggle::make('is_active')
                             ->label('Active')
@@ -185,18 +272,23 @@ class PlanResource extends Resource
             ->modifyQueryUsing(fn (Builder $query) => $query->with('intervals'))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nome')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('description')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('currency')
+                    ->label('Descrição')
                     ->searchable()
-                    ->badge(),
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('currency')
+                    ->label('Moeda')
+                    ->searchable()
+                    ->badge()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('prices')
-                    ->label('Prices')
+                    ->label('Preços')
                     ->state(function ($record) {
                         $intervals = $record->intervals;
                         if ($intervals->isEmpty()) {
-                            return 'No prices set';
+                            return 'Sem preços';
                         }
                         return $intervals->map(function ($interval) {
                             $price = number_format($interval->pivot->price, 2);
@@ -204,37 +296,55 @@ class PlanResource extends Resource
                         })->implode(' | ');
                     })
                     ->wrap(),
+                Tables\Columns\TextColumn::make('new_user_discount')
+                    ->label('Desconto Novo Usuário')
+                    ->state(function ($record) {
+                        return $record->getNewUserDiscountText() ?? 'Nenhum';
+                    })
+                    ->badge()
+                    ->color(fn ($record) => $record->hasNewUserDiscount() ? 'success' : 'gray'),
                 Tables\Columns\IconColumn::make('is_featured')
+                    ->label('Destaque')
+                    ->boolean(),
+                Tables\Columns\IconColumn::make('show_on_map')
+                    ->label('Mapa')
                     ->boolean(),
                 Tables\Columns\IconColumn::make('is_active')
+                    ->label('Ativo')
                     ->boolean(),
                 Tables\Columns\IconColumn::make('is_default')
+                    ->label('Padrão')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('sort_order')
+                    ->label('Ordem')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Criado em')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->label('Atualizado em')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('deleted_at')
-                    ->dateTime()
+                    ->label('Excluído em')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('interval_links')
-                    ->label('Registration Links')
+                    ->label('Links de Registro')
                     ->state(function ($record) {
                         $intervals = $record->intervals()->where('is_active', true)->get();
                         if ($intervals->isEmpty()) {
-                            return ['No active intervals'];
+                            return ['Nenhum intervalo ativo'];
                         }
                         return $intervals->map(function ($interval) use ($record) {
                             $pivotId = $interval->pivot->id;
-                            
+
                             $url = route('register', [
                                 'plan' => $pivotId,
                             ]);
@@ -260,7 +370,7 @@ class PlanResource extends Resource
                         }
                         return $state;
                     })
-                    ->copyMessage('Link copied!')
+                    ->copyMessage('Link copiado!')
                     ->copyMessageDuration(2000),
             ])
             ->filters([
@@ -270,7 +380,7 @@ class PlanResource extends Resource
                 ActionGroup::make([
                     Tables\Actions\EditAction::make(),
                 ])
-                ->label('Actions')
+                ->label('Ações')
                 ->icon('heroicon-m-ellipsis-vertical')
                 ->color('primary'),
             ])

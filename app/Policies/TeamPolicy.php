@@ -15,8 +15,13 @@ final class TeamPolicy
     /**
      * Determine whether the user can view any models.
      */
-    public function viewAny(): bool
+    public function viewAny(User $user): bool
     {
+        // Superadmins can view all teams in admin panel
+        if ($user->is_superadmin) {
+            return true;
+        }
+
         return true;
     }
 
@@ -25,14 +30,24 @@ final class TeamPolicy
      */
     public function view(User $user, Team $team): bool
     {
+        // Superadmins can view any team
+        if ($user->is_superadmin) {
+            return true;
+        }
+
         return $user->belongsToTeam($team);
     }
 
     /**
      * Determine whether the user can create models.
      */
-    public function create(): bool
+    public function create(User $user): bool
     {
+        // Superadmins can create teams
+        if ($user->is_superadmin) {
+            return true;
+        }
+
         return true;
     }
 
@@ -41,6 +56,11 @@ final class TeamPolicy
      */
     public function update(User $user, Team $team): bool
     {
+        // Superadmins can edit any team
+        if ($user->is_superadmin) {
+            return true;
+        }
+
         return $user->ownsTeam($team);
     }
 
@@ -73,6 +93,11 @@ final class TeamPolicy
      */
     public function delete(User $user, Team $team): bool
     {
+        // Superadmins can delete any team
+        if ($user->is_superadmin) {
+            return true;
+        }
+
         return $user->ownsTeam($team);
     }
 }

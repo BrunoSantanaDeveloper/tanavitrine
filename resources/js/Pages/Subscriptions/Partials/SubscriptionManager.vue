@@ -3,11 +3,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/Components/shadcn/ui/aler
 import { Button } from '@/Components/shadcn/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/Components/shadcn/ui/card'
 import { Separator } from '@/Components/shadcn/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/shadcn/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/Components/shadcn/ui/tabs'
 import { __ } from '@/Composables/useTranslations.js'
-import { Link, router } from '@inertiajs/vue3'
+import { usePage } from '@inertiajs/vue3'
 import { Check, Crown, Lock, TriangleAlert, Zap, Sparkles, ArrowRight } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+
+const page = usePage()
 
 const props = defineProps({
   activeSubscriptions: {
@@ -43,6 +45,26 @@ const hasActivePlan = computed(() => {
   return props.currentPlan && !props.currentPlan.is_default
 })
 
+// Get only string features (filter out analytics object)
+const currentPlanStringFeatures = computed(() => {
+  if (!props.currentPlan?.features) return []
+
+  return Object.values(props.currentPlan.features).filter(feature => typeof feature === 'string')
+})
+
+// Check if there are multiple intervals available
+const hasMultipleIntervals = computed(() => {
+  const allIntervals = new Set()
+  props.plans.forEach(plan => {
+    if (plan.intervals && Array.isArray(plan.intervals)) {
+      plan.intervals.forEach(interval => {
+        allIntervals.add(interval.code)
+      })
+    }
+  })
+  return allIntervals.size > 1
+})
+
 function formatPrice(price, interval = 'monthly') {
   if (price === 0 || !price) {
     return __('subscriptions.free')
@@ -56,16 +78,6 @@ function formatPrice(price, interval = 'monthly') {
   return `${formatted}${intervalText}`
 }
 
-function getPlanFeatures(plan) {
-  if (!plan.features || plan.features.length === 0) {
-    return []
-  }
-  return plan.features.map(feature => ({
-    name: feature,
-    included: true,
-  }))
-}
-
 function getPlanLimits(planLimits = null) {
   const limitsToUse = planLimits || props.limits
   if (!limitsToUse) return []
@@ -75,6 +87,18 @@ function getPlanLimits(planLimits = null) {
     limit: value,
     current: props.usage?.[key] || 0,
   }))
+}
+
+// Filter only string features (remove analytics object)
+function getStringFeatures(features) {
+  if (!features) {
+    return []
+  }
+  if (Array.isArray(features)) {
+    return features
+  }
+
+  return Object.values(features).filter(feature => typeof feature === 'string')
 }
 
 const availablePlans = computed(() => {
@@ -99,7 +123,7 @@ const availablePlans = computed(() => {
         id: plan.id,
         name: plan.name,
         description: plan.description,
-        features: plan.features || [],
+        features: getStringFeatures(plan.features),
         limits: plan.limits || [],
         intervals: {}
       }
@@ -137,8 +161,29 @@ function handleSubscribe(plan, intervalName) {
     return
   }
 
-  // Use the plan_interval ID for checkout
-  router.post(route('subscriptions.checkout', intervalData.id))
+  // Get user and store info
+  const userName = page.props.auth?.user?.name || 'Usuário'
+  const storeName = page.props.auth?.user?.current_team?.name || 'Minha Loja'
+  const currentPlanName = props.currentPlan?.name || 'Gratuito'
+
+  // Format price
+  const price = formatPrice(intervalData.price, intervalName)
+  const intervalText = intervalName === 'yearly' ? 'Anual' : 'Mensal'
+
+  // Create WhatsApp message
+  const message = `Olá! Gostaria de fazer upgrade do meu plano.\n\n` +
+    `👤 Usuário: ${userName}\n` +
+    `🏪 Loja: ${storeName}\n` +
+    `📦 Plano Atual: ${currentPlanName}\n\n` +
+    `🎯 Novo Plano Desejado:\n` +
+    `   • ${plan.name}\n` +
+    `   • ${intervalText}\n` +
+    `   • ${price}\n\n` +
+    `Por favor, me ajude com o processo de upgrade.`
+
+  // Encode message and open WhatsApp
+  const encodedMessage = encodeURIComponent(message)
+  window.open(`https://wa.me/556231900204?text=${encodedMessage}`, '_blank')
 }
 </script>
 
@@ -180,12 +225,27 @@ function handleSubscribe(plan, intervalName) {
                   {{ currentPlan.description }}
                 </CardDescription>
               </div>
-              <div class="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full">
-                <Check class="h-4 w-4" />
-                <span class="text-sm font-medium">Ativo</span>
+              <div class="flex items-center gap-2 px-3 py-1 rounded-full" :class="currentPlan.subscription?.is_trial ? 'bg-yellow-50 text-yellow-700' : 'bg-green-50 text-green-700'">
+                <Sparkles v-if="currentPlan.subscription?.is_trial" class="h-4 w-4" />
+                <Check v-else class="h-4 w-4" />
+                <span class="text-sm font-medium">{{ currentPlan.subscription?.is_trial ? 'Trial Grátis' : 'Ativo' }}</span>
               </div>
             </div>
           </CardHeader>
+
+          <!-- Trial Alert -->
+          <Alert v-if="currentPlan.subscription?.is_trial && currentPlan.subscription?.trial_days_remaining > 0" class="mx-6 mb-4 border-yellow-200 bg-yellow-50">
+            <Sparkles class="h-4 w-4 text-yellow-600" />
+            <AlertTitle class="text-yellow-900">
+              Você está com acesso especial grátis! 🎉
+            </AlertTitle>
+            <AlertDescription class="text-yellow-800">
+              Seu período gratuito termina em <strong>{{ currentPlan.subscription.trial_ends_at }}</strong>
+              ({{ Math.ceil(currentPlan.subscription.trial_days_remaining) }} dias restantes).
+              Aproveite todos os recursos do plano {{ currentPlan.name }}!
+            </AlertDescription>
+          </Alert>
+
           <CardContent>
             <div class="grid gap-6 md:grid-cols-3">
               <div class="space-y-2">
@@ -193,7 +253,11 @@ function handleSubscribe(plan, intervalName) {
                   Valor
                 </h4>
                 <p class="text-2xl font-bold">
-                  {{ currentPlan.current_price ? formatPrice(currentPlan.current_price, currentPlan.current_interval?.toLowerCase().includes('anual') ? 'yearly' : 'monthly') : 'N/A' }}
+                  <span v-if="currentPlan.subscription?.is_trial" class="text-green-600">Grátis</span>
+                  <span v-else>{{ currentPlan.current_price ? formatPrice(currentPlan.current_price, currentPlan.current_interval?.toLowerCase().includes('anual') ? 'yearly' : 'monthly') : 'N/A' }}</span>
+                </p>
+                <p v-if="currentPlan.subscription?.is_trial" class="text-xs text-muted-foreground">
+                  Depois: {{ currentPlan.current_price ? formatPrice(currentPlan.current_price, currentPlan.current_interval?.toLowerCase().includes('anual') ? 'yearly' : 'monthly') : 'N/A' }}
                 </p>
               </div>
 
@@ -213,7 +277,7 @@ function handleSubscribe(plan, intervalName) {
                   Recursos
                 </h4>
                 <ul class="space-y-1">
-                  <li v-for="(feature, idx) in currentPlan.features?.slice(0, 3)" :key="idx" class="flex items-center gap-2 text-sm">
+                  <li v-for="(feature, idx) in currentPlanStringFeatures.slice(0, 3)" :key="idx" class="flex items-center gap-2 text-sm">
                     <Check class="h-3 w-3 text-green-500 flex-shrink-0" />
                     <span>{{ feature }}</span>
                   </li>
@@ -233,8 +297,8 @@ function handleSubscribe(plan, intervalName) {
           </p>
         </div>
 
-        <!-- Interval Selector -->
-        <Card class="p-4 mb-6">
+        <!-- Interval Selector - Only show if multiple intervals exist -->
+        <Card v-if="hasMultipleIntervals" class="p-4 mb-6">
           <div class="flex justify-center">
             <Tabs v-model="selectedInterval" default-value="monthly" class="w-full max-w-md">
               <TabsList class="grid w-full grid-cols-2">
@@ -343,7 +407,7 @@ function handleSubscribe(plan, intervalName) {
         <Alert class="mt-8">
           <Lock class="h-4 w-4" />
           <AlertDescription>
-            Pagamentos processados de forma segura pelo Stripe. Seus dados estão protegidos.
+            Pagamentos processados de forma segura. Seus dados estão protegidos.
           </AlertDescription>
         </Alert>
       </div>

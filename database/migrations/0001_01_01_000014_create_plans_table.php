@@ -18,10 +18,18 @@ return new class extends Migration
             $table->integer('trial_days')->nullable();
             $table->json('features');
             $table->boolean('is_featured')->default(false);
+            $table->boolean('show_on_map')->default(false)->comment('Se o plano permite que a loja apareça no mapa');
             $table->integer('sort_order')->default(0);
             $table->json('metadata')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_default')->default(false);
+
+            // New user automatic discount fields
+            $table->enum('new_user_discount_type', ['none', 'percentage', 'fixed', 'trial'])->default('none');
+            $table->decimal('new_user_discount_value', 10, 2)->nullable();
+            $table->integer('new_user_discount_duration_value')->nullable();
+            $table->enum('new_user_discount_duration_unit', ['days', 'months', 'years'])->nullable();
+
             $table->timestamps();
             $table->softDeletes();
         });

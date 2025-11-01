@@ -31,6 +31,7 @@ return new class extends Migration
             $table->enum('player_order_status', ['pending', 'preparing', 'shipped', 'delivered'])->nullable();
             $table->string('player_tracking_code')->nullable();
             $table->timestamp('trial_ends_at')->nullable();
+            $table->boolean('is_superadmin')->default(false);
             $table->timestamps();
             $table->softDeletes();
         });

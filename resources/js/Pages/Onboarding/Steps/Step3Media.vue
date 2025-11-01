@@ -1,22 +1,23 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import Button from '@/Components/shadcn/ui/button/Button.vue'
 import Input from '@/Components/shadcn/ui/input/Input.vue'
 import Label from '@/Components/shadcn/ui/label/Label.vue'
-import AddressForm from '@/Components/AddressForm.vue'
-import Select from '@/Components/shadcn/ui/select/Select.vue'
-import SelectContent from '@/Components/shadcn/ui/select/SelectContent.vue'
-import SelectItem from '@/Components/shadcn/ui/select/SelectItem.vue'
-import SelectTrigger from '@/Components/shadcn/ui/select/SelectTrigger.vue'
-import SelectValue from '@/Components/shadcn/ui/select/SelectValue.vue'
-import { formatPhone } from '@/utils/formatters'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/Components/shadcn/ui/tabs'
 
 const form = defineModel()
 const emit = defineEmits(['next', 'prev'])
 
 const photoPreviews = ref([])
 const logoPreview = ref(null)
+const videoMode = ref('url') // 'url' or 'upload'
+const videoPreview = ref(null)
 
 // Restaurar previews quando o componente for montado
 onMounted(() => {
@@ -37,7 +38,7 @@ onMounted(() => {
         reader.onload = (e) => {
           photoPreviews.value.push({
             url: e.target.result,
-            name: file.name
+            name: file.name,
           })
         }
         reader.readAsDataURL(file)
@@ -46,25 +47,10 @@ onMounted(() => {
   }
 })
 
-const states = [
-  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
-  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
-  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
-]
-
-const isValid = computed(() => {
-  return (
-    form.value.logo &&
-    form.value.photos.length >= 3 &&
-    form.value.address.city &&
-    form.value.address.state &&
-    form.value.whatsapp
-  )
-})
-
 function handleLogoUpload(e) {
   const file = e.target.files[0]
-  if (!file) return
+  if (!file)
+    return
 
   if (!file.type.startsWith('image/')) {
     alert('Apenas imagens são permitidas')
@@ -91,7 +77,7 @@ function removeLogo() {
 
 function handlePhotosUpload(e) {
   const files = Array.from(e.target.files)
-  const validFiles = files.filter(file => {
+  const validFiles = files.filter((file) => {
     if (!file.type.startsWith('image/')) {
       alert('Apenas imagens são permitidas')
       return false
@@ -107,14 +93,14 @@ function handlePhotosUpload(e) {
   const remainingSlots = 10 - form.value.photos.length
   const filesToAdd = validFiles.slice(0, remainingSlots)
 
-  filesToAdd.forEach(file => {
+  filesToAdd.forEach((file) => {
     form.value.photos.push(file)
 
     const reader = new FileReader()
     reader.onload = (e) => {
       photoPreviews.value.push({
         url: e.target.result,
-        name: file.name
+        name: file.name,
       })
     }
     reader.readAsDataURL(file)
@@ -130,12 +116,73 @@ function removePhoto(index) {
   photoPreviews.value.splice(index, 1)
 }
 
-function handleWhatsAppInput(e) {
-  form.value.whatsapp = formatPhone(e.target.value)
+// Video functions
+function handleVideoUpload(e) {
+  const file = e.target.files[0]
+  if (!file)
+    return
+
+  if (!file.type.startsWith('video/')) {
+    alert('Apenas vídeos são permitidos')
+    return
+  }
+  if (file.size > 100 * 1024 * 1024) { // 100MB max
+    alert('Vídeo muito grande. Máximo 100MB.')
+    return
+  }
+
+  form.value.video_file = file
+  form.value.video_url = null // Clear URL if file is uploaded
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    videoPreview.value = e.target.result
+  }
+  reader.readAsDataURL(file)
 }
 
-function handlePhoneInput(e) {
-  form.value.phone = formatPhone(e.target.value)
+function removeVideo() {
+  form.value.video_file = null
+  form.value.video_url = null
+  videoPreview.value = null
+}
+
+function extractVideoId(url) {
+  // YouTube
+  const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+  const youtubeMatch = url.match(youtubeRegex)
+  if (youtubeMatch)
+    return { platform: 'youtube', id: youtubeMatch[1] }
+
+  // Vimeo
+  const vimeoRegex = /vimeo\.com\/(?:.*\/)?(\d+)/
+  const vimeoMatch = url.match(vimeoRegex)
+  if (vimeoMatch)
+    return { platform: 'vimeo', id: vimeoMatch[1] }
+
+  return null
+}
+
+const videoEmbedUrl = computed(() => {
+  if (!form.value.video_url)
+    return null
+
+  const videoInfo = extractVideoId(form.value.video_url)
+  if (!videoInfo)
+    return null
+
+  if (videoInfo.platform === 'youtube') {
+    return `https://www.youtube.com/embed/${videoInfo.id}`
+  }
+  if (videoInfo.platform === 'vimeo') {
+    return `https://player.vimeo.com/video/${videoInfo.id}`
+  }
+
+  return null
+})
+
+const isValid = () => {
+  return form.value.logo && form.value.photos.length >= 3
 }
 </script>
 
@@ -145,9 +192,11 @@ function handlePhoneInput(e) {
       <div class="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <Icon icon="lucide:image" class="h-8 w-8 text-teal-600" />
       </div>
-      <h2 class="text-2xl font-bold mb-2">Fotos e Contato</h2>
+      <h2 class="text-2xl font-bold mb-2">
+        Fotos da Loja
+      </h2>
       <p class="text-muted-foreground">
-        Mostre seus produtos e facilite o contato com seus clientes
+        Mostre seus produtos com fotos de qualidade
       </p>
     </div>
 
@@ -158,11 +207,11 @@ function handlePhoneInput(e) {
         <div class="flex gap-4 items-start">
           <div class="flex-shrink-0">
             <div v-if="logoPreview" class="relative group">
-              <img :src="logoPreview" alt="Logo preview" class="w-32 h-32 object-cover rounded-lg border-2 border-gray-300" />
+              <img :src="logoPreview" alt="Logo preview" class="w-32 h-32 object-cover rounded-lg border-2 border-gray-300">
               <button
                 type="button"
-                @click="removeLogo"
                 class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                @click="removeLogo"
               >
                 <Icon icon="lucide:x" class="h-4 w-4" />
               </button>
@@ -172,12 +221,12 @@ function handlePhoneInput(e) {
                 <Icon icon="lucide:image-plus" class="h-8 w-8 text-gray-400 mx-auto mb-1" />
                 <span class="text-xs text-gray-500">Adicionar logo</span>
                 <input
-                  type="file"
                   id="logo-upload"
+                  type="file"
                   accept="image/*"
                   class="hidden"
                   @change="handleLogoUpload"
-                />
+                >
               </label>
             </div>
           </div>
@@ -199,13 +248,13 @@ function handlePhoneInput(e) {
         <Label class="text-base mb-2 block">Fotos dos Produtos * (mínimo 3, máximo 10)</Label>
         <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-teal-500 transition-colors">
           <input
-            type="file"
             id="photos-upload"
+            type="file"
             multiple
             accept="image/*"
             class="hidden"
             @change="handlePhotosUpload"
-          />
+          >
           <label for="photos-upload" class="cursor-pointer">
             <Icon icon="lucide:upload-cloud" class="h-12 w-12 text-gray-400 mx-auto mb-2" />
             <p class="text-sm font-medium text-gray-700 mb-1">
@@ -224,11 +273,11 @@ function handlePhoneInput(e) {
             :key="index"
             class="relative group aspect-square rounded-lg overflow-hidden border"
           >
-            <img :src="photo.url" :alt="photo.name" class="w-full h-full object-cover" />
+            <img :src="photo.url" :alt="photo.name" class="w-full h-full object-cover">
             <button
               type="button"
-              @click="removePhoto(index)"
               class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              @click="removePhoto(index)"
             >
               <Icon icon="lucide:x" class="h-4 w-4" />
             </button>
@@ -239,136 +288,95 @@ function handlePhoneInput(e) {
         </p>
       </div>
 
-      <!-- Localização -->
+      <!-- Upload de Vídeo -->
       <div class="border-t pt-6">
-        <h3 class="font-semibold text-lg mb-4">Localização</h3>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <Label for="city">Cidade *</Label>
-            <Input
-              id="city"
-              v-model="form.address.city"
-              placeholder="Ex: São Paulo"
-              class="mt-2"
-            />
-          </div>
-          <div>
-            <Label for="state">Estado *</Label>
-            <Select v-model="form.address.state">
-              <SelectTrigger class="mt-2">
-                <SelectValue placeholder="UF" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="state in states" :key="state" :value="state">
-                  {{ state }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <Label class="text-base mb-2 block">Vídeo da Loja (opcional)</Label>
+        <p class="text-sm text-gray-700 mb-4">
+          Adicione um vídeo para mostrar mais sobre seus produtos. Pode ser um link do YouTube/Vimeo ou fazer upload.
+        </p>
 
-        <div class="grid grid-cols-2 gap-4 mt-4">
-          <div>
-            <Label for="cep">CEP (opcional)</Label>
-            <Input
-              id="cep"
-              v-model="form.address.cep"
-              placeholder="00000-000"
-              class="mt-2"
-            />
-          </div>
-          <div>
-            <Label for="street">Rua (opcional)</Label>
-            <Input
-              id="street"
-              v-model="form.address.street"
-              placeholder="Nome da rua"
-              class="mt-2"
-            />
-          </div>
-        </div>
-      </div>
+        <Tabs v-model="videoMode" class="w-full">
+          <TabsList class="grid w-full grid-cols-2">
+            <TabsTrigger value="url">
+              <Icon icon="lucide:link" class="mr-2 h-4 w-4" />
+              Link do Vídeo
+            </TabsTrigger>
+            <TabsTrigger value="upload">
+              <Icon icon="lucide:upload" class="mr-2 h-4 w-4" />
+              Upload de Arquivo
+            </TabsTrigger>
+          </TabsList>
 
-      <!-- Contato -->
-      <div class="border-t pt-6">
-        <h3 class="font-semibold text-lg mb-4">Informações de Contato</h3>
-        <div class="space-y-4">
-          <div>
-            <Label for="whatsapp">WhatsApp * <span class="text-teal-600">(Principal forma de contato)</span></Label>
-            <Input
-              id="whatsapp"
-              v-model="form.whatsapp"
-              type="tel"
-              placeholder="(00) 00000-0000"
-              class="mt-2"
-              @input="handleWhatsAppInput"
-            />
-          </div>
-
-          <div>
-            <Label for="phone">Telefone Fixo (opcional)</Label>
-            <Input
-              id="phone"
-              v-model="form.phone"
-              type="tel"
-              placeholder="(00) 0000-0000"
-              class="mt-2"
-              @input="handlePhoneInput"
-            />
-          </div>
-
-          <div>
-            <Label for="instagram">Instagram (opcional)</Label>
-            <div class="flex gap-2 mt-2">
-              <span class="flex items-center px-3 bg-gray-100 border border-r-0 rounded-l-md text-sm text-gray-600">
-                @
-              </span>
+          <!-- URL Tab -->
+          <TabsContent value="url" class="space-y-4">
+            <div>
+              <Label for="video-url">URL do YouTube ou Vimeo</Label>
               <Input
-                id="instagram"
-                v-model="form.social_media.instagram"
-                placeholder="seu_usuario"
-                class="rounded-l-none"
+                id="video-url"
+                v-model="form.video_url"
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=..."
+                class="mt-2"
+                @input="form.video_file = null"
               />
+              <p class="text-xs text-muted-foreground mt-1">
+                Cole o link completo do vídeo do YouTube ou Vimeo
+              </p>
             </div>
-          </div>
 
-          <div>
-            <Label for="facebook">Facebook (opcional)</Label>
-            <Input
-              id="facebook"
-              v-model="form.social_media.facebook"
-              type="url"
-              placeholder="https://facebook.com/..."
-              class="mt-2"
-            />
-          </div>
-
-          <div>
-            <Label for="tiktok">TikTok (opcional)</Label>
-            <div class="flex gap-2 mt-2">
-              <span class="flex items-center px-3 bg-gray-100 border border-r-0 rounded-l-md text-sm text-gray-600">
-                @
-              </span>
-              <Input
-                id="tiktok"
-                v-model="form.social_media.tiktok"
-                placeholder="seu_usuario"
-                class="rounded-l-none"
+            <!-- Video Preview (YouTube/Vimeo) -->
+            <div v-if="videoEmbedUrl" class="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
+              <iframe
+                :src="videoEmbedUrl"
+                class="w-full h-full"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
               />
+              <button
+                type="button"
+                class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2"
+                @click="removeVideo"
+              >
+                <Icon icon="lucide:x" class="h-4 w-4" />
+              </button>
             </div>
-          </div>
+          </TabsContent>
 
-          <div>
-            <Label for="website">Website (opcional)</Label>
-            <Input
-              id="website"
-              v-model="form.social_media.website"
-              type="url"
-              placeholder="https://..."
-              class="mt-2"
-            />
-          </div>
-        </div>
+          <!-- Upload Tab -->
+          <TabsContent value="upload" class="space-y-4">
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-teal-500 transition-colors">
+              <input
+                id="video-upload"
+                type="file"
+                accept="video/*"
+                class="hidden"
+                @change="handleVideoUpload"
+              >
+              <label for="video-upload" class="cursor-pointer">
+                <Icon icon="lucide:video" class="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                <p class="text-sm font-medium text-gray-700 mb-1">
+                  Clique para adicionar vídeo
+                </p>
+                <p class="text-xs text-muted-foreground">
+                  MP4, MOV ou WEBM (máx. 100MB)
+                </p>
+              </label>
+            </div>
+
+            <!-- Video Preview (Uploaded File) -->
+            <div v-if="form.video_file" class="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
+              <video :src="videoPreview" controls class="w-full h-full" />
+              <button
+                type="button"
+                class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2"
+                @click="removeVideo"
+              >
+                <Icon icon="lucide:x" class="h-4 w-4" />
+              </button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
 
@@ -384,8 +392,8 @@ function handlePhoneInput(e) {
       <Button
         size="lg"
         class="bg-teal-600 hover:bg-teal-700"
+        :disabled="!isValid()"
         @click="emit('next')"
-        :disabled="!isValid"
       >
         Continuar
         <Icon icon="lucide:arrow-right" class="ml-2 h-5 w-5" />

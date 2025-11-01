@@ -44,7 +44,7 @@ const navigationConfig = computed(() => {
           params: { slug: props.store.slug }
         },
         {
-          name: 'Fotos',
+          name: 'Galeria',
           icon: 'lucide:image',
           route: 'dashboard.stores.photos',
           params: { slug: props.store.slug }

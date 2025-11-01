@@ -16,59 +16,33 @@ final class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        // Verificar se precisa fazer onboarding
-        if (!$user->onboarding_completed) {
-            return Inertia::render('OnBoarding', [
-                'categories' => Category::active()
-                    ->parents()
-                    ->with('children')
-                    ->orderBy('sort_order')
-                    ->get()
-                    ->map(function ($category) {
-                        return [
-                            'id' => $category->id,
-                            'name' => $category->name,
-                            'slug' => $category->slug,
-                            'children' => $category->children->map(function ($child) {
-                                return [
-                                    'id' => $child->id,
-                                    'name' => $child->name,
-                                    'slug' => $child->slug,
-                                ];
-                            }),
-                        ];
-                    }),
-            ]);
-        }
-
         // Buscar a vitrine do usuário (apenas 1)
         $userStore = Team::where('user_id', $user->id)
             ->where('personal_team', false)
             ->with('category')
             ->first();
 
-        // Se não tem vitrine, redirecionar para onboarding
+        // Buscar dados do plano e assinatura (ANTES de verificar se tem store)
+        $planData = $this->getPlanData($user);
+
+        // Buscar welcome discount
+        $welcomeDiscount = $this->getWelcomeDiscount();
+
+        // Se não tem vitrine, retornar early mas COM informação de subscription
         if (!$userStore) {
-            return Inertia::render('OnBoarding', [
-                'categories' => Category::active()
-                    ->parents()
-                    ->with('children')
-                    ->orderBy('sort_order')
-                    ->get()
-                    ->map(function ($category) {
-                        return [
-                            'id' => $category->id,
-                            'name' => $category->name,
-                            'slug' => $category->slug,
-                            'children' => $category->children->map(function ($child) {
-                                return [
-                                    'id' => $child->id,
-                                    'name' => $child->name,
-                                    'slug' => $child->slug,
-                                ];
-                            }),
-                        ];
-                    }),
+            return Inertia::render('Dashboard', [
+                'store' => null,
+                'stats' => [
+                    'total_views' => 0,
+                    'whatsapp_clicks' => 0,
+                    'website_clicks' => 0,
+                    'favorites_received' => 0,
+                    'views_trend' => 0,
+                    'clicks_trend' => 0,
+                    'favorites_trend' => 0,
+                ],
+                'plan' => $planData,
+                'welcomeDiscount' => $welcomeDiscount,
             ]);
         }
 
@@ -82,22 +56,6 @@ final class DashboardController extends Controller
             'clicks_trend' => 0,
             'favorites_trend' => 0,
         ];
-
-        // Buscar dados do plano
-        $currentTeam = $user->currentTeam;
-        $planData = [
-            'name' => 'Gratuito',
-            'max_photos' => 3,
-            'features' => [],
-        ];
-
-        if ($currentTeam && $currentTeam->plan) {
-            $planData = [
-                'name' => $currentTeam->plan->name,
-                'max_photos' => $currentTeam->plan->metadata['max_photos'] ?? 3,
-                'features' => $currentTeam->plan->features ?? [],
-            ];
-        }
 
         // Transformar vitrine para o frontend
         $store = [
@@ -120,6 +78,100 @@ final class DashboardController extends Controller
             'store' => $store,
             'stats' => $stats,
             'plan' => $planData,
+            'welcomeDiscount' => $welcomeDiscount,
         ]);
+    }
+
+    /**
+     * Get plan data with subscription information
+     */
+    private function getPlanData($user): array
+    {
+        $planData = [
+            'name' => 'Gratuito',
+            'max_photos' => 3,
+            'features' => [],
+            'subscription' => null,
+        ];
+
+        // Buscar subscription ativa do usuário (independente do team)
+        $subscription = $user->subscriptions()
+            ->where('stripe_status', 'active')
+            ->latest()
+            ->first();
+
+        // Se tem subscription, buscar o plano correspondente
+        if ($subscription) {
+            $subscriptionItem = $subscription->items->first();
+            $plan = null;
+
+            // Tentar encontrar plano pelo stripe_product ou stripe_price
+            if ($subscriptionItem) {
+                $plan = \App\Models\Plan::where('stripe_product_id', $subscriptionItem->stripe_product)
+                    ->orWhere(function ($query) use ($subscriptionItem) {
+                        $query->whereHas('intervals', function ($q) use ($subscriptionItem) {
+                            $q->where('stripe_price_id', $subscriptionItem->stripe_price);
+                        });
+                    })
+                    ->first();
+            }
+
+            // Fallback: usar plano do currentTeam
+            if (!$plan && $user->currentTeam && $user->currentTeam->plan) {
+                $plan = $user->currentTeam->plan;
+            }
+
+            if ($plan) {
+                $isTrial = $subscription->onTrial();
+                $trialEndsAt = $subscription->trial_ends_at;
+
+                $planData = [
+                    'name' => $plan->name,
+                    'max_photos' => $plan->getModuleLimit('store', 'photos_per_vitrine'),
+                    'features' => $plan->features ?? [],
+                    'subscription' => [
+                        'status' => $subscription->stripe_status,
+                        'is_trial' => $isTrial,
+                        'trial_ends_at' => $trialEndsAt ? $trialEndsAt->format('d/m/Y') : null,
+                        'trial_days_remaining' => $isTrial && $trialEndsAt ? (int) now()->diffInDays($trialEndsAt, false) : null,
+                        'ends_at' => $subscription->ends_at ? $subscription->ends_at->format('d/m/Y') : null,
+                        'is_active' => $subscription->active(),
+                        'on_grace_period' => $subscription->onGracePeriod(),
+                    ],
+                ];
+            }
+        } elseif ($user->currentTeam && $user->currentTeam->plan) {
+            // Fallback: usar plano do currentTeam se não tiver subscription
+            $plan = $user->currentTeam->plan;
+            $planData = [
+                'name' => $plan->name,
+                'max_photos' => $plan->getModuleLimit('store', 'photos_per_vitrine'),
+                'features' => $plan->features ?? [],
+                'subscription' => null,
+            ];
+        }
+
+        return $planData;
+    }
+
+    /**
+     * Get welcome discount from session
+     */
+    private function getWelcomeDiscount(): ?array
+    {
+        if (session('show_welcome_discount')) {
+            $welcomeDiscount = [
+                'type' => session('welcome_discount_type'),
+                'text' => session('welcome_discount_text'),
+                'plan_name' => session('welcome_plan_name'),
+            ];
+
+            // Clear session after reading
+            session()->forget(['show_welcome_discount', 'welcome_discount_type', 'welcome_discount_text', 'welcome_plan_name']);
+
+            return $welcomeDiscount;
+        }
+
+        return null;
     }
 }

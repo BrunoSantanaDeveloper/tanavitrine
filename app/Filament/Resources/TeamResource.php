@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Support\Enums\FontWeight;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 final class TeamResource extends Resource
 {
@@ -32,7 +33,7 @@ final class TeamResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Lojas';
 
-    protected static ?string $navigationGroup = 'Gerenciamento';
+    protected static ?string $navigationGroup = 'Clientes';
 
     protected static ?int $navigationSort = 1;
 
@@ -108,6 +109,10 @@ final class TeamResource extends Resource
                             ->relationship('category', 'name')
                             ->searchable()
                             ->preload()
+                            ->live()
+                            ->afterStateUpdated(function (Forms\Set $set) {
+                                $set('subcategory', []);
+                            })
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')
                                     ->required()
@@ -116,45 +121,28 @@ final class TeamResource extends Resource
                                     ->required()
                                     ->maxLength(255),
                             ]),
-                        Forms\Components\TagsInput::make('subcategory')
+                        Forms\Components\Select::make('subcategory')
                             ->label('Subcategorias')
-                            ->placeholder('Clique para selecionar ou digite para criar nova')
-                            ->suggestions([
-                                'Camisetas',
-                                'Camisas',
-                                'Calças',
-                                'Shorts',
-                                'Saias',
-                                'Vestidos',
-                                'Blusas',
-                                'Jaquetas',
-                                'Casacos',
-                                'Moletons',
-                                'Calçados',
-                                'Tênis',
-                                'Sapatos',
-                                'Sandálias',
-                                'Chinelos',
-                                'Botas',
-                                'Acessórios',
-                                'Bolsas',
-                                'Mochilas',
-                                'Carteiras',
-                                'Cintos',
-                                'Bonés',
-                                'Chapéus',
-                                'Óculos',
-                                'Joias',
-                                'Relógios',
-                                'Bijuterias',
-                                'Lingerie',
-                                'Moda Praia',
-                                'Moda Fitness',
-                                'Pijamas',
-                                'Roupas Íntimas',
-                            ])
-                            ->splitKeys(['Enter', 'Tab'])
-                            ->helperText('Clique nas sugestões ou digite novas subcategorias e pressione Enter'),
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->placeholder('Selecione a categoria primeiro')
+                            ->options(function (Forms\Get $get) {
+                                $categoryId = $get('category_id');
+                                if (!$categoryId) {
+                                    return [];
+                                }
+
+                                $category = Category::with('children')->find($categoryId);
+                                if (!$category || !$category->children) {
+                                    return [];
+                                }
+
+                                return $category->children->pluck('name', 'name')->toArray();
+                            })
+                            ->helperText('Selecione uma ou mais subcategorias que representam seus produtos')
+                            ->disabled(fn (Forms\Get $get): bool => !$get('category_id'))
+                            ->dehydrateStateUsing(fn ($state) => is_array($state) ? $state : []),
                         Forms\Components\Select::make('gender')
                             ->label('Gênero')
                             ->options([
@@ -167,6 +155,25 @@ final class TeamResource extends Resource
                             ->label('Pedido Mínimo')
                             ->numeric()
                             ->prefix('R$'),
+                    ])
+                    ->columns(2),
+
+                Forms\Components\Section::make('Mídia')
+                    ->schema([
+                        Forms\Components\FileUpload::make('logo_path')
+                            ->label('Logo da Loja')
+                            ->image()
+                            ->disk('public')
+                            ->directory('stores/logos')
+                            ->maxSize(2048)
+                            ->imageEditor()
+                            ->helperText('Imagem quadrada recomendada (máx. 2MB)'),
+                        Forms\Components\TextInput::make('video_url')
+                            ->label('Vídeo')
+                            ->maxLength(500)
+                            ->placeholder('https://www.youtube.com/watch?v=... ou https://vimeo.com/...')
+                            ->helperText('Cole o link do vídeo do YouTube ou Vimeo')
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
 
@@ -206,39 +213,152 @@ final class TeamResource extends Resource
                     ->columns(2),
 
                 Forms\Components\Section::make('Endereço')
+                    ->description('Preencha o CEP para carregar automaticamente o endereço. As coordenadas GPS são preenchidas automaticamente ao salvar.')
                     ->schema([
                         Forms\Components\TextInput::make('zip_code')
                             ->label('CEP')
+                            ->required()
                             ->maxLength(9)
-                            ->placeholder('00000-000'),
+                            ->placeholder('00000-000')
+                            ->mask('99999-999')
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(function (Forms\Set $set, ?string $state, Forms\Get $get) {
+                                if (!$state || strlen(str_replace('-', '', $state)) !== 8) {
+                                    return;
+                                }
+
+                                // Remove formatting
+                                $cep = preg_replace('/\D/', '', $state);
+
+                                try {
+                                    // Call ViaCEP API
+                                    $response = Http::timeout(5)->get("https://viacep.com.br/ws/{$cep}/json/");
+
+                                    if ($response->successful() && $data = $response->json()) {
+                                        if (!isset($data['erro'])) {
+                                            // Fill address fields automatically
+                                            $street = $data['logradouro'] ?? '';
+                                            $city = $data['localidade'] ?? '';
+                                            $state_uf = $data['uf'] ?? '';
+
+                                            if ($street) {
+                                                $set('address', $street);
+                                            }
+                                            if ($city) {
+                                                $set('city', $city);
+                                            }
+                                            if ($state_uf) {
+                                                $set('state', $state_uf);
+                                            }
+
+                                            // Show success notification
+                                            \Filament\Notifications\Notification::make()
+                                                ->title('CEP encontrado!')
+                                                ->body('Endereço preenchido automaticamente.')
+                                                ->success()
+                                                ->send();
+                                        } else {
+                                            // CEP not found
+                                            \Filament\Notifications\Notification::make()
+                                                ->title('CEP não encontrado')
+                                                ->body('Verifique o número digitado.')
+                                                ->warning()
+                                                ->send();
+                                        }
+                                    }
+                                } catch (\Exception $e) {
+                                    // Silent fail - user can fill manually
+                                    \Filament\Notifications\Notification::make()
+                                        ->title('Erro ao buscar CEP')
+                                        ->body('Por favor, preencha manualmente.')
+                                        ->danger()
+                                        ->send();
+                                }
+                            })
+                            ->helperText('Digite o CEP completo para buscar automaticamente'),
                         Forms\Components\TextInput::make('address')
-                            ->label('Endereço')
+                            ->label('Endereço (Rua, Nº)')
+                            ->required()
                             ->maxLength(255)
+                            ->placeholder('Ex: Rua Augusta, 123')
                             ->columnSpanFull(),
                         Forms\Components\TextInput::make('city')
                             ->label('Cidade')
+                            ->required()
                             ->maxLength(100),
                         Forms\Components\TextInput::make('state')
-                            ->label('Estado')
+                            ->label('Estado (UF)')
+                            ->required()
                             ->maxLength(2)
                             ->placeholder('SP')
                             ->length(2),
                         Forms\Components\TextInput::make('latitude')
                             ->numeric()
-                            ->label('Latitude'),
+                            ->label('Latitude')
+                            ->helperText('Preenchido automaticamente após salvar'),
                         Forms\Components\TextInput::make('longitude')
                             ->numeric()
-                            ->label('Longitude'),
+                            ->label('Longitude')
+                            ->helperText('Preenchido automaticamente após salvar'),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Configurações')
+                Forms\Components\Section::make('Plano e Assinatura')
+                    ->description('Ao alterar o plano, a assinatura do proprietário será automaticamente sincronizada')
                     ->schema([
                         Forms\Components\Select::make('plan_id')
-                            ->label('Plano')
+                            ->label('Plano Atribuído')
                             ->relationship('plan', 'name')
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->helperText('⚡ Ao salvar, a subscription do proprietário será criada/atualizada automaticamente')
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                if ($state) {
+                                    $plan = \App\Models\Plan::find($state);
+                                    if ($plan) {
+                                        $set('plan_info', $plan->description);
+                                    }
+                                }
+                            }),
+                        Forms\Components\Placeholder::make('plan_info')
+                            ->label('Descrição do Plano')
+                            ->content(function ($record, Forms\Get $get) {
+                                $planId = $get('plan_id') ?? $record?->plan_id;
+                                if (!$planId) {
+                                    return 'Nenhum plano selecionado - usará o plano gratuito padrão';
+                                }
+                                $plan = \App\Models\Plan::find($planId);
+                                return $plan?->description ?? 'Plano não encontrado';
+                            }),
+                        Forms\Components\Placeholder::make('subscription_status')
+                            ->label('Status da Assinatura')
+                            ->content(function ($record) {
+                                if (!$record || !$record->owner) {
+                                    return 'N/A';
+                                }
+
+                                $subscription = $record->owner->subscription('default');
+                                if (!$subscription) {
+                                    return '❌ Sem assinatura ativa';
+                                }
+
+                                $status = match($subscription->stripe_status) {
+                                    'active' => '✅ Ativa',
+                                    'past_due' => '⚠️ Vencida',
+                                    'canceled' => '❌ Cancelada',
+                                    default => '⏸️ ' . $subscription->stripe_status,
+                                };
+
+                                return "{$status} | Plano: {$subscription->type}";
+                            })
+                            ->visibleOn('edit'),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
+
+                Forms\Components\Section::make('Configurações da Loja')
+                    ->schema([
                         Forms\Components\Select::make('status')
                             ->label('Status')
                             ->options([
@@ -260,6 +380,7 @@ final class TeamResource extends Resource
                     ->columns(2),
 
                 Forms\Components\Section::make('Analytics')
+                    ->description('Métricas de desempenho da loja (somente leitura)')
                     ->schema([
                         Forms\Components\TextInput::make('views_count')
                             ->label('Visualizações')
@@ -276,15 +397,48 @@ final class TeamResource extends Resource
                             ->numeric()
                             ->disabled()
                             ->dehydrated(false),
+                        Forms\Components\TextInput::make('phone_clicks')
+                            ->label('Cliques no Telefone')
+                            ->numeric()
+                            ->disabled()
+                            ->dehydrated(false),
+                        Forms\Components\TextInput::make('map_clicks')
+                            ->label('Cliques no Mapa')
+                            ->numeric()
+                            ->disabled()
+                            ->dehydrated(false),
+                        Forms\Components\TextInput::make('shares_count')
+                            ->label('Compartilhamentos')
+                            ->numeric()
+                            ->disabled()
+                            ->dehydrated(false),
+                        Forms\Components\TextInput::make('instagram_clicks')
+                            ->label('Cliques no Instagram')
+                            ->numeric()
+                            ->disabled()
+                            ->dehydrated(false),
+                        Forms\Components\TextInput::make('facebook_clicks')
+                            ->label('Cliques no Facebook')
+                            ->numeric()
+                            ->disabled()
+                            ->dehydrated(false),
+                        Forms\Components\TextInput::make('tiktok_clicks')
+                            ->label('Cliques no TikTok')
+                            ->numeric()
+                            ->disabled()
+                            ->dehydrated(false),
                     ])
                     ->columns(3)
-                    ->visibleOn('edit'),
+                    ->visibleOn('edit')
+                    ->collapsible()
+                    ->collapsed(false),
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['owner.subscriptions', 'plan', 'category']))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nome')
@@ -295,11 +449,46 @@ final class TeamResource extends Resource
                     ->label('Proprietário')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('plan.name')
+                    ->label('Plano')
+                    ->sortable()
+                    ->badge()
+                    ->color(fn ($record) => $record->plan_id ? 'success' : 'gray')
+                    ->default('Gratuito'),
+                Tables\Columns\TextColumn::make('subscription_status')
+                    ->label('Status Assinatura')
+                    ->state(function ($record) {
+                        $subscription = $record->owner?->subscription('default');
+                        return $subscription?->stripe_status ?? 'none';
+                    })
+                    ->badge()
+                    ->color(fn ($state) => match($state) {
+                        'active' => 'success',
+                        'past_due' => 'warning',
+                        'canceled' => 'danger',
+                        'none' => 'gray',
+                        default => 'info',
+                    })
+                    ->formatStateUsing(fn ($state) => match($state) {
+                        'active' => 'Ativa',
+                        'past_due' => 'Vencida',
+                        'canceled' => 'Cancelada',
+                        'none' => 'Sem assinatura',
+                        default => ucfirst($state),
+                    })
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Categoria')
                     ->searchable()
                     ->sortable()
                     ->badge(),
+                Tables\Columns\TextColumn::make('subcategory')
+                    ->label('Subcategorias')
+                    ->badge()
+                    ->separator(',')
+                    ->limit(2)
+                    ->tooltip(fn ($record) => is_array($record->subcategory) ? implode(', ', $record->subcategory) : $record->subcategory)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('sale_type')
                     ->label('Tipo de Venda')
                     ->badge()
@@ -348,6 +537,22 @@ final class TeamResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('plan')
+                    ->label('Plano')
+                    ->relationship('plan', 'name')
+                    ->searchable()
+                    ->preload(),
+                Tables\Filters\Filter::make('without_plan')
+                    ->label('Sem Plano Atribuído')
+                    ->query(fn ($query) => $query->whereNull('plan_id')),
+                Tables\Filters\Filter::make('with_active_subscription')
+                    ->label('Com Assinatura Ativa')
+                    ->query(function ($query) {
+                        $query->whereHas('owner.subscriptions', function ($q) {
+                            $q->where('stripe_status', 'active')
+                                ->whereNull('ends_at');
+                        });
+                    }),
                 Tables\Filters\SelectFilter::make('category')
                     ->label('Categoria')
                     ->relationship('category', 'name')
@@ -361,7 +566,7 @@ final class TeamResource extends Resource
                         'ambos' => 'Ambos',
                     ]),
                 Tables\Filters\SelectFilter::make('status')
-                    ->label('Status')
+                    ->label('Status da Loja')
                     ->options([
                         'ativo' => 'Ativo',
                         'inativo' => 'Inativo',
@@ -395,6 +600,84 @@ final class TeamResource extends Resource
                         ->label('Editar')
                         ->icon('heroicon-o-pencil')
                         ->color('primary'),
+                    Tables\Actions\Action::make('change_plan')
+                        ->label('Alterar Plano')
+                        ->icon('heroicon-o-credit-card')
+                        ->color('warning')
+                        ->form([
+                            Forms\Components\Select::make('plan_id')
+                                ->label('Novo Plano')
+                                ->options(\App\Models\Plan::query()->where('is_active', true)->pluck('name', 'id'))
+                                ->searchable()
+                                ->required()
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                    if ($state) {
+                                        $plan = \App\Models\Plan::with('intervals')->find($state);
+                                        if ($plan && $plan->intervals->isNotEmpty()) {
+                                            $interval = $plan->intervals->first();
+                                            $set('price', $interval->pivot->price ?? 0);
+                                        }
+                                    }
+                                })
+                                ->helperText('A assinatura do proprietário será automaticamente atualizada'),
+                            Forms\Components\TextInput::make('price')
+                                ->label('Preço do Plano')
+                                ->prefix('R$')
+                                ->numeric()
+                                ->disabled()
+                                ->dehydrated(false),
+                            Forms\Components\Select::make('coupon_id')
+                                ->label('Aplicar Cupom (Opcional)')
+                                ->options(function () {
+                                    return \App\Models\Coupon::query()
+                                        ->where('is_active', true)
+                                        ->where(function ($q) {
+                                            $q->whereNull('valid_until')
+                                              ->orWhere('valid_until', '>', now());
+                                        })
+                                        ->pluck('code', 'id');
+                                })
+                                ->searchable()
+                                ->preload()
+                                ->reactive()
+                                ->helperText('Selecione um cupom para aplicar desconto'),
+                        ])
+                        ->action(function (Team $record, array $data) {
+                            $record->update(['plan_id' => $data['plan_id']]);
+
+                            // Se houver cupom, atualizar a subscription com desconto
+                            if (!empty($data['coupon_id'])) {
+                                $subscription = $record->owner->subscription('default');
+                                if ($subscription) {
+                                    $coupon = \App\Models\Coupon::find($data['coupon_id']);
+                                    $plan = \App\Models\Plan::with('intervals')->find($data['plan_id']);
+                                    $interval = $plan->intervals->first();
+                                    $price = (float) ($interval->pivot->price ?? 0);
+
+                                    if ($coupon && $coupon->isValid()) {
+                                        $discountAmount = $coupon->calculateDiscount($price);
+                                        $discountEndsAt = $coupon->calculateExpirationDate();
+
+                                        $subscription->update([
+                                            'coupon_id' => $coupon->id,
+                                            'original_price' => $price,
+                                            'discount_amount' => $discountAmount,
+                                            'final_price' => $price - $discountAmount,
+                                            'discount_ends_at' => $discountEndsAt,
+                                        ]);
+
+                                        $coupon->incrementUses();
+                                    }
+                                }
+                            }
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Plano atualizado com sucesso!')
+                                ->success()
+                                ->send();
+                        })
+                        ->successNotificationTitle('Plano atualizado!'),
                     Tables\Actions\Action::make('toggle_status')
                         ->label(fn (Team $record): string => $record->status === 'ativo' ? 'Desativar' : 'Ativar')
                         ->icon(fn (Team $record): string => $record->status === 'ativo' ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')

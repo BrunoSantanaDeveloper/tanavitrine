@@ -56,6 +56,7 @@ class StoreController extends Controller
             'tiktok' => $store->tiktok,
             'featured' => $store->isFeatured(),
             'logo' => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
+            'video_url' => $store->video_url,
             'images' => $store->media->map(function ($photo) {
                 return [
                     'id' => $photo->id,
@@ -80,8 +81,12 @@ class StoreController extends Controller
      */
     public function trackWhatsAppClick(string $slug)
     {
-        $store = Team::where('slug', $slug)->firstOrFail();
-        $store->incrementWhatsappClicks();
+        $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
+
+        // Only track if plan has analytics access for this metric
+        if ($this->hasAnalyticsAccess($store, 'whatsapp_clicks')) {
+            $store->incrementWhatsappClicks();
+        }
 
         return response()->json(['success' => true]);
     }
@@ -91,10 +96,101 @@ class StoreController extends Controller
      */
     public function trackWebsiteClick(string $slug)
     {
-        $store = Team::where('slug', $slug)->firstOrFail();
-        $store->incrementWebsiteClicks();
+        $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
+
+        // Only track if plan has analytics access for this metric
+        if ($this->hasAnalyticsAccess($store, 'website_clicks')) {
+            $store->incrementWebsiteClicks();
+        }
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Track phone click.
+     */
+    public function trackPhoneClick(string $slug)
+    {
+        $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
+
+        // Only track if plan has analytics access for this metric
+        if ($this->hasAnalyticsAccess($store, 'phone_clicks')) {
+            $store->incrementPhoneClicks();
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Track map click.
+     */
+    public function trackMapClick(string $slug)
+    {
+        $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
+
+        // Only track if plan has analytics access for this metric
+        if ($this->hasAnalyticsAccess($store, 'map_clicks')) {
+            $store->incrementMapClicks();
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Track Instagram click.
+     */
+    public function trackInstagramClick(string $slug)
+    {
+        $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
+
+        // Only track if plan has analytics access for this metric
+        if ($this->hasAnalyticsAccess($store, 'instagram_clicks')) {
+            $store->incrementInstagramClicks();
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Track Facebook click.
+     */
+    public function trackFacebookClick(string $slug)
+    {
+        $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
+
+        // Only track if plan has analytics access for this metric
+        if ($this->hasAnalyticsAccess($store, 'facebook_clicks')) {
+            $store->incrementFacebookClicks();
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Track TikTok click.
+     */
+    public function trackTikTokClick(string $slug)
+    {
+        $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
+
+        // Only track if plan has analytics access for this metric
+        if ($this->hasAnalyticsAccess($store, 'tiktok_clicks')) {
+            $store->incrementTikTokClicks();
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Check if store has analytics access for a specific metric based on plan.
+     */
+    private function hasAnalyticsAccess(Team $store, string $metric): bool
+    {
+        if (!$store->plan) {
+            return false;
+        }
+
+        return $store->plan->hasAnalyticsMetric($metric);
     }
 
     /**
@@ -102,7 +198,7 @@ class StoreController extends Controller
      */
     public function captureLead(Request $request, string $slug)
     {
-        $store = Team::where('slug', $slug)->firstOrFail();
+        $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -119,14 +215,14 @@ class StoreController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        // Increment respective counter
-        if ($validated['action'] === 'whatsapp') {
+        // Track clicks based on action if plan has analytics access for that metric
+        if ($validated['action'] === 'whatsapp' && $this->hasAnalyticsAccess($store, 'whatsapp_clicks')) {
             $store->incrementWhatsappClicks();
-        } elseif ($validated['action'] === 'website') {
+        } elseif ($validated['action'] === 'website' && $this->hasAnalyticsAccess($store, 'website_clicks')) {
             $store->incrementWebsiteClicks();
-        } elseif ($validated['action'] === 'map') {
+        } elseif ($validated['action'] === 'map' && $this->hasAnalyticsAccess($store, 'map_clicks')) {
             $store->increment('map_clicks');
-        } elseif ($validated['action'] === 'phone') {
+        } elseif ($validated['action'] === 'phone' && $this->hasAnalyticsAccess($store, 'phone_clicks')) {
             $store->increment('phone_clicks');
         }
 
@@ -138,8 +234,12 @@ class StoreController extends Controller
      */
     public function trackShare(string $slug)
     {
-        $store = Team::where('slug', $slug)->firstOrFail();
-        $store->increment('shares_count');
+        $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
+
+        // Only track if plan has analytics access for this metric
+        if ($this->hasAnalyticsAccess($store, 'shares')) {
+            $store->increment('shares_count');
+        }
 
         return response()->json(['success' => true]);
     }
@@ -201,7 +301,7 @@ class StoreController extends Controller
                     'whatsapp' => $store->whatsapp,
                     'image' => $store->media->first()?->path
                         ? asset('storage/' . $store->media->first()->path)
-                        : 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
+                        : null,
                     'featured' => $store->isFeatured(),
                     'favorited_at' => $store->pivot->created_at->format('d/m/Y'),
                 ];

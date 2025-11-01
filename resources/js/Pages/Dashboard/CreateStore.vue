@@ -3,24 +3,25 @@ import { Button } from '@/Components/shadcn/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/shadcn/ui/card'
 import Input from '@/Components/shadcn/ui/input/Input.vue'
 import Label from '@/Components/shadcn/ui/label/Label.vue'
-import Textarea from '@/Components/shadcn/ui/textarea/Textarea.vue'
+import { MultiSelect } from '@/Components/shadcn/ui/multi-select'
+import { Progress } from '@/Components/shadcn/ui/progress'
 import Select from '@/Components/shadcn/ui/select/Select.vue'
 import SelectContent from '@/Components/shadcn/ui/select/SelectContent.vue'
 import SelectItem from '@/Components/shadcn/ui/select/SelectItem.vue'
 import SelectTrigger from '@/Components/shadcn/ui/select/SelectTrigger.vue'
 import SelectValue from '@/Components/shadcn/ui/select/SelectValue.vue'
-import { Progress } from '@/Components/shadcn/ui/progress'
+import Textarea from '@/Components/shadcn/ui/textarea/Textarea.vue'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { router, useForm } from '@inertiajs/vue3'
-import { computed, ref } from 'vue'
+import { formatCEP, formatPhone } from '@/utils/formatters'
 import { Icon } from '@iconify/vue'
-import { formatPhone, formatCEP } from '@/utils/formatters'
+import { router, useForm } from '@inertiajs/vue3'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
   categories: {
     type: Array,
-    required: true
-  }
+    required: true,
+  },
 })
 
 const currentStep = ref(1)
@@ -32,7 +33,7 @@ const form = useForm({
 
   // Step 2: Categoria
   category_id: '',
-  subcategory: '',
+  subcategory: [],
   gender: '',
 
   // Step 3: Informações da loja
@@ -82,20 +83,37 @@ const states = [
 ]
 
 const subcategories = computed(() => {
-  const category = props.categories.find(c => c.id === form.category_id)
+  const categoryId = Number.parseInt(form.category_id)
+  const category = props.categories.find(c => c.id === categoryId)
   return category?.subcategories || []
+})
+
+// Converte subcategories para o formato do MultiSelect
+const subcategoryOptions = computed(() => {
+  return subcategories.value.map(sub => ({
+    value: sub.name,
+    label: sub.name,
+  }))
+})
+
+// Limpa subcategorias quando a categoria principal mudar
+watch(() => form.category_id, (newCategoryId, oldCategoryId) => {
+  if (oldCategoryId !== undefined && newCategoryId !== oldCategoryId) {
+    form.subcategory = []
+  }
 })
 
 function handleNext() {
   if (currentStep.value < totalSteps) {
     currentStep.value++
     window.scrollTo(0, 0)
-  } else {
+  }
+  else {
     // Submit form
     form.post('/dashboard/stores', {
       onSuccess: () => {
         router.visit('/dashboard/stores')
-      }
+      },
     })
   }
 }
@@ -111,7 +129,7 @@ const isStepValid = computed(() => {
     return !!form.sale_type
   }
   if (currentStep.value === 2) {
-    return !!form.category_id && !!form.subcategory
+    return !!form.category_id && Array.isArray(form.subcategory) && form.subcategory.length > 0
   }
   if (currentStep.value === 3) {
     return form.name.trim() !== '' && form.description.trim() !== '' && !!form.store_type
@@ -197,7 +215,7 @@ function handleCEPInput(e) {
                     <SelectItem
                       v-for="category in categories"
                       :key="category.id"
-                      :value="category.id"
+                      :value="String(category.id)"
                     >
                       {{ category.name }}
                     </SelectItem>
@@ -206,21 +224,16 @@ function handleCEPInput(e) {
               </div>
 
               <div v-if="subcategories.length > 0">
-                <Label for="subcategory">Subcategoria</Label>
-                <Select v-model="form.subcategory">
-                  <SelectTrigger id="subcategory">
-                    <SelectValue placeholder="Selecione a subcategoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem
-                      v-for="sub in subcategories"
-                      :key="sub.id"
-                      :value="sub.name"
-                    >
-                      {{ sub.name }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label for="subcategory">Subcategorias</Label>
+                <MultiSelect
+                  id="subcategory"
+                  v-model="form.subcategory"
+                  :options="subcategoryOptions"
+                  placeholder="Selecione uma ou mais subcategorias..."
+                />
+                <p class="text-xs text-muted-foreground mt-2">
+                  Selecione as subcategorias que representam seus produtos
+                </p>
               </div>
 
               <div>

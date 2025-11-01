@@ -55,6 +55,15 @@ class EditPlan extends EditRecord
         $plan = $this->record;
         $data['intervals'] = $plan?->intervals_for_form ?? [];
         $data['limits'] = $plan?->limits_for_form ?? [];
+
+        // Load analytics metrics from features array
+        $features = $plan->features ?? [];
+        if (is_array($features) && isset($features['analytics']) && is_array($features['analytics'])) {
+            $data['analytics_metrics'] = $features['analytics'];
+        } else {
+            $data['analytics_metrics'] = [];
+        }
+
         return $data;
     }
 }

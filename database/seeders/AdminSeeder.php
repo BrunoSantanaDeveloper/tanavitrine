@@ -19,6 +19,7 @@ final class AdminSeeder extends Seeder
             'name' => 'Gestor Tanavitrine',
             'email' => 'appmanager@tanavitrine.com.br',
             'password' => Hash::make('OXAg839SQ'),
+            'is_superadmin' => true,
         ]);
 
         // Atribuir o plano gratuito ao usuário admin por padrão

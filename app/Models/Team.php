@@ -63,6 +63,7 @@ final class Team extends JetstreamTeam
         'personal_team',
         'plan_id',
         'description',
+        'video_url',
         'sale_type',
         'store_type',
         'category_id',
@@ -124,6 +125,12 @@ final class Team extends JetstreamTeam
             'views_count' => 'integer',
             'whatsapp_clicks' => 'integer',
             'website_clicks' => 'integer',
+            'phone_clicks' => 'integer',
+            'map_clicks' => 'integer',
+            'shares_count' => 'integer',
+            'instagram_clicks' => 'integer',
+            'facebook_clicks' => 'integer',
+            'tiktok_clicks' => 'integer',
             'subcategory' => 'array',
         ];
     }
@@ -159,14 +166,29 @@ final class Team extends JetstreamTeam
         return $this->belongsTo(Plan::class);
     }
 
+    /**
+     * Get the current active plan for this team.
+     *
+     * Priority:
+     * 1. If admin manually assigned a plan (plan_id), use it
+     * 2. Otherwise, check if owner has active subscription
+     * 3. Fallback to default free plan
+     */
     public function currentPlan(): ?Plan
     {
-        $subscription = $this->activeSubscription();
+        // Se admin definiu um plano manualmente, use ele (prioridade)
+        if ($this->plan_id) {
+            return $this->plan ?? Plan::getDefaultPlan();
+        }
 
-        if (!$subscription) {
+        // Caso contrário, verifica se o owner tem subscription ativa
+        $subscription = $this->owner?->subscription('default');
+
+        if (!$subscription || !$subscription->active()) {
             return Plan::getDefaultPlan();
         }
 
+        // Busca o plano pela subscription do Stripe
         return Plan::where('stripe_price_id', $subscription->stripe_price)->first()
             ?? Plan::getDefaultPlan();
     }
@@ -236,6 +258,17 @@ final class Team extends JetstreamTeam
     }
 
     /**
+     * Filter for stores with plans that allow showing on map.
+     * Only show stores that have an active subscription with show_on_map enabled.
+     */
+    public function scopeShowOnMap($query)
+    {
+        return $query->whereHas('plan', function ($planQuery) {
+            $planQuery->where('show_on_map', true);
+        });
+    }
+
+    /**
      * Scope a query to filter by location.
      */
     public function scopeByLocation($query, $state = null, $city = null)
@@ -287,6 +320,54 @@ final class Team extends JetstreamTeam
     public function incrementWebsiteClicks(): void
     {
         $this->increment('website_clicks');
+    }
+
+    /**
+     * Increment phone clicks count.
+     */
+    public function incrementPhoneClicks(): void
+    {
+        $this->increment('phone_clicks');
+    }
+
+    /**
+     * Increment map clicks count.
+     */
+    public function incrementMapClicks(): void
+    {
+        $this->increment('map_clicks');
+    }
+
+    /**
+     * Increment shares count.
+     */
+    public function incrementShares(): void
+    {
+        $this->increment('shares_count');
+    }
+
+    /**
+     * Increment Instagram clicks count.
+     */
+    public function incrementInstagramClicks(): void
+    {
+        $this->increment('instagram_clicks');
+    }
+
+    /**
+     * Increment Facebook clicks count.
+     */
+    public function incrementFacebookClicks(): void
+    {
+        $this->increment('facebook_clicks');
+    }
+
+    /**
+     * Increment TikTok clicks count.
+     */
+    public function incrementTikTokClicks(): void
+    {
+        $this->increment('tiktok_clicks');
     }
 
     /**
