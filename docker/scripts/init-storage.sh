@@ -71,9 +71,22 @@ check_directory "/app/storage/app/public/products" true
 check_directory "/app/storage/app/public/services" true
 check_directory "/app/storage/app/public/teams" true
 check_directory "/app/storage/app/public/logos" true
+check_directory "/app/storage/app/public/stores" true
+check_directory "/app/storage/app/public/onboarding" true
 check_directory "/app/storage/app/public/ai" true
 check_directory "/app/storage/app/public/ai/uploads" true
 check_directory "/app/storage/app/public/ai/generated" true
+
+# Corrigir permissões dos diretórios de upload se rodando como root
+echo "🔒 Verificando e corrigindo permissões..."
+if [ "$(id -u)" = "0" ] && [ -n "$WWWUSER" ] && [ -n "$WWWGROUP" ]; then
+    echo "  - Ajustando permissões para $WWWUSER:$WWWGROUP"
+    chown -R $WWWUSER:$WWWGROUP /app/storage/app/public 2>/dev/null || echo "⚠️ Não foi possível ajustar permissões (pode ser NFS)"
+    chmod -R 775 /app/storage/app/public 2>/dev/null || echo "⚠️ Não foi possível ajustar permissões de modo (pode ser NFS)"
+    echo "✅ Permissões ajustadas"
+else
+    echo "  - Permissões não alteradas (usuário não-root ou sem WWWUSER/WWWGROUP)"
+fi
 
 # Para storage local, verificar/criar symlink para public
 echo "🔗 Verificando symlink para public storage..."
