@@ -71,6 +71,20 @@ class TeamObserver
             $stripePriceId = $planInterval->pivot->stripe_price_id ?? 'price_' . $planInterval->pivot->id;
             $price = (float) ($planInterval->pivot->price ?? 0);
 
+            // Marca featured=true se o plano for "Destaque" e is_featured=true
+            if ($plan->is_featured && !$team->featured) {
+                $team->featured = true;
+                $team->featured_until = now()->addDays(30); // Destaque por 30 dias
+                $team->saveQuietly(); // Usa saveQuietly para não disparar o observer novamente
+            }
+
+            // Remove featured se o plano NÃO for destaque
+            if (!$plan->is_featured && $team->featured) {
+                $team->featured = false;
+                $team->featured_until = null;
+                $team->saveQuietly();
+            }
+
             // Verifica se user já tem subscription default
             $subscription = $user->subscription('default');
 

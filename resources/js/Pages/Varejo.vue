@@ -139,11 +139,23 @@ const alternatedListings = computed(() => {
 
   // Filter by subcategories (multiple)
   if (filters.value.subcategorias.length > 0) {
-    filtered = filtered.filter(store =>
-      store.subcategory && filters.value.subcategorias.some(sub =>
+    filtered = filtered.filter(store => {
+      if (!store.subcategory) return false
+
+      // Se subcategory for array, verifica se tem interseção com o filtro
+      if (Array.isArray(store.subcategory)) {
+        return filters.value.subcategorias.some(filterSub =>
+          store.subcategory.some(storeSub =>
+            storeSub.toLowerCase().includes(filterSub.toLowerCase())
+          )
+        )
+      }
+
+      // Se for string (retrocompatibilidade), verifica se contém alguma subcategoria filtrada
+      return filters.value.subcategorias.some(sub =>
         store.subcategory.toLowerCase().includes(sub.toLowerCase())
       )
-    )
+    })
   }
 
   // Filter by store type
