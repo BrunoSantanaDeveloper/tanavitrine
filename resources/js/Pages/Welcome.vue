@@ -153,13 +153,53 @@ function handleSearch() {
 const selectedListingType = ref('destaques')
 const showStickySelector = ref(false)
 
-// Handle scroll to show/hide sticky selector
+// Infinite scroll state
+const currentPage = ref({ destaques: 1, recentes: 1 })
+const hasMore = ref({ destaques: true, recentes: true })
+const isLoading = ref(false)
+const allStores = ref({ destaques: [...props.featuredStores], recentes: [...props.recentStores] })
+
+// Load more stores
+async function loadMoreStores() {
+  if (isLoading.value || !hasMore.value[selectedListingType.value]) return
+
+  isLoading.value = true
+
+  try {
+    const response = await fetch(
+      `/api/stores/load-more?type=${selectedListingType.value}&page=${currentPage.value[selectedListingType.value] + 1}`
+    )
+    const data = await response.json()
+
+    if (data.stores && data.stores.length > 0) {
+      allStores.value[selectedListingType.value].push(...data.stores)
+      currentPage.value[selectedListingType.value] = data.nextPage
+      hasMore.value[selectedListingType.value] = data.hasMore
+    } else {
+      hasMore.value[selectedListingType.value] = false
+    }
+  } catch (error) {
+    console.error('Error loading more stores:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Handle scroll to show/hide sticky selector and infinite scroll
 const handleScroll = () => {
   const selectorSection = document.getElementById('selector-section')
   if (selectorSection) {
     const rect = selectorSection.getBoundingClientRect()
     // Show sticky selector when the section goes above the viewport (considering header height)
     showStickySelector.value = rect.bottom < 100
+  }
+
+  // Check if user has scrolled near the bottom
+  const scrollPosition = window.innerHeight + window.scrollY
+  const threshold = document.documentElement.scrollHeight - 500
+
+  if (scrollPosition >= threshold && !isLoading.value && hasMore.value[selectedListingType.value]) {
+    loadMoreStores()
   }
 }
 
@@ -175,11 +215,7 @@ onUnmounted(() => {
 
 // Filter listings based on selected type
 const filteredListings = computed(() => {
-  if (selectedListingType.value === 'destaques') {
-    return props.featuredStores
-  }
-  // For 'recentes', return recent stores
-  return props.recentStores
+  return allStores.value[selectedListingType.value] || []
 })
 
 </script>
@@ -582,6 +618,31 @@ const filteredListings = computed(() => {
             :key="store.id"
             :store="store"
           />
+        </div>
+
+        <!-- Loading Indicator -->
+        <div v-if="isLoading" class="flex justify-center items-center py-8">
+          <div class="flex items-center gap-2 text-muted-foreground">
+            <Icon icon="lucide:loader-2" class="size-6 animate-spin" />
+            <span>Carregando mais lojas...</span>
+          </div>
+        </div>
+
+        <!-- No more stores message -->
+        <div v-else-if="!hasMore[selectedListingType] && filteredListings.length > 0" class="flex justify-center py-8">
+          <p class="text-muted-foreground text-sm">
+            Todas as lojas foram carregadas
+          </p>
+        </div>
+
+        <!-- No stores message -->
+        <div v-else-if="filteredListings.length === 0" class="flex justify-center py-16">
+          <div class="text-center">
+            <Icon icon="lucide:store" class="size-16 mx-auto text-muted-foreground mb-4" />
+            <p class="text-muted-foreground text-lg">
+              Nenhuma loja encontrada
+            </p>
+          </div>
         </div>
       </div>
     </section>

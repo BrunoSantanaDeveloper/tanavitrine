@@ -49,3 +49,27 @@ export function formatCEP(value) {
 export function onlyNumbers(value) {
   return value.replace(/\D/g, '')
 }
+
+/**
+ * Formata um número de telefone para uso na API do WhatsApp
+ * @param {string} phone - Número de telefone com ou sem formatação
+ * @returns {string} Número formatado para WhatsApp (apenas dígitos com código do país)
+ */
+export function formatWhatsAppNumber(phone) {
+  if (!phone) return ''
+
+  // Remove todos os caracteres não numéricos
+  let numbers = phone.replace(/\D/g, '')
+
+  // Se começar com 0, remove (alguns números são salvos como 011...)
+  if (numbers.startsWith('0')) {
+    numbers = numbers.substring(1)
+  }
+
+  // Se não tiver código do país (55), adiciona
+  if (!numbers.startsWith('55')) {
+    numbers = '55' + numbers
+  }
+
+  return numbers
+}

@@ -276,10 +276,11 @@ function sendWhatsApp() {
               <li class="flex items-center gap-2">
                 <Icon icon="lucide:phone" class="size-4" aria-hidden="true" />
                 <a href="tel:+556231900204" class="hover:text-foreground transition-colors">
-                  (62) 9 9172-9522
+                  (62) 3190- 0204
                 </a>
               </li>
               <li class="flex items-center gap-2 mt-4">
+                <Icon icon="lucide:instagram" class="size-5" aria-hidden="true" />
                 <a
                   href="https://instagram.com/tanavitrine2025/"
                   target="_blank"
@@ -287,7 +288,7 @@ function sendWhatsApp() {
                   class="hover:text-foreground transition-colors"
                   aria-label="Instagram"
                 >
-                  <Icon icon="lucide:instagram" class="size-5" aria-hidden="true" />
+                  tanavitrine2025
                 </a>
               </li>
             </ul>

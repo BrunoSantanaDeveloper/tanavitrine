@@ -26,10 +26,9 @@ final class WelcomeController extends Controller
                 return $this->transformStore($store);
             });
 
-        // Get recent stores
+        // Get recent stores (including featured ones)
         $recentStores = Team::active()
             ->where('personal_team', false)
-            ->where('featured', false)
             ->with(['category', 'media', 'plan'])
             ->orderBy('created_at', 'desc')
             ->limit(6)
@@ -257,6 +256,45 @@ final class WelcomeController extends Controller
                 'title' => 'Sobre - ' . config('app.name'),
                 'description' => 'Conheça a TanaVitrine, o maior marketplace de moda atacado e varejo do Brasil. Conectando fornecedores e lojistas.',
             ],
+        ]);
+    }
+
+    /**
+     * Load more stores for infinite scroll.
+     */
+    public function loadMoreStores(): \Illuminate\Http\JsonResponse
+    {
+        $type = request('type', 'recentes'); // 'destaques' or 'recentes'
+        $page = request('page', 1);
+        $perPage = 6;
+
+        $query = Team::active()
+            ->where('personal_team', false)
+            ->with(['category', 'media', 'plan']);
+
+        if ($type === 'destaques') {
+            $query->featured();
+        } else {
+            // For recentes, show all stores ordered by creation date
+            $query->orderBy('created_at', 'desc');
+        }
+
+        $stores = $query->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get()
+            ->map(function ($store) {
+                return $this->transformStore($store);
+            });
+
+        $totalCount = Team::active()
+            ->where('personal_team', false)
+            ->when($type === 'destaques', fn($q) => $q->featured())
+            ->count();
+
+        return response()->json([
+            'stores' => $stores,
+            'hasMore' => ($page * $perPage) < $totalCount,
+            'nextPage' => $page + 1,
         ]);
     }
 

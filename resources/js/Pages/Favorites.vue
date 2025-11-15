@@ -8,6 +8,7 @@ import { Icon } from '@iconify/vue'
 import { Link } from '@inertiajs/vue3'
 import { ref } from 'vue'
 import axios from 'axios'
+import { formatWhatsAppNumber } from '@/utils/formatters'
 
 const props = defineProps({
   canLogin: {
@@ -42,6 +43,11 @@ async function removeFavorite(storeSlug) {
   } catch (error) {
     alert('Erro ao remover favorito')
   }
+}
+
+function openWhatsApp(whatsappNumber) {
+  const phone = formatWhatsAppNumber(whatsappNumber)
+  window.open(`https://wa.me/${phone}`, '_blank')
 }
 </script>
 
@@ -179,7 +185,7 @@ async function removeFavorite(storeSlug) {
                     <Button
                       size="sm"
                       class="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                      @click="() => window.open(`https://wa.me/${store.whatsapp}`, '_blank')"
+                      @click="() => openWhatsApp(store.whatsapp)"
                     >
                       <Icon icon="lucide:message-circle" class="size-4 mr-1" />
                       WhatsApp

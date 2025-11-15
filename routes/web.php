@@ -55,6 +55,9 @@ Route::get('/varejo', [WelcomeController::class, 'varejo'])->name('varejo');
 Route::get('/prices', [WelcomeController::class, 'prices'])->name('prices');
 Route::get('/about', [WelcomeController::class, 'about'])->name('about');
 
+// API route for infinite scroll
+Route::get('/api/stores/load-more', [WelcomeController::class, 'loadMoreStores'])->name('api.stores.load-more');
+
 // Store routes
 Route::get('/loja/{slug}', [StoreController::class, 'show'])->name('store.show');
 Route::post('/loja/{slug}/lead', [StoreController::class, 'captureLead'])->name('store.lead');

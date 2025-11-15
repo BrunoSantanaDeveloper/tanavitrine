@@ -74,25 +74,12 @@ services:
       - APP_ENV=production
       - APP_DEBUG=false
       - APP_URL=https://tanavitrine.com.br
-      # CACHE E SESSIONS DISTRIBUÍDOS
-      - CACHE_STORE=redis
-      - SESSION_DRIVER=redis
-      # REDIS LOCAL CONFIGURATION
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=
-      - REDIS_CLIENT=phpredis
-      - REDIS_PREFIX=tanavitrine_prod_
-      - REDIS_DB=0
-      - REDIS_CACHE_CONNECTION=cache
-      - REDIS_CACHE_DB=1
-      - REDIS_TIMEOUT=5
-      - REDIS_READ_TIMEOUT=10
+      # CACHE, SESSIONS E QUEUE NO DATABASE (Redis está read-only)
+      - CACHE_STORE=database
+      - SESSION_DRIVER=database
+      - QUEUE_CONNECTION=database
       # ARMAZENAMENTO LOCAL
       - FILESYSTEM_DISK=public
-      # AWS keys removidas para usar apenas storage local
-      # QUEUE
-      - QUEUE_CONNECTION=redis
       # OCTANE
       - OCTANE_SERVER=frankenphp
       - OCTANE_HTTPS=false
@@ -108,7 +95,6 @@ services:
     restart: unless-stopped
     networks:
       - gravit_network
-    # Redis agora é externo (Valkey Serverless)
     deploy:
       replicas: 2
       restart_policy:
@@ -126,19 +112,9 @@ services:
       # MESMAS CONFIGURAÇÕES DO APP
       - APP_ENV=production
       - APP_DEBUG=false
-      - CACHE_STORE=redis
-      - SESSION_DRIVER=redis
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=
-      - REDIS_CLIENT=phpredis
-      - REDIS_PREFIX=tanavitrine_prod_
-      - REDIS_DB=0
-      - REDIS_CACHE_CONNECTION=cache
-      - REDIS_CACHE_DB=1
-      - REDIS_TIMEOUT=5
-      - REDIS_READ_TIMEOUT=10
-      - QUEUE_CONNECTION=redis
+      - CACHE_STORE=database
+      - SESSION_DRIVER=database
+      - QUEUE_CONNECTION=database
     entrypoint: ["/app/docker/scripts/entrypoint.sh"]
     command: ["php", "artisan", "queue:work", "--verbose", "--tries=3", "--timeout=90"]
     healthcheck:

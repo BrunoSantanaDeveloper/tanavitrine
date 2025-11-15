@@ -13,7 +13,7 @@ import {
 import { Input } from '@/Components/shadcn/ui/input'
 import { Label } from '@/Components/shadcn/ui/label'
 import WebLayout from '@/Layouts/WebLayout.vue'
-import { formatPhone } from '@/utils/formatters'
+import { formatPhone, formatWhatsAppNumber } from '@/utils/formatters'
 import { Icon } from '@iconify/vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
@@ -184,7 +184,7 @@ async function submitLead() {
 
     // Execute the action
     if (leadAction.value === 'whatsapp') {
-      const phone = props.store.whatsapp
+      const phone = formatWhatsAppNumber(props.store.whatsapp)
       const message = `Olá! Sou ${leadForm.value.name}. Vi a vitrine de ${props.store.name} no TanaVitrine e gostaria de saber mais.`
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
       window.open(url, '_blank')

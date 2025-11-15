@@ -2,9 +2,15 @@
 
 echo "🚀 Iniciando container Initfly..."
 
+# Garantir que /tmp tem permissões corretas para uploads do PHP
+chmod 1777 /tmp 2>/dev/null || echo "⚠️ Não foi possível ajustar permissões do /tmp"
+
 # Executar inicialização do storage apenas para o container app
-if [ "${CONTAINER_ROLE:-app}" = "app" ]; then
-    echo "📦 Container role: app - executando inicialização do storage"
+# Aceita "app" ou qualquer role começando com "app_"
+ROLE="${CONTAINER_ROLE:-app}"
+case "$ROLE" in
+    app|app_*)
+        echo "📦 Container role: $ROLE - executando inicialização do storage"
 
     # Aguardar um pouco para garantir que volumes estão montados
     sleep 2
@@ -32,9 +38,11 @@ if [ "${CONTAINER_ROLE:-app}" = "app" ]; then
         php artisan view:cache --quiet
         echo "✅ Caches limpos e atualizados"
     fi
+    ;;
 
-elif [ "${CONTAINER_ROLE}" = "queue" ]; then
-    echo "📦 Container role: queue - aguardando Redis..."
+queue|queue_*)
+    ROLE="${CONTAINER_ROLE:-queue}"
+    echo "📦 Container role: $ROLE - aguardando Redis..."
 
     # Aguardar Redis estar disponível
     while ! php artisan queue:work --stop-when-empty --tries=1 --timeout=1 --quiet >/dev/null 2>&1; do
@@ -43,12 +51,19 @@ elif [ "${CONTAINER_ROLE}" = "queue" ]; then
     done
 
     echo "✅ Redis disponível"
+    ;;
 
-elif [ "${CONTAINER_ROLE}" = "init" ]; then
-    echo "📦 Container role: init - executando apenas inicialização"
+init|init_*)
+    echo "📦 Container role: ${CONTAINER_ROLE:-init} - executando apenas inicialização"
     exec "$@"
     exit 0
-fi
+    ;;
+
+*)
+    echo "⚠️  Container role desconhecido: ${CONTAINER_ROLE:-none}"
+    echo "Prosseguindo sem inicialização especial..."
+    ;;
+esac
 
 php artisan storage:link
 
