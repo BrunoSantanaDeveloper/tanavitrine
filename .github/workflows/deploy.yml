@@ -1,0 +1,66 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  APP_NAME: tanavitrine
+  DEPLOY_PATH: /root/tanavitrine
+
+jobs:
+  deploy:
+    name: 🚀 Deploy to VPS
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: 🔧 Add VPS to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: 🚀 Deploy to VPS
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
+            set -e
+            
+            echo "📂 Navegando para o diretório do projeto..."
+            cd /root/tanavitrine
+            
+            echo "📥 Fazendo pull das alterações..."
+            git fetch origin main
+            git reset --hard origin/main
+            
+            echo "🐳 Construindo nova imagem Docker..."
+            docker build -t tanavitrine-app:latest .
+            
+            echo "🔄 Atualizando stack no Swarm..."
+            docker stack deploy -c docker-compose.app.yml tanavitrine --with-registry-auth
+            
+            echo "⏳ Aguardando estabilização..."
+            sleep 10
+            
+            echo "🔍 Verificando status dos serviços..."
+            docker service ls | grep tanavitrine
+            
+            echo "🧹 Limpando imagens antigas..."
+            docker image prune -f --filter "until=24h"
+            
+            echo "✅ Deploy concluído com sucesso!"
+          DEPLOY_SCRIPT
+
+      - name: 📊 Health Check
+        run: |
+          echo "Aguardando aplicação iniciar..."
+          sleep 30
+          curl -f https://tanavitrine.com.br/up || echo "⚠️ Health check falhou, verificar manualmente"

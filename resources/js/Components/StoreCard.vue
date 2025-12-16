@@ -237,9 +237,15 @@ async function shareStore() {
 
               <div class="flex-1">
                 <p class="text-xs text-muted-foreground mb-1">Cod.: {{ store.code }}</p>
-                <Badge variant="secondary" class="mb-2 text-xs">
-                  {{ store.badge }}
-                </Badge>
+                <div class="flex flex-wrap gap-1 mb-2">
+                  <template v-if="store.badge?.toLowerCase() === 'ambos'">
+                    <Badge variant="secondary" class="text-xs">Atacado</Badge>
+                    <Badge variant="secondary" class="text-xs">Varejo</Badge>
+                  </template>
+                  <Badge v-else variant="secondary" class="text-xs">
+                    {{ store.badge }}
+                  </Badge>
+                </div>
                 <h3 class="text-xl font-bold text-foreground mb-2">
                   {{ store.name }}
                 </h3>

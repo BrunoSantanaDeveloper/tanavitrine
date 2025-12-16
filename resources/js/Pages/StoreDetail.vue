@@ -492,9 +492,15 @@ function scrollPrev() {
 
                     <!-- Store Info -->
                     <div>
-                      <Badge variant="secondary" class="mb-2">
-                        {{ store.badge }}
-                      </Badge>
+                      <div class="flex flex-wrap gap-1 mb-2">
+                        <template v-if="store.badge?.toLowerCase() === 'ambos'">
+                          <Badge variant="secondary">Atacado</Badge>
+                          <Badge variant="secondary">Varejo</Badge>
+                        </template>
+                        <Badge v-else variant="secondary">
+                          {{ store.badge }}
+                        </Badge>
+                      </div>
                       <h1 class="text-4xl font-bold text-foreground mb-2">
                         {{ store.name }}
                       </h1>
