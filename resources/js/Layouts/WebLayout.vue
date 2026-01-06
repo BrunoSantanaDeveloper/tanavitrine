@@ -282,13 +282,13 @@ function sendWhatsApp() {
               <li class="flex items-center gap-2 mt-4">
                 <Icon icon="lucide:instagram" class="size-5" aria-hidden="true" />
                 <a
-                  href="https://instagram.com/tanavitrine2025/"
+                  href="https://instagram.com/tanavitrineoficial/"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="hover:text-foreground transition-colors"
                   aria-label="Instagram"
                 >
-                  tanavitrine2025
+                  tanavitrineoficial
                 </a>
               </li>
             </ul>

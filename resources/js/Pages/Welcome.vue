@@ -150,7 +150,7 @@ function handleSearch() {
 }
 
 // Selector state
-const selectedListingType = ref('destaques')
+const selectedListingType = ref('recentes')
 const showStickySelector = ref(false)
 
 // Infinite scroll state
