@@ -12,6 +12,10 @@ defineProps({
   canRegister: {
     type: Boolean,
   },
+  showFloatingWhatsApp: {
+    type: Boolean,
+    default: true,
+  },
 })
 
 const mode = useColorMode({
@@ -317,7 +321,7 @@ function sendWhatsApp() {
     </footer>
 
     <!-- WhatsApp Floating Button -->
-    <div class="fixed bottom-6 right-6 z-50">
+    <div v-if="showFloatingWhatsApp" class="fixed bottom-6 right-6 z-50">
       <!-- Chat Box -->
       <Transition
         enter-active-class="transition ease-out duration-200"

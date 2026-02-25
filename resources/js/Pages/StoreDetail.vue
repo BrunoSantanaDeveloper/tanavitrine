@@ -17,7 +17,7 @@ import { formatPhone, formatWhatsAppNumber } from '@/utils/formatters'
 import { Icon } from '@iconify/vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   store: {
@@ -30,6 +30,53 @@ const props = defineProps({
   canRegister: {
     type: Boolean,
   },
+})
+
+const normalizedStoreType = computed(() => String(props.store?.storeType || '').trim().toLowerCase())
+const hasVirtualStore = computed(() => {
+  const raw = normalizedStoreType.value
+  return raw === 'virtual' || raw === 'online' || raw === 'ambos' || raw.includes('online')
+})
+const hasPhysicalStore = computed(() => {
+  const raw = normalizedStoreType.value
+  return raw === 'fisica' || raw === 'física' || raw === 'ambos' || raw.includes('fisica') || raw.includes('física')
+})
+const isVirtualOnlyStore = computed(() => hasVirtualStore.value && !hasPhysicalStore.value)
+const showBackToTop = ref(false)
+const lastScrollTop = ref(0)
+
+function handleBackToTopVisibility() {
+  const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0
+  const delta = scrollTop - lastScrollTop.value
+
+  if (scrollTop <= 180) {
+    showBackToTop.value = false
+    lastScrollTop.value = Math.max(scrollTop, 0)
+    return
+  }
+
+  if (delta > 6) {
+    showBackToTop.value = true
+  } else if (delta < -6) {
+    showBackToTop.value = false
+  }
+
+  lastScrollTop.value = Math.max(scrollTop, 0)
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleBackToTopVisibility, { passive: true })
+  document.addEventListener('scroll', handleBackToTopVisibility, { passive: true, capture: true })
+  handleBackToTopVisibility()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleBackToTopVisibility)
+  document.removeEventListener('scroll', handleBackToTopVisibility, true)
 })
 
 // Função para extrair ID do vídeo do YouTube/Vimeo
@@ -356,7 +403,7 @@ function scrollPrev() {
 </script>
 
 <template>
-  <WebLayout :can-login="canLogin" :can-register="canRegister">
+  <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="false">
     <div class="min-h-screen bg-background">
       <!-- Photo Carousel Section -->
       <section class="bg-muted/30 py-2">
@@ -459,6 +506,7 @@ function scrollPrev() {
 
             <!-- Location Button -->
             <button
+              v-if="!isVirtualOnlyStore"
               @click="openLocation"
               class="absolute bottom-4 left-4 bg-white hover:bg-gray-100 text-foreground px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2 font-medium z-10"
             >
@@ -500,6 +548,8 @@ function scrollPrev() {
                         <Badge v-else variant="secondary">
                           {{ store.badge }}
                         </Badge>
+                        <Badge v-if="hasPhysicalStore" variant="secondary">Loja Física</Badge>
+                        <Badge v-if="hasVirtualStore" variant="secondary">Loja Virtual</Badge>
                       </div>
                       <h1 class="text-4xl font-bold text-foreground mb-2">
                         {{ store.name }}
@@ -597,6 +647,7 @@ function scrollPrev() {
 
                 <!-- Location Button -->
                 <Button
+                  v-if="!isVirtualOnlyStore"
                   @click="openLocation"
                   size="lg"
                   variant="outline"
@@ -626,7 +677,7 @@ function scrollPrev() {
                 </div>
 
                 <!-- Location -->
-                <div class="border-t pt-4 mb-4">
+                <div v-if="!isVirtualOnlyStore" class="border-t pt-4 mb-4">
                   <h4 class="font-semibold mb-3">Localização</h4>
                   <p class="text-sm text-muted-foreground flex items-start gap-2">
                     <Icon icon="lucide:map-pin" class="size-4 mt-1 flex-shrink-0" />
@@ -766,5 +817,17 @@ function scrollPrev() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <button
+      v-show="showBackToTop"
+      type="button"
+      class="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 inline-flex items-center gap-2 rounded-full border border-green-700 bg-green-600 px-4 py-2.5 shadow-lg transition hover:bg-green-700 hover:shadow-xl"
+      aria-label="Voltar ao topo"
+      title="Voltar ao topo"
+      @click="scrollToTop"
+    >
+      <Icon icon="lucide:arrow-up" class="size-4 text-white" />
+      <span class="text-sm font-medium text-white">Voltar ao topo</span>
+    </button>
   </WebLayout>
 </template>

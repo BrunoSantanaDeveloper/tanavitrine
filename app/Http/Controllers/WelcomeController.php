@@ -316,6 +316,7 @@ final class WelcomeController extends Controller
             'subcategory' => $store->subcategory,
             'description' => $store->description,
             'saleType' => ucfirst($store->sale_type),
+            'storeType' => ucfirst((string) $store->store_type),
             'minOrder' => $store->min_order,
             'location' => $store->city && $store->state ? "{$store->city} - {$store->state}" : null,
             'city' => $store->city,
