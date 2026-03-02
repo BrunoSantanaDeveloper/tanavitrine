@@ -96,7 +96,7 @@ class StoreController extends Controller
             })->toArray(),
             'collections' => $collections->toArray(),
             'has_collections' => $collections->isNotEmpty(),
-            'show_on_map' => $store->plan?->show_on_map ?? false,
+            'show_on_map' => (bool) ($store->currentPlan()?->show_on_map ?? false),
             'views_count' => $store->views_count,
             'is_favorited' => auth()->check()
                 ? auth()->user()->favoriteStores()->where('team_id', $store->id)->exists()

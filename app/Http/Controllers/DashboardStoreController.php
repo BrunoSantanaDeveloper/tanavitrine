@@ -9,6 +9,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 
@@ -239,18 +240,21 @@ class DashboardStoreController extends Controller
     {
         $store = Team::where('slug', $slug)
             ->where('user_id', auth()->id())
-            ->with(['media', 'collections.media', 'plan'])
+            ->with(['photos', 'collections.media', 'plan'])
             ->firstOrFail();
 
-        $currentPhotos = $store->media()
+        $currentPhotos = $store->photos()
             ->where('type', 'image')
+            ->where('media.is_active', true)
+            ->whereNull('media.team_collection_id')
             ->where(function ($query) {
                 $query->whereNull('category')->orWhere('category', '!=', 'logo');
             })
             ->count();
 
-        $featuredPhotos = $store->media
+        $featuredPhotos = $store->photos
             ->where('type', 'image')
+            ->where('is_active', true)
             ->where('team_collection_id', null)
             ->where('category', '!=', 'logo')
             ->values();
@@ -266,6 +270,9 @@ class DashboardStoreController extends Controller
                         'url' => $photo->url ?? asset('storage/' . $photo->path),
                         'name' => $photo->name,
                         'size' => $photo->size,
+                        'order' => (int) ($photo->pivot?->order ?? 0),
+                        'is_primary' => (bool) ($photo->pivot?->is_primary ?? false),
+                        'is_active' => (bool) $photo->is_active,
                     ];
                 }),
                 'collections' => $store->collections->map(function ($collection) {
@@ -357,23 +364,56 @@ class DashboardStoreController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'photo' => 'required|image|mimes:jpeg,jpg,png,webp|max:5120', // 5MB
+            'photo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
+            'photos' => 'nullable|array',
+            'photos.*' => 'image|mimes:jpeg,jpg,png,webp|max:5120',
         ]);
 
-        $photo = $request->file('photo');
-        $path = $photo->store("stores/store_{$store->id}/photos", 'public');
+        $photos = [];
+        if ($request->hasFile('photos')) {
+            $photos = $request->file('photos');
+        } elseif ($request->hasFile('photo')) {
+            $photos = [$request->file('photo')];
+        }
 
-        $store->media()->create([
-            'name' => $photo->getClientOriginalName(),
-            'path' => $path,
-            'type' => 'image',
-            'size' => $photo->getSize() / 1024, // Convert to KB
-            'is_generic' => false,
-            'category' => 'highlight',
-            'team_collection_id' => null,
-        ]);
+        if (count($photos) === 0) {
+            return redirect()->back()->with('error', 'Selecione ao menos uma foto.');
+        }
 
-        return redirect()->back()->with('success', 'Foto de destaque adicionada com sucesso!');
+        DB::transaction(function () use ($store, $photos): void {
+            $nextOrder = ((int) $store->photos()
+                ->whereNull('media.team_collection_id')
+                ->max('team_media.order')) + 1;
+
+            $hasPrimary = $store->photos()
+                ->whereNull('media.team_collection_id')
+                ->wherePivot('is_primary', true)
+                ->exists();
+
+            foreach ($photos as $index => $photo) {
+                $path = $photo->store("stores/store_{$store->id}/photos", 'public');
+
+                $media = $store->media()->create([
+                    'name' => $photo->getClientOriginalName(),
+                    'path' => $path,
+                    'type' => 'image',
+                    'size' => $photo->getSize() / 1024, // KB
+                    'is_generic' => false,
+                    'is_active' => true,
+                    'category' => 'highlight',
+                    'team_collection_id' => null,
+                ]);
+
+                $store->photos()->attach($media->id, [
+                    'order' => $nextOrder + $index,
+                    'is_primary' => !$hasPrimary && $index === 0,
+                ]);
+            }
+        });
+
+        return redirect()->back()->with('success', count($photos) > 1
+            ? 'Fotos de destaque adicionadas com sucesso!'
+            : 'Foto de destaque adicionada com sucesso!');
     }
 
     /**
@@ -385,19 +425,49 @@ class DashboardStoreController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
-        $media = $store->media()
-            ->whereNull('team_collection_id')
+        $media = $store->photos()
+            ->whereNull('media.team_collection_id')
+            ->where('media.id', $photo)
             ->findOrFail($photo);
 
-        // Delete file from storage
-        if (\Storage::disk('public')->exists($media->path)) {
-            \Storage::disk('public')->delete($media->path);
-        }
-
-        // Delete record from database
+        $store->photos()->detach($media->id);
         $media->delete();
 
         return redirect()->back()->with('success', 'Foto de destaque removida com sucesso!');
+    }
+
+    public function setPrimaryPhoto(string $slug, int $photo): RedirectResponse
+    {
+        $store = Team::where('slug', $slug)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $primaryPhoto = $store->photos()
+            ->whereNull('media.team_collection_id')
+            ->where('media.id', $photo)
+            ->firstOrFail();
+
+        DB::transaction(function () use ($store, $primaryPhoto): void {
+            $orderedIds = $store->photos()
+                ->whereNull('media.team_collection_id')
+                ->where('media.id', '!=', $primaryPhoto->id)
+                ->pluck('media.id')
+                ->values();
+
+            $store->photos()->updateExistingPivot($primaryPhoto->id, [
+                'is_primary' => true,
+                'order' => 1,
+            ]);
+
+            foreach ($orderedIds as $index => $photoId) {
+                $store->photos()->updateExistingPivot((int) $photoId, [
+                    'is_primary' => false,
+                    'order' => $index + 2,
+                ]);
+            }
+        });
+
+        return redirect()->back()->with('success', 'Foto principal atualizada com sucesso!');
     }
 
     public function createCollection(Request $request, string $slug): RedirectResponse

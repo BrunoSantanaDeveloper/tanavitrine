@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\TeamResource\Pages;
 
 use App\Filament\Resources\TeamResource;
+use App\Models\Coupon;
 use App\Models\Team;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -13,6 +14,8 @@ use Filament\Notifications\Notification;
 final class EditTeam extends EditRecord
 {
     protected static string $resource = TeamResource::class;
+
+    private ?int $couponIdToApply = null;
 
     protected function getHeaderActions(): array
     {
@@ -83,11 +86,83 @@ final class EditTeam extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        if (isset($data['subscription_coupon_id']) && $data['subscription_coupon_id'] !== '') {
+            $this->couponIdToApply = (int) $data['subscription_coupon_id'];
+        }
+
+        unset($data['subscription_coupon_id']);
+
         // Se a loja foi marcada como não-destaque, limpar a data de destaque
         if (isset($data['featured']) && !$data['featured']) {
             $data['featured_until'] = null;
         }
 
         return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        if ($this->couponIdToApply === null) {
+            return;
+        }
+
+        /** @var Team $store */
+        $store = $this->record->fresh(['owner.subscriptions.coupon', 'plan.intervals']);
+        $subscription = $store->owner?->subscription('default');
+
+        if (!$subscription) {
+            Notification::make()
+                ->warning()
+                ->title('Assinatura não encontrada')
+                ->body('Esta loja não possui assinatura para trocar cupom.')
+                ->send();
+
+            return;
+        }
+
+        if ((int) $subscription->coupon_id === $this->couponIdToApply) {
+            return;
+        }
+
+        $coupon = Coupon::find($this->couponIdToApply);
+
+        if (!$coupon || !$coupon->isValid()) {
+            Notification::make()
+                ->danger()
+                ->title('Cupom inválido')
+                ->body('Selecione um cupom ativo e válido.')
+                ->send();
+
+            return;
+        }
+
+        $plan = $store->plan;
+        $price = 0.0;
+
+        if ($plan && $plan->intervals->isNotEmpty()) {
+            $price = (float) ($plan->intervals->first()->pivot->price ?? 0);
+        }
+
+        if ($price <= 0) {
+            $price = (float) ($subscription->original_price ?? 0);
+        }
+
+        if ($price <= 0) {
+            Notification::make()
+                ->danger()
+                ->title('Preço base não encontrado')
+                ->body('Não foi possível calcular o desconto para este cupom.')
+                ->send();
+
+            return;
+        }
+
+        $subscription->applyCustomCoupon($coupon, $price);
+
+        Notification::make()
+            ->success()
+            ->title('Cupom atualizado')
+            ->body("Assinatura atualizada com o cupom {$coupon->code}.")
+            ->send();
     }
 }

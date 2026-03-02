@@ -9,6 +9,7 @@ use App\Filament\Resources\TeamResource\RelationManagers;
 use App\Models\Team;
 use App\Models\Category;
 use App\Models\Plan;
+use App\Models\Coupon;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -352,6 +353,33 @@ final class TeamResource extends Resource
                                 return "{$status} | Plano: {$subscription->type}";
                             })
                             ->visibleOn('edit'),
+                        Forms\Components\Placeholder::make('current_subscription_coupon')
+                            ->label('Cupom Atual')
+                            ->content(function ($record) {
+                                $couponCode = $record?->owner?->subscription('default')?->coupon?->code;
+
+                                return $couponCode ? "Cupom aplicado: {$couponCode}" : 'Sem cupom aplicado';
+                            })
+                            ->visibleOn('edit'),
+                        Forms\Components\Select::make('subscription_coupon_id')
+                            ->label('Trocar Cupom da Assinatura')
+                            ->visibleOn('edit')
+                            ->formatStateUsing(fn ($state, $record) => $record?->owner?->subscription('default')?->coupon_id)
+                            ->options(function (): array {
+                                return Coupon::query()
+                                    ->where('is_active', true)
+                                    ->where(function ($q) {
+                                        $q->whereNull('valid_until')
+                                            ->orWhere('valid_until', '>', now());
+                                    })
+                                    ->orderBy('code')
+                                    ->pluck('code', 'id')
+                                    ->toArray();
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->dehydrated()
+                            ->helperText('Selecione um cupom para trocar o cupom atual da assinatura.'),
                     ])
                     ->columns(2)
                     ->collapsible(),

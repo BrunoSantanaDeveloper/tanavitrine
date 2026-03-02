@@ -464,6 +464,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         Route::get('/{slug}/photos', [DashboardStoreController::class, 'photos'])->name('photos');
         Route::post('/{slug}/photos', [DashboardStoreController::class, 'uploadPhoto'])->name('photos.upload');
         Route::delete('/{slug}/photos/{photo}', [DashboardStoreController::class, 'deletePhoto'])->name('photos.delete');
+        Route::put('/{slug}/photos/{photo}/primary', [DashboardStoreController::class, 'setPrimaryPhoto'])->name('photos.primary');
         Route::post('/{slug}/collections', [DashboardStoreController::class, 'createCollection'])->name('collections.create');
         Route::put('/{slug}/collections/{collection}', [DashboardStoreController::class, 'updateCollection'])->name('collections.update');
         Route::delete('/{slug}/collections/{collection}', [DashboardStoreController::class, 'deleteCollection'])->name('collections.delete');

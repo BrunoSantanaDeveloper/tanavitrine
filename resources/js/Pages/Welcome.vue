@@ -241,12 +241,23 @@ function normalizeStoreType(type) {
     .replace(/[\u0300-\u036f]/g, '')
 }
 
+function hasPhysicalPresence(type) {
+  const normalized = normalizeStoreType(type)
+  return [
+    'ambos',
+    'fisica',
+    'virtual / fisica',
+    'virtual/fisica',
+    'virtual e fisica',
+    'fisica e virtual',
+  ].includes(normalized)
+}
+
 const storesForMap = computed(() => {
   return filteredListings.value.filter((store) => {
-    const storeType = normalizeStoreType(store.storeType)
-    const hasPhysicalPresence = storeType === 'ambos' || storeType === 'fisica'
+    const physicalStore = hasPhysicalPresence(store.storeType)
     const hasCoordinates = store.latitude !== null && store.longitude !== null
-    return store.show_on_map === true && hasPhysicalPresence && hasCoordinates
+    return store.show_on_map === true && physicalStore && hasCoordinates
   })
 })
 

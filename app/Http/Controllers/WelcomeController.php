@@ -344,7 +344,7 @@ final class WelcomeController extends Controller
             'image' => $photos[0] ?? null,
             'images' => $photos,
             'featured' => $store->isFeatured(),
-            'show_on_map' => $store->plan?->show_on_map ?? false,
+            'show_on_map' => (bool) ($store->currentPlan()?->show_on_map ?? false),
             'can_favorite' => auth()->check(),
             'is_favorited' => auth()->check()
                 ? auth()->user()->favoriteStores()->where('team_id', $store->id)->exists()

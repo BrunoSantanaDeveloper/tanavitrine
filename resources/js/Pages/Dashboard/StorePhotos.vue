@@ -25,7 +25,7 @@ const collectionPhotoInput = ref(null)
 const uploadingCollectionId = ref(null)
 
 const uploadFeaturedForm = useForm({
-  photo: null,
+  photos: [],
 })
 
 const createCollectionForm = useForm({
@@ -51,20 +51,21 @@ const videoForm = useForm({
 const hasCollections = computed(() => (props.store.collections?.length || 0) > 0)
 
 function handleFeaturedFileSelect(event) {
-  const file = event.target.files[0]
-  if (!file)
+  const files = Array.from(event.target.files || [])
+  if (!files.length)
     return
 
-  uploadFeaturedForm.photo = file
+  uploadFeaturedForm.photos = files
   uploadFeaturedPhotos()
 }
 
 function uploadFeaturedPhotos() {
-  if (!uploadFeaturedForm.photo)
+  if (!uploadFeaturedForm.photos.length)
     return
 
   uploadFeaturedForm.post(route('dashboard.stores.photos.upload', props.store.slug), {
     preserveScroll: true,
+    forceFormData: true,
     onSuccess: () => {
       uploadFeaturedForm.reset()
       if (featuredFileInput.value)
@@ -79,6 +80,17 @@ function deleteFeaturedPhoto(photoId) {
 
   router.delete(route('dashboard.stores.photos.delete', { slug: props.store.slug, photo: photoId }), {
     preserveScroll: true,
+  })
+}
+
+function setPrimaryFeaturedPhoto(photoId) {
+  router.put(route('dashboard.stores.photos.primary', {
+    slug: props.store.slug,
+    photo: photoId,
+  }), {}, {
+    preserveScroll: true,
+    onSuccess: () => toast.success('Foto principal atualizada!'),
+    onError: () => toast.error('Erro ao definir foto principal!'),
   })
 }
 
@@ -322,6 +334,7 @@ function submitVideo() {
                   ref="featuredFileInput"
                   type="file"
                   accept="image/*"
+                  multiple
                   class="hidden"
                   @change="handleFeaturedFileSelect"
                 >
@@ -334,10 +347,10 @@ function submitVideo() {
                 >
                   <Icon v-if="!uploadFeaturedForm.processing" icon="lucide:upload" class="mr-2 h-5 w-5" />
                   <Icon v-else icon="lucide:loader-2" class="mr-2 h-5 w-5 animate-spin" />
-                  {{ uploadFeaturedForm.processing ? 'Enviando...' : 'Adicionar Foto em Destaque' }}
+                  {{ uploadFeaturedForm.processing ? 'Enviando...' : 'Adicionar Fotos em Destaque' }}
                 </Button>
                 <p class="text-sm text-muted-foreground">
-                  PNG, JPG, JPEG ou WEBP até 5MB
+                  PNG, JPG, JPEG ou WEBP até 5MB por arquivo. Você pode selecionar várias fotos.
                 </p>
               </div>
             </div>
@@ -353,15 +366,34 @@ function submitVideo() {
                   :alt="photo.name"
                   class="w-full h-full object-cover"
                 >
+                <Badge
+                  v-if="photo.is_primary"
+                  class="absolute top-2 left-2 bg-yellow-500 text-white border-0 z-10"
+                >
+                  Principal
+                </Badge>
                 <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    @click="deleteFeaturedPhoto(photo.id)"
-                  >
-                    <Icon icon="lucide:trash-2" class="h-4 w-4" />
-                  </Button>
+                  <div class="flex items-center gap-2">
+                    <Button
+                      v-if="!photo.is_primary"
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      class="bg-white/90"
+                      @click="setPrimaryFeaturedPhoto(photo.id)"
+                    >
+                      <Icon icon="lucide:star" class="h-4 w-4 mr-1" />
+                      Principal
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      @click="deleteFeaturedPhoto(photo.id)"
+                    >
+                      <Icon icon="lucide:trash-2" class="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
