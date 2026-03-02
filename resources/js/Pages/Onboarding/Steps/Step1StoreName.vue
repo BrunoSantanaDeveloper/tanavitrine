@@ -14,8 +14,13 @@ const saleTypes = [
   { value: 'ambos', label: 'Ambos', icon: 'lucide:package', description: 'Trabalho tanto com atacado quanto varejo' },
 ]
 
+const storeTypes = [
+  { value: 'virtual', label: 'Loja Virtual', icon: 'lucide:monitor', description: 'Atendo online por redes sociais, WhatsApp ou site, sem loja física' },
+  { value: 'ambos', label: 'Virtual e Física', icon: 'lucide:building-2', description: 'Atendo online (redes sociais/site) e também em loja física' },
+]
+
 const isValid = computed(() => {
-  return form.value.store_name && form.value.store_name.trim().length >= 3 && form.value.sale_type
+  return form.value.store_name && form.value.store_name.trim().length >= 3 && form.value.sale_type && form.value.store_type
 })
 </script>
 
@@ -60,6 +65,35 @@ const isValid = computed(() => {
         >
           <input
             v-model="form.sale_type"
+            type="radio"
+            :value="type.value"
+            class="mt-1"
+          />
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <Icon :icon="type.icon" class="h-5 w-5 text-teal-600" />
+              <span class="font-semibold text-base">{{ type.label }}</span>
+            </div>
+            <p class="text-sm text-muted-foreground">{{ type.description }}</p>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <Label class="text-lg mb-4 block">Tipo da Loja *</Label>
+      <div class="space-y-3">
+        <label
+          v-for="type in storeTypes"
+          :key="type.value"
+          class="flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-teal-300 hover:bg-teal-50"
+          :class="{
+            'border-teal-600 bg-teal-50': form.store_type === type.value,
+            'border-gray-200': form.store_type !== type.value
+          }"
+        >
+          <input
+            v-model="form.store_type"
             type="radio"
             :value="type.value"
             class="mt-1"

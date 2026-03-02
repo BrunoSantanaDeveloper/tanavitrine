@@ -6,7 +6,6 @@ namespace App\Filament\Widgets;
 
 use App\Models\Team;
 use App\Models\User;
-use App\Models\StoreLead;
 use Filament\Widgets\ChartWidget;
 use Carbon\CarbonInterface;
 
@@ -42,7 +41,6 @@ final class GrowthChartWidget extends ChartWidget
 
         $data = match ($this->filter) {
             'users' => $this->getUsersData($months),
-            'leads' => $this->getLeadsData($months),
             default => $this->getStoresData($months),
         };
 
@@ -51,18 +49,15 @@ final class GrowthChartWidget extends ChartWidget
                 [
                     'label' => match ($this->filter) {
                         'users' => 'Novos Usuários',
-                        'leads' => 'Novos Leads',
                         default => 'Novas Lojas',
                     },
                     'data' => $data,
                     'borderColor' => match ($this->filter) {
                         'users' => 'rgb(59, 130, 246)',
-                        'leads' => 'rgb(16, 185, 129)',
                         default => 'rgb(251, 191, 36)',
                     },
                     'backgroundColor' => match ($this->filter) {
                         'users' => 'rgba(59, 130, 246, 0.1)',
-                        'leads' => 'rgba(16, 185, 129, 0.1)',
                         default => 'rgba(251, 191, 36, 0.1)',
                     },
                     'fill' => true,
@@ -83,7 +78,6 @@ final class GrowthChartWidget extends ChartWidget
         return [
             'stores' => 'Lojas',
             'users' => 'Usuários',
-            'leads' => 'Leads',
         ];
     }
 
@@ -105,12 +99,4 @@ final class GrowthChartWidget extends ChartWidget
         })->toArray();
     }
 
-    protected function getLeadsData($months): array
-    {
-        return $months->map(function (CarbonInterface $date) {
-            return (int) StoreLead::whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->count();
-        })->toArray();
-    }
 }

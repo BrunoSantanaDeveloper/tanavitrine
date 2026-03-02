@@ -10,13 +10,13 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Storage;
 
 final class PhotosRelationManager extends RelationManager
 {
     protected static string $relationship = 'photos';
 
-    protected static ?string $title = 'Fotos da Loja';
+    protected static ?string $title = 'Fotos em Destaque';
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -45,20 +45,28 @@ final class PhotosRelationManager extends RelationManager
                     ->label('Descrição')
                     ->maxLength(500)
                     ->rows(3),
-                Forms\Components\TextInput::make('order')
-                    ->label('Ordem')
-                    ->numeric()
-                    ->default(0)
-                    ->helperText('Ordem de exibição da foto'),
                 Forms\Components\Toggle::make('is_primary')
                     ->label('Foto Principal')
                     ->helperText('Marcar como foto de capa da loja'),
+                Forms\Components\Toggle::make('is_active')
+                    ->label('Ativa')
+                    ->default(true)
+                    ->helperText('Fotos inativas não aparecem no site'),
             ]);
     }
 
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                $query->whereNull('media.team_collection_id')
+                    ->where(function (Builder $subQuery) {
+                        $subQuery->whereNull('media.category')
+                            ->orWhere('media.category', '!=', 'logo');
+                    });
+            })
+            ->recordClasses(fn ($record): string => ($record->pivot?->is_primary ?? false) ? 'tv-primary-photo-locked' : '')
+            ->defaultSort('team_media.order')
             ->recordTitleAttribute('name')
             ->columns([
                 Tables\Columns\ImageColumn::make('path')
@@ -71,11 +79,13 @@ final class PhotosRelationManager extends RelationManager
                     ->sortable(),
                 Tables\Columns\TextColumn::make('pivot.order')
                     ->label('Ordem')
-                    ->sortable(),
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('team_media.order', $direction)),
                 Tables\Columns\IconColumn::make('pivot.is_primary')
                     ->label('Principal')
                     ->boolean()
                     ->sortable(),
+                Tables\Columns\ToggleColumn::make('is_active')
+                    ->label('Ativa'),
                 Tables\Columns\TextColumn::make('size')
                     ->label('Tamanho')
                     ->formatStateUsing(fn ($state) => number_format($state, 2) . ' MB')
@@ -94,28 +104,32 @@ final class PhotosRelationManager extends RelationManager
                     ->falseLabel('Não principal'),
             ])
             ->headerActions([
-                Tables\Actions\AttachAction::make()
-                    ->preloadRecordSelect()
-                    ->form(fn (Tables\Actions\AttachAction $action): array => [
-                        $action->getRecordSelect(),
-                        Forms\Components\TextInput::make('order')
-                            ->label('Ordem')
-                            ->numeric()
-                            ->default(0),
-                        Forms\Components\Toggle::make('is_primary')
-                            ->label('Foto Principal'),
-                    ]),
                 Tables\Actions\CreateAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
+                        $sizeInMb = 0.0;
+                        if (!empty($data['path']) && Storage::disk('public')->exists($data['path'])) {
+                            $sizeInMb = Storage::disk('public')->size($data['path']) / 1024 / 1024;
+                        }
+
                         $data['type'] = 'image';
                         $data['team_id'] = $this->getOwnerRecord()->id;
+                        $data['team_collection_id'] = null;
+                        $data['category'] = 'highlight';
+                        $data['is_generic'] = false;
+                        $data['size'] = $sizeInMb;
+                        $data['is_active'] = (bool) ($data['is_active'] ?? true);
                         return $data;
                     })
                     ->after(function ($record, $data) {
-                        $this->getOwnerRecord()->photos()->attach($record->id, [
-                            'order' => $data['order'] ?? 0,
-                            'is_primary' => $data['is_primary'] ?? false,
-                        ]);
+                        $nextOrder = ((int) $this->getOwnerRecord()->photos()->max('team_media.order')) + 1;
+
+                        $this->getOwnerRecord()->photos()->updateExistingPivot(
+                            $record->id,
+                            [
+                                'order' => $nextOrder,
+                                'is_primary' => $data['is_primary'] ?? false,
+                            ]
+                        );
                     }),
             ])
             ->actions([
@@ -126,28 +140,36 @@ final class PhotosRelationManager extends RelationManager
                     ->visible(fn ($record) => !$record->pivot->is_primary)
                     ->requiresConfirmation()
                     ->action(function ($record) {
-                        // Remove primary flag from all photos
-                        $this->getOwnerRecord()->photos()->updateExistingPivot(
-                            $this->getOwnerRecord()->photos()->pluck('media.id'),
-                            ['is_primary' => false]
-                        );
-                        // Set this photo as primary
-                        $this->getOwnerRecord()->photos()->updateExistingPivot(
-                            $record->id,
-                            ['is_primary' => true]
-                        );
+                        $owner = $this->getOwnerRecord();
+
+                        $orderedIds = $owner->photos()
+                            ->where('media.id', '!=', $record->id)
+                            ->pluck('media.id')
+                            ->values();
+
+                        // Move selected photo to position 1 and mark as primary.
+                        $owner->photos()->updateExistingPivot($record->id, [
+                            'is_primary' => true,
+                            'order' => 1,
+                        ]);
+
+                        // Reindex remaining photos after the primary one.
+                        foreach ($orderedIds as $index => $photoId) {
+                            $owner->photos()->updateExistingPivot((int) $photoId, [
+                                'is_primary' => false,
+                                'order' => $index + 2,
+                            ]);
+                        }
                     }),
                 Tables\Actions\EditAction::make()
-                    ->mutateFormDataUsing(function (array $data, $record): array {
-                        $data['order'] = $record->pivot->order ?? 0;
-                        $data['is_primary'] = $record->pivot->is_primary ?? false;
-                        return $data;
-                    })
+                    ->mutateFormDataUsing(fn (array $data, $record): array => [
+                        ...$data,
+                        'is_primary' => $record->pivot->is_primary ?? false,
+                    ])
                     ->using(function ($record, array $data) {
                         $this->getOwnerRecord()->photos()->updateExistingPivot(
                             $record->id,
                             [
-                                'order' => $data['order'] ?? 0,
                                 'is_primary' => $data['is_primary'] ?? false,
                             ]
                         );
@@ -166,9 +188,47 @@ final class PhotosRelationManager extends RelationManager
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->reorderable('pivot.order')
-            ->emptyStateHeading('Nenhuma foto cadastrada')
-            ->emptyStateDescription('Adicione fotos para exibir na vitrine da loja')
+            ->reorderable('order')
+            ->emptyStateHeading('Nenhuma foto de destaque cadastrada')
+            ->emptyStateDescription('Adicione fotos para exibir no topo da vitrine')
             ->emptyStateIcon('heroicon-o-photo');
+    }
+
+    /**
+     * Keep the primary photo locked in first position during drag-and-drop reorder.
+     *
+     * @param array<int|string> $order
+     */
+    public function reorderTable(array $order): void
+    {
+        if (! $this->getTable()->isReorderable()) {
+            return;
+        }
+
+        $owner = $this->getOwnerRecord();
+
+        $primaryPhotoId = $owner->photos()
+            ->wherePivot('is_primary', true)
+            ->value('media.id');
+
+        $orderedIds = collect($order)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->values();
+
+        if ($primaryPhotoId) {
+            $primaryPhotoId = (int) $primaryPhotoId;
+
+            $orderedIds = $orderedIds
+                ->reject(fn (int $id) => $id === $primaryPhotoId)
+                ->prepend($primaryPhotoId)
+                ->values();
+        }
+
+        foreach ($orderedIds as $index => $photoId) {
+            $owner->photos()->updateExistingPivot($photoId, [
+                'order' => $index + 1,
+            ]);
+        }
     }
 }

@@ -35,6 +35,20 @@ class CouponResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Informações do Cupom')
                     ->schema([
+                        Forms\Components\Select::make('partner_id')
+                            ->label('Parceiro')
+                            ->relationship(
+                                name: 'partner',
+                                titleAttribute: 'name',
+                                modifyQueryUsing: fn (Builder $query): Builder => $query
+                                    ->where('is_partner', true)
+                                    ->where('is_partner_active', true)
+                                    ->orderBy('name'),
+                            )
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->helperText('Opcional: vincule este cupom a um parceiro/influencer.'),
                         Forms\Components\TextInput::make('code')
                             ->label('Código')
                             ->required()
@@ -142,6 +156,12 @@ class CouponResource extends Resource
                     ->copyMessage('Código copiado!')
                     ->badge()
                     ->color('success'),
+                Tables\Columns\TextColumn::make('partner.name')
+                    ->label('Parceiro')
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('Sem parceiro')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nome')
                     ->searchable()

@@ -150,6 +150,11 @@ final class Team extends JetstreamTeam
         return $this->hasMany(Media::class);
     }
 
+    public function collections(): HasMany
+    {
+        return $this->hasMany(TeamCollection::class)->orderBy('sort_order');
+    }
+
     /**
      * Get the leads for the store.
      */

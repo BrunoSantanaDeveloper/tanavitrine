@@ -47,14 +47,13 @@ const form = useForm({
   name: props.store.name,
   description: props.store.description,
   sale_type: props.store.sale_type,
-  store_type: props.store.store_type,
+  // Keep compatibility with legacy "fisica" records by mapping them to "ambos" in the edit UI.
+  store_type: props.store.store_type === 'fisica' ? 'ambos' : props.store.store_type,
   category_id: props.store.category_id ? String(props.store.category_id) : null,
   subcategory: initialSubcategory,
   gender: props.store.gender || null,
   min_order: props.store.min_order || '',
   whatsapp: props.store.whatsapp || '',
-  phone: props.store.phone || '',
-  email: props.store.email || '',
   website: props.store.website || '',
   instagram: props.store.instagram || '',
   facebook: props.store.facebook || '',
@@ -70,6 +69,7 @@ const subcategories = computed(() => {
   const category = props.categories.find(c => c.id === Number.parseInt(form.category_id))
   return category?.children || []
 })
+const showLocationSection = computed(() => form.store_type === 'ambos')
 
 // Converte subcategories para o formato do MultiSelect
 const subcategoryOptions = computed(() => {
@@ -118,10 +118,6 @@ function removeLogo() {
 
 function handleWhatsAppInput(e) {
   form.whatsapp = formatPhone(e.target.value)
-}
-
-function handlePhoneInput(e) {
-  form.phone = formatPhone(e.target.value)
 }
 
 function handleCEPInput(e) {
@@ -251,7 +247,6 @@ function submit() {
     // Convert empty strings and undefined to null for optional fields
     gender: data.gender || null,
     min_order: data.min_order || null,
-    phone: data.phone || null,
     website: data.website || null,
     instagram: data.instagram || null,
     facebook: data.facebook || null,
@@ -376,11 +371,13 @@ function submit() {
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fisica">Física</SelectItem>
-                        <SelectItem value="virtual">Virtual</SelectItem>
-                        <SelectItem value="ambos">Ambos</SelectItem>
+                        <SelectItem value="virtual">Loja Virtual</SelectItem>
+                        <SelectItem value="ambos">Virtual / Física</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p class="text-xs text-muted-foreground mt-2">
+                      Loja Virtual: atende por redes sociais, WhatsApp ou site. Virtual / Física: atende online e também em loja física.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -455,21 +452,9 @@ function submit() {
               <CardTitle>Contato</CardTitle>
             </CardHeader>
             <CardContent class="space-y-4">
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <Label for="whatsapp">WhatsApp *</Label>
-                  <Input id="whatsapp" v-model="form.whatsapp" placeholder="(62) 99999-9999" maxlength="15" required @input="handleWhatsAppInput" />
-                </div>
-
-                <div>
-                  <Label for="phone">Telefone</Label>
-                  <Input id="phone" v-model="form.phone" placeholder="(62) 3333-3333" maxlength="15" @input="handlePhoneInput" />
-                </div>
-              </div>
-
               <div>
-                <Label for="email">E-mail *</Label>
-                <Input id="email" v-model="form.email" type="email" required />
+                <Label for="whatsapp">WhatsApp *</Label>
+                <Input id="whatsapp" v-model="form.whatsapp" placeholder="(62) 99999-9999" maxlength="15" required @input="handleWhatsAppInput" />
               </div>
             </CardContent>
           </Card>
@@ -507,7 +492,7 @@ function submit() {
           </Card>
 
           <!-- Localização -->
-          <Card>
+          <Card v-if="showLocationSection">
             <CardHeader>
               <CardTitle>Localização</CardTitle>
               <CardDescription>Preencha o CEP para carregar automaticamente o endereço e atualizar a localização no mapa</CardDescription>

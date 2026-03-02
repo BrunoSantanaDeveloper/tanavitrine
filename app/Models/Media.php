@@ -29,6 +29,20 @@ use Illuminate\Support\Facades\Storage;
  */
 final class Media extends Model
 {
+    protected static function booted(): void
+    {
+        static::deleting(function (Media $media): void {
+            // Remove local file when media record is deleted.
+            if (!$media->path || filter_var($media->path, FILTER_VALIDATE_URL)) {
+                return;
+            }
+
+            if (Storage::disk('public')->exists($media->path)) {
+                Storage::disk('public')->delete($media->path);
+            }
+        });
+    }
+
     /**
      * The attributes that are mass assignable.
      *
@@ -36,6 +50,7 @@ final class Media extends Model
      */
     protected $fillable = [
         'team_id',
+        'team_collection_id',
         'name',
         'path',
         'type',
@@ -43,6 +58,7 @@ final class Media extends Model
         'description',
         'duration',
         'is_generic',
+        'is_active',
         'category',
         'business_type',
         'metadata',
@@ -59,6 +75,7 @@ final class Media extends Model
             'size' => 'float',
             'duration' => 'integer',
             'is_generic' => 'boolean',
+            'is_active' => 'boolean',
             'metadata' => 'array',
         ];
     }
@@ -69,6 +86,11 @@ final class Media extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    public function collection(): BelongsTo
+    {
+        return $this->belongsTo(TeamCollection::class, 'team_collection_id');
     }
 
     /**

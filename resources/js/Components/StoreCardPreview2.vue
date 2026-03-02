@@ -58,15 +58,6 @@ const images = computed(() => {
 
 const currentImage = computed(() => images.value[currentImageIndex.value])
 const storeDetailHref = computed(() => props.store.previewDetailUrl || `/loja/${props.store.slug}`)
-const normalizedStoreType = computed(() => String(props.store.storeType || '').trim().toLowerCase())
-const hasVirtualStore = computed(() => {
-  const raw = normalizedStoreType.value
-  return raw === 'virtual' || raw === 'online' || raw === 'ambos' || raw.includes('online')
-})
-const hasPhysicalStore = computed(() => {
-  const raw = normalizedStoreType.value
-  return raw === 'fisica' || raw === 'física' || raw === 'ambos' || raw.includes('fisica') || raw.includes('física')
-})
 
 const hasMultipleImages = computed(() => images.value.length > 1)
 
@@ -254,12 +245,6 @@ async function shareStore() {
                   </template>
                   <Badge v-else variant="secondary" class="text-xs">
                     {{ store.badge }}
-                  </Badge>
-                  <Badge v-if="hasPhysicalStore" variant="secondary" class="text-xs">
-                    Loja Física
-                  </Badge>
-                  <Badge v-if="hasVirtualStore" variant="secondary" class="text-xs">
-                    Loja Virtual
                   </Badge>
                 </div>
                 <h3 class="text-xl font-bold text-foreground mb-2">

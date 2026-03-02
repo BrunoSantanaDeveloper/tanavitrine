@@ -13,7 +13,7 @@ import FloatingMap from '@/Components/FloatingMap.vue'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
 import WebLayout from '@/Layouts/WebLayout.vue'
 import { Icon } from '@iconify/vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   canLogin: {
@@ -71,9 +71,15 @@ onMounted(() => {
   if (urlParams.has('genero')) filters.value.genero = urlParams.get('genero')
 })
 
+watch(() => filters.value.tipoLoja, (newType) => {
+  if (newType === 'virtual') {
+    filters.value.estado = ''
+    filters.value.cidade = ''
+  }
+})
+
 const categorias = computed(() => props.categories.map(c => c.name))
 const subcategorias = ['Feminino', 'Masculino', 'Infantil', 'Plus Size', 'Moda Praia', 'Lingerie']
-const tiposLoja = ['fisica', 'virtual', 'ambos']
 const estados = computed(() => props.states)
 const cidades = computed(() => {
   // Filter cities by selected state if needed
@@ -85,6 +91,12 @@ const cidades = computed(() => {
 })
 const generos = ['Masculino', 'Feminino', 'Unissex']
 const pedidosMinimos = ['Até 20 peças', '20-50 peças', '50-100 peças', 'Acima de 100 peças']
+const normalizeStoreType = value =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
 
 // Multi-select functions
 function toggleCategoria(categoria) {
@@ -160,15 +172,25 @@ const alternatedListings = computed(() => {
 
   // Filter by store type
   if (filters.value.tipoLoja) {
-    filtered = filtered.filter(store => {
-      // transformStore doesn't return store_type, need to add it
-      // For now, skip this filter
+    const selectedType = normalizeStoreType(filters.value.tipoLoja)
+    filtered = filtered.filter((store) => {
+      const storeType = normalizeStoreType(store.storeType)
+      if (selectedType === 'virtual') {
+        return storeType === 'virtual' || storeType === 'online'
+      }
+      if (selectedType === 'ambos' || selectedType === 'fisica') {
+        return storeType === 'ambos' || storeType === 'fisica'
+      }
       return true
     })
   }
 
   // Filter by state
   if (filters.value.estado) {
+    filtered = filtered.filter(store => {
+      const storeType = normalizeStoreType(store.storeType)
+      return storeType === 'ambos' || storeType === 'fisica'
+    })
     filtered = filtered.filter(store => {
       const storeState = store.location?.split(' - ')[1]
       return storeState === filters.value.estado
@@ -197,7 +219,11 @@ const alternatedListings = computed(() => {
 
 // Stores for map - only those with show_on_map = true
 const storesForMap = computed(() => {
-  return alternatedListings.value.filter(store => store.show_on_map === true)
+  return alternatedListings.value.filter((store) => {
+    const storeType = normalizeStoreType(store.storeType)
+    const hasPhysicalPresence = storeType === 'ambos' || storeType === 'fisica'
+    return store.show_on_map === true && hasPhysicalPresence
+  })
 })
 
 function handleSearch() {
@@ -242,6 +268,43 @@ function handleMarkerClick(store) {
     }, 2000)
   }
 }
+
+const showBackToTop = ref(false)
+const lastScrollTop = ref(0)
+
+function handleBackToTopVisibility() {
+  const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0
+  const delta = scrollTop - lastScrollTop.value
+
+  if (scrollTop <= 180) {
+    showBackToTop.value = false
+    lastScrollTop.value = Math.max(scrollTop, 0)
+    return
+  }
+
+  if (delta > 6) {
+    showBackToTop.value = true
+  } else if (delta < -6) {
+    showBackToTop.value = false
+  }
+
+  lastScrollTop.value = Math.max(scrollTop, 0)
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleBackToTopVisibility, { passive: true })
+  document.addEventListener('scroll', handleBackToTopVisibility, { passive: true, capture: true })
+  handleBackToTopVisibility()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleBackToTopVisibility)
+  document.removeEventListener('scroll', handleBackToTopVisibility, true)
+})
 </script>
 
 <template>
@@ -355,7 +418,7 @@ function handleMarkerClick(store) {
 
           <!-- Estado -->
           <Select v-model="filters.estado">
-            <SelectTrigger class="w-full">
+            <SelectTrigger class="w-full" :disabled="filters.tipoLoja === 'virtual'">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
@@ -367,7 +430,7 @@ function handleMarkerClick(store) {
 
           <!-- Cidade -->
           <Select v-model="filters.cidade">
-            <SelectTrigger class="w-full">
+            <SelectTrigger class="w-full" :disabled="filters.tipoLoja === 'virtual'">
               <SelectValue placeholder="Cidade" />
             </SelectTrigger>
             <SelectContent>
@@ -383,9 +446,8 @@ function handleMarkerClick(store) {
               <SelectValue placeholder="Tipo Loja" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="fisica">Física</SelectItem>
-              <SelectItem value="virtual">Virtual</SelectItem>
-              <SelectItem value="ambos">Ambos</SelectItem>
+              <SelectItem value="virtual">Loja Virtual</SelectItem>
+              <SelectItem value="ambos">Virtual / Física</SelectItem>
             </SelectContent>
           </Select>
 
@@ -425,9 +487,20 @@ function handleMarkerClick(store) {
     <FloatingMap
       :stores="storesForMap"
       :hovered-store-id="hoveredStoreId"
-      title="Mapa de Fornecedores"
+      title="Mapa de Fornecedores / Loja Física"
       @marker-click="handleMarkerClick"
       @marker-hover="handleStoreHover"
     />
+    <button
+      v-show="showBackToTop"
+      type="button"
+      class="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 inline-flex items-center gap-2 rounded-full border border-green-700 bg-green-600 px-4 py-2.5 shadow-lg transition hover:bg-green-700 hover:shadow-xl"
+      aria-label="Voltar ao topo"
+      title="Voltar ao topo"
+      @click="scrollToTop"
+    >
+      <Icon icon="lucide:arrow-up" class="size-4 text-white" />
+      <span class="text-sm font-medium text-white">Voltar ao topo</span>
+    </button>
   </WebLayout>
 </template>

@@ -6,7 +6,6 @@ namespace App\Filament\Widgets;
 
 use App\Models\Team;
 use App\Models\User;
-use App\Models\StoreLead;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Number;
@@ -41,18 +40,6 @@ final class StatsOverviewWidget extends BaseWidget
             ->count();
         $usersGrowth = $usersLastMonth > 0
             ? round((($usersThisMonth - $usersLastMonth) / $usersLastMonth) * 100, 1)
-            : 100;
-
-        // Total de leads
-        $totalLeads = (int) StoreLead::count();
-        $leadsThisMonth = (int) StoreLead::whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->count();
-        $leadsLastMonth = (int) StoreLead::whereMonth('created_at', now()->subMonth()->month)
-            ->whereYear('created_at', now()->subMonth()->year)
-            ->count();
-        $leadsGrowth = $leadsLastMonth > 0
-            ? round((($leadsThisMonth - $leadsLastMonth) / $leadsLastMonth) * 100, 1)
             : 100;
 
         // Lojas ativas vs inativas
@@ -90,12 +77,6 @@ final class StatsOverviewWidget extends BaseWidget
                 ->descriptionIcon($usersGrowth >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->chart([$usersLastMonth, $usersThisMonth])
                 ->color($usersGrowth >= 0 ? 'success' : 'danger'),
-
-            Stat::make('Leads Capturados', Number::format($totalLeads))
-                ->description($leadsGrowth >= 0 ? "+{$leadsGrowth}% em relação ao mês anterior" : "{$leadsGrowth}% em relação ao mês anterior")
-                ->descriptionIcon($leadsGrowth >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
-                ->chart([$leadsLastMonth, $leadsThisMonth])
-                ->color($leadsGrowth >= 0 ? 'success' : 'danger'),
 
             Stat::make('Total de Visualizações', Number::format($totalViews))
                 ->description("Este mês: " . Number::format($viewsThisMonth))

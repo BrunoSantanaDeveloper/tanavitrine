@@ -2,22 +2,14 @@
 import Badge from '@/Components/shadcn/ui/badge/Badge.vue'
 import Button from '@/Components/shadcn/ui/button/Button.vue'
 import Card from '@/Components/shadcn/ui/card/Card.vue'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/Components/shadcn/ui/dialog'
-import { Input } from '@/Components/shadcn/ui/input'
-import { Label } from '@/Components/shadcn/ui/label'
+import { Dialog, DialogContent } from '@/Components/shadcn/ui/dialog'
+import FloatingMap from '@/Components/FloatingMap.vue'
 import WebLayout from '@/Layouts/WebLayout.vue'
-import { formatPhone, formatWhatsAppNumber } from '@/utils/formatters'
+import { formatWhatsAppNumber } from '@/utils/formatters'
 import { Icon } from '@iconify/vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 
 const props = defineProps({
   store: {
@@ -31,19 +23,53 @@ const props = defineProps({
     type: Boolean,
   },
 })
-
 const normalizedStoreType = computed(() => String(props.store?.storeType || '').trim().toLowerCase())
-const hasVirtualStore = computed(() => {
+const storeTypeTagLabel = computed(() => {
   const raw = normalizedStoreType.value
-  return raw === 'virtual' || raw === 'online' || raw === 'ambos' || raw.includes('online')
+  if (raw === 'ambos')
+    return 'Virtual / Física'
+  if (raw === 'virtual' || raw === 'online')
+    return 'Loja Virtual'
+  if (raw === 'fisica' || raw === 'física')
+    return 'Loja Física'
+  return null
 })
-const hasPhysicalStore = computed(() => {
+const isVirtualOnlyStore = computed(() => {
   const raw = normalizedStoreType.value
-  return raw === 'fisica' || raw === 'física' || raw === 'ambos' || raw.includes('fisica') || raw.includes('física')
+  return raw === 'virtual' || raw === 'online'
 })
-const isVirtualOnlyStore = computed(() => hasVirtualStore.value && !hasPhysicalStore.value)
+const storesForMap = computed(() => {
+  if (isVirtualOnlyStore.value) return []
+  if (props.store.show_on_map !== true) return []
+  if (!props.store.latitude || !props.store.longitude) return []
+
+  return [
+    {
+      id: props.store.id,
+      code: props.store.code,
+      slug: props.store.slug,
+      name: props.store.name,
+      category: props.store.category,
+      description: props.store.description,
+      featured: props.store.featured,
+      location: props.store.location,
+      latitude: props.store.latitude,
+      longitude: props.store.longitude,
+      logo: props.store.logo,
+      image: props.store.images?.[0]?.url || null,
+      url: `/loja/${props.store.slug}`,
+    },
+  ]
+})
+
 const showBackToTop = ref(false)
 const lastScrollTop = ref(0)
+const activeSectionTab = ref('sobre')
+const showAllCollections = ref(false)
+const selectedCollectionId = ref(null)
+const selectedCollectionImageIndex = ref(0)
+const floatingMapRef = ref(null)
+const selectedCollectionPreviewRef = ref(null)
 
 function handleBackToTopVisibility() {
   const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0
@@ -65,18 +91,24 @@ function handleBackToTopVisibility() {
 }
 
 function scrollToTop() {
+  // Force scroll on the main window (helps keep behavior stable across layout changes).
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 onMounted(() => {
+  if (hasCollections.value && featuredCollection.value) {
+    selectedCollectionId.value = featuredCollection.value.id
+  }
   window.addEventListener('scroll', handleBackToTopVisibility, { passive: true })
   document.addEventListener('scroll', handleBackToTopVisibility, { passive: true, capture: true })
+  window.addEventListener('keydown', handleLightboxKeydown)
   handleBackToTopVisibility()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleBackToTopVisibility)
   document.removeEventListener('scroll', handleBackToTopVisibility, true)
+  window.removeEventListener('keydown', handleLightboxKeydown)
 })
 
 // Função para extrair ID do vídeo do YouTube/Vimeo
@@ -165,6 +197,70 @@ const scrollPosition = ref(0)
 const carouselContainer = ref(null)
 const isFavorited = ref(props.store.is_favorited || false)
 const isFavoriting = ref(false)
+const isGalleryLightboxOpen = ref(false)
+const topGalleryImageIndex = ref(0)
+const lightboxSource = ref('top')
+const lightboxTouchStartX = ref(0)
+const lightboxTouchEndX = ref(0)
+const isLightboxZoomed = ref(false)
+const topGalleryMedia = computed(() => mediaItems.value
+  .map((item, index) => ({ ...item, originalIndex: index }))
+  .filter(item => item.type !== 'placeholder'))
+const hasCollections = computed(() => props.store.has_collections === true && Array.isArray(props.store.collections) && props.store.collections.length > 0)
+const sectionTabs = computed(() => {
+  const tabs = [{ id: 'sobre', icon: 'lucide:file-text' }]
+  if (hasCollections.value) {
+    tabs.push({ id: 'galeria', icon: 'lucide:images' })
+  }
+  tabs.push({ id: 'infos', icon: 'lucide:circle-check-big' })
+  return tabs
+})
+const featuredCollection = computed(() => {
+  if (!hasCollections.value) return null
+  const items = props.store.collections
+  return items.find(collection => collection.is_featured) || items[0] || null
+})
+const secondaryCollections = computed(() => {
+  if (!hasCollections.value || !featuredCollection.value) return []
+  return props.store.collections.filter(collection => collection.id !== featuredCollection.value.id)
+})
+const visibleSecondaryCollections = computed(() => (
+  showAllCollections.value ? secondaryCollections.value : secondaryCollections.value.slice(0, 4)
+))
+const selectedCollection = computed(() => {
+  if (!hasCollections.value) return null
+  return props.store.collections.find(collection => collection.id === selectedCollectionId.value) || featuredCollection.value
+})
+const selectedCollectionImages = computed(() => selectedCollection.value?.photos ?? [])
+const selectedCollectionMainImage = computed(() =>
+  selectedCollectionImages.value[selectedCollectionImageIndex.value] ?? selectedCollectionImages.value[0] ?? null
+)
+const activeLightboxItems = computed(() => {
+  if (lightboxSource.value === 'collection') {
+    return selectedCollectionImages.value.map(url => ({ type: 'image', url }))
+  }
+  return topGalleryMedia.value
+})
+const activeLightboxTitle = computed(() => {
+  if (lightboxSource.value === 'collection') {
+    return selectedCollection.value?.name || 'Galeria'
+  }
+  return `${props.store.name} • Mídias Destaques`
+})
+const activeLightboxIndex = computed({
+  get: () => (lightboxSource.value === 'collection' ? selectedCollectionImageIndex.value : topGalleryImageIndex.value),
+  set: (value) => {
+    if (lightboxSource.value === 'collection') {
+      selectedCollectionImageIndex.value = value
+    } else {
+      topGalleryImageIndex.value = value
+    }
+  },
+})
+const activeLightboxMainItem = computed(() =>
+  activeLightboxItems.value[activeLightboxIndex.value] ?? activeLightboxItems.value[0] ?? null
+)
+const canZoomActiveItem = computed(() => activeLightboxMainItem.value?.type === 'image')
 
 // Format subcategories
 const formattedSubcategories = computed(() => {
@@ -180,75 +276,28 @@ const formattedSubcategories = computed(() => {
   return subcategory
 })
 
-// Lead capture modal
-const showLeadModal = ref(false)
-const leadAction = ref('whatsapp')
-const leadForm = ref({
-  name: '',
-  whatsapp: ''
-})
-const isSubmittingLead = ref(false)
-
 async function openLocation() {
-  // Track map click
-  await trackMapClick()
+  const query = encodeURIComponent(props.store.location || props.store.name)
+  window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
+  trackMapClick()
+}
 
-  leadAction.value = 'map'
-  showLeadModal.value = true
+function openMapWidget() {
+  trackMapClick()
+  floatingMapRef.value?.openWidget?.()
 }
 
 function openWhatsApp() {
-  leadAction.value = 'whatsapp'
-  showLeadModal.value = true
+  const phone = formatWhatsAppNumber(props.store.whatsapp)
+  const message = `Olá! Vi a vitrine de ${props.store.name} no TanaVitrine e gostaria de saber mais.`
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+  window.open(url, '_blank')
+  trackWhatsAppClick()
 }
 
 function openWebsite() {
-  leadAction.value = 'website'
-  showLeadModal.value = true
-}
-
-function handlePhoneInput(event) {
-  const formatted = formatPhone(event.target.value)
-  leadForm.value.whatsapp = formatted
-}
-
-async function submitLead() {
-  if (!leadForm.value.name || !leadForm.value.whatsapp) {
-    alert('Por favor, preencha todos os campos.')
-    return
-  }
-
-  isSubmittingLead.value = true
-
-  try {
-    await axios.post(`/loja/${props.store.slug}/lead`, {
-      name: leadForm.value.name,
-      whatsapp: leadForm.value.whatsapp,
-      action: leadAction.value
-    })
-
-    showLeadModal.value = false
-
-    // Execute the action
-    if (leadAction.value === 'whatsapp') {
-      const phone = formatWhatsAppNumber(props.store.whatsapp)
-      const message = `Olá! Sou ${leadForm.value.name}. Vi a vitrine de ${props.store.name} no TanaVitrine e gostaria de saber mais.`
-      const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-      window.open(url, '_blank')
-    } else if (leadAction.value === 'map') {
-      const query = encodeURIComponent(props.store.location || props.store.name)
-      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
-    } else if (leadAction.value === 'website') {
-      window.open(props.store.website, '_blank')
-    }
-
-    // Reset form
-    leadForm.value = { name: '', whatsapp: '' }
-  } catch (error) {
-    alert('Erro ao enviar informações. Tente novamente.')
-  } finally {
-    isSubmittingLead.value = false
-  }
+  window.open(props.store.website, '_blank')
+  trackWebsiteClick()
 }
 
 async function toggleFavorite() {
@@ -326,17 +375,25 @@ async function trackShare() {
   }
 }
 
-async function trackPhoneClick() {
+async function trackMapClick() {
   try {
-    await axios.post(`/loja/${props.store.slug}/track/phone`)
+    await axios.post(`/loja/${props.store.slug}/track/map`)
   } catch (error) {
     // Continue even if tracking fails
   }
 }
 
-async function trackMapClick() {
+async function trackWhatsAppClick() {
   try {
-    await axios.post(`/loja/${props.store.slug}/track/map`)
+    await axios.post(`/loja/${props.store.slug}/track/whatsapp`)
+  } catch (error) {
+    // Continue even if tracking fails
+  }
+}
+
+async function trackWebsiteClick() {
+  try {
+    await axios.post(`/loja/${props.store.slug}/track/website`)
   } catch (error) {
     // Continue even if tracking fails
   }
@@ -400,10 +457,113 @@ function scrollPrev() {
     })
   }
 }
+
+function openTopGalleryLightboxByMediaIndex(mediaIndex) {
+  const imageIndex = topGalleryMedia.value.findIndex(item => item.originalIndex === mediaIndex)
+  if (imageIndex === -1) return
+  lightboxSource.value = 'top'
+  topGalleryImageIndex.value = imageIndex
+  isLightboxZoomed.value = false
+  isGalleryLightboxOpen.value = true
+}
+
+function selectCollection(collectionId) {
+  selectedCollectionId.value = collectionId
+  selectedCollectionImageIndex.value = 0
+
+  nextTick(() => {
+    const element = selectedCollectionPreviewRef.value
+    if (!element) return
+
+    const offset = 120
+    const top = element.getBoundingClientRect().top + window.scrollY - offset
+    window.scrollTo({ top, behavior: 'smooth' })
+  })
+}
+
+function openCollectionLightbox(index = selectedCollectionImageIndex.value) {
+  if (!selectedCollectionImages.value.length) return
+  lightboxSource.value = 'collection'
+  selectedCollectionImageIndex.value = index
+  isLightboxZoomed.value = false
+  isGalleryLightboxOpen.value = true
+}
+
+function closeGalleryLightbox() {
+  isLightboxZoomed.value = false
+  isGalleryLightboxOpen.value = false
+}
+
+function nextGalleryImage() {
+  if (!activeLightboxItems.value.length) return
+  isLightboxZoomed.value = false
+  activeLightboxIndex.value = (activeLightboxIndex.value + 1) % activeLightboxItems.value.length
+}
+
+function prevGalleryImage() {
+  if (!activeLightboxItems.value.length) return
+  isLightboxZoomed.value = false
+  activeLightboxIndex.value = (activeLightboxIndex.value - 1 + activeLightboxItems.value.length) % activeLightboxItems.value.length
+}
+
+function handleLightboxKeydown(event) {
+  if (!isGalleryLightboxOpen.value) return
+
+  if (event.key === 'Escape') {
+    closeGalleryLightbox()
+    return
+  }
+
+  if (event.key === 'ArrowRight') {
+    nextGalleryImage()
+    return
+  }
+
+  if (event.key === 'ArrowLeft') {
+    prevGalleryImage()
+  }
+}
+
+function onLightboxTouchStart(event) {
+  lightboxTouchStartX.value = event.changedTouches[0]?.clientX ?? 0
+  lightboxTouchEndX.value = lightboxTouchStartX.value
+}
+
+function onLightboxTouchMove(event) {
+  lightboxTouchEndX.value = event.changedTouches[0]?.clientX ?? lightboxTouchEndX.value
+}
+
+function onLightboxTouchEnd() {
+  const deltaX = lightboxTouchEndX.value - lightboxTouchStartX.value
+  const minSwipeDistance = 50
+
+  if (Math.abs(deltaX) < minSwipeDistance) return
+
+  if (deltaX < 0) {
+    nextGalleryImage()
+  } else {
+    prevGalleryImage()
+  }
+}
+
+function toggleLightboxZoom() {
+  if (!canZoomActiveItem.value) return
+  isLightboxZoomed.value = !isLightboxZoomed.value
+}
+
+function scrollToSection(sectionId) {
+  activeSectionTab.value = sectionId
+  const element = document.getElementById(`store-section-${sectionId}`)
+  if (!element) return
+
+  const offset = 120
+  const top = element.getBoundingClientRect().top + window.scrollY - offset
+  window.scrollTo({ top, behavior: 'smooth' })
+}
 </script>
 
 <template>
-  <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="false">
+  <WebLayout :can-login="canLogin" :can-register="canRegister" :showFloatingWhatsApp="false">
     <div class="min-h-screen bg-background">
       <!-- Photo Carousel Section -->
       <section class="bg-muted/30 py-2">
@@ -422,7 +582,7 @@ function scrollPrev() {
                 class="flex-shrink-0 relative w-full md:w-[calc(33.333%-0.5rem)]"
                 style="scroll-snap-align: start;"
               >
-                <div class="aspect-[4/3] rounded-lg overflow-hidden bg-black">
+                <div class="relative aspect-[4/3] rounded-lg overflow-hidden bg-black">
                   <!-- Placeholder -->
                   <div
                     v-if="item.type === 'placeholder'"
@@ -459,6 +619,14 @@ function scrollPrev() {
                     :src="item.url"
                     :alt="`${store.name} - Foto ${index + 1}`"
                     class="w-full h-full object-cover"
+                  >
+
+                  <button
+                    v-if="item.type !== 'placeholder'"
+                    type="button"
+                    class="absolute inset-0 z-10"
+                    :aria-label="`Abrir mídia ${index + 1}`"
+                    @click="openTopGalleryLightboxByMediaIndex(index)"
                   />
                 </div>
               </div>
@@ -548,8 +716,9 @@ function scrollPrev() {
                         <Badge v-else variant="secondary">
                           {{ store.badge }}
                         </Badge>
-                        <Badge v-if="hasPhysicalStore" variant="secondary">Loja Física</Badge>
-                        <Badge v-if="hasVirtualStore" variant="secondary">Loja Virtual</Badge>
+                        <Badge v-if="storeTypeTagLabel" variant="secondary">
+                          {{ storeTypeTagLabel }}
+                        </Badge>
                       </div>
                       <h1 class="text-4xl font-bold text-foreground mb-2">
                         {{ store.name }}
@@ -565,7 +734,7 @@ function scrollPrev() {
                     <Icon icon="lucide:tag" class="size-5 text-primary" />
                     <span>{{ store.category }}<template v-if="formattedSubcategories"> - {{ formattedSubcategories }}</template></span>
                   </div>
-                  <div class="flex items-center gap-2 text-muted-foreground">
+                  <div v-if="!isVirtualOnlyStore" class="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="lucide:map-pin" class="size-5 text-primary" />
                     <span>{{ store.location }}</span>
                   </div>
@@ -578,18 +747,176 @@ function scrollPrev() {
                     <span>{{ store.saleType }}</span>
                   </div>
                 </div>
+
+                <div class="mt-6 border-y border-border">
+                  <div class="grid" :class="hasCollections ? 'grid-cols-3' : 'grid-cols-2'">
+                    <button
+                      v-for="tab in sectionTabs"
+                      :key="tab.id"
+                      type="button"
+                      class="relative flex items-center justify-center py-3 text-muted-foreground transition-colors hover:text-foreground"
+                      :class="{ 'text-foreground': activeSectionTab === tab.id }"
+                      @click="scrollToSection(tab.id)"
+                    >
+                      <Icon :icon="tab.icon" class="size-5" />
+                      <span
+                        class="absolute inset-x-4 bottom-0 h-0.5 rounded-full transition-colors"
+                        :class="activeSectionTab === tab.id ? 'bg-foreground' : 'bg-transparent'"
+                      />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <!-- Description -->
-              <Card class="p-6">
+              <Card id="store-section-sobre" class="p-6 scroll-mt-28">
                 <h2 class="text-2xl font-bold mb-4">Sobre o Fornecedor</h2>
                 <p class="text-muted-foreground leading-relaxed whitespace-pre-line">
                   {{ store.description }}
                 </p>
               </Card>
 
+              <Card v-if="hasCollections" id="store-section-galeria" class="p-6 scroll-mt-28">
+                <h2 class="text-2xl font-bold mb-4">Galeria de Fotos</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                  <button
+                    v-if="featuredCollection"
+                    type="button"
+                    class="group relative overflow-hidden rounded-2xl border border-border text-left lg:col-span-6 min-h-[220px]"
+                    :class="{ 'ring-2 ring-primary/30': selectedCollectionId === featuredCollection.id }"
+                    @click="selectCollection(featuredCollection.id)"
+                  >
+                    <img
+                      v-if="featuredCollection.cover"
+                      :src="featuredCollection.cover"
+                      :alt="featuredCollection.name"
+                      class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    >
+                    <div v-else class="absolute inset-0 bg-muted flex items-center justify-center">
+                      <Icon icon="lucide:image-off" class="size-10 text-muted-foreground" />
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/10" />
+                    <div class="relative h-full p-5 flex flex-col justify-end">
+                      <div class="inline-flex w-fit items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-foreground mb-3">
+                        <Icon icon="lucide:crown" class="size-3.5 text-amber-500" />
+                        Coleção em destaque
+                      </div>
+                      <h3 class="text-xl sm:text-2xl font-bold text-white">{{ featuredCollection.name }}</h3>
+                      <div class="mt-3 flex items-center justify-between">
+                        <span class="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs text-white backdrop-blur-sm">
+                          <Icon icon="lucide:images" class="size-3.5" />
+                          {{ featuredCollection.photos_count }} fotos
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+
+                  <div class="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4 content-start">
+                    <button
+                      v-for="collection in visibleSecondaryCollections"
+                      :key="collection.id"
+                      type="button"
+                      class="group relative overflow-hidden rounded-2xl border border-border text-left transition-all hover:shadow-md min-h-[150px]"
+                      :class="{ 'ring-2 ring-primary/30': selectedCollectionId === collection.id }"
+                      @click="selectCollection(collection.id)"
+                    >
+                      <img
+                        v-if="collection.cover"
+                        :src="collection.cover"
+                        :alt="collection.name"
+                        class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      >
+                      <div v-else class="absolute inset-0 bg-muted flex items-center justify-center">
+                        <Icon icon="lucide:image-off" class="size-8 text-muted-foreground" />
+                      </div>
+                      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                      <div class="relative h-full p-4 flex flex-col justify-end">
+                        <div class="flex items-end justify-between gap-2">
+                          <h3 class="text-sm font-semibold text-white">{{ collection.name }}</h3>
+                          <span class="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] text-white backdrop-blur-sm">
+                            <Icon icon="lucide:images" class="size-3" />
+                            {{ collection.photos_count }}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div v-if="secondaryCollections.length > 4" class="mt-4 flex justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    class="rounded-full px-5"
+                    @click="showAllCollections = !showAllCollections"
+                  >
+                    <Icon
+                      :icon="showAllCollections ? 'lucide:chevron-up' : 'lucide:chevron-down'"
+                      class="size-4 mr-2"
+                    />
+                    {{ showAllCollections ? 'Mostrar menos categorias' : `Ver mais categorias (${secondaryCollections.length - 4})` }}
+                  </Button>
+                </div>
+
+                <div
+                  v-if="selectedCollection"
+                  ref="selectedCollectionPreviewRef"
+                  class="mt-6 rounded-2xl border border-border bg-card overflow-hidden scroll-mt-28"
+                >
+                  <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-border">
+                    <div>
+                      <p class="text-sm font-semibold">{{ selectedCollection.name }}</p>
+                      <p class="text-xs text-muted-foreground">
+                        Visualizando coleção • {{ selectedCollectionImages.length }} imagens
+                      </p>
+                    </div>
+                    <span class="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                      <Icon icon="lucide:images" class="size-3.5" />
+                      {{ selectedCollection.photos_count }} fotos
+                    </span>
+                  </div>
+
+                  <div class="p-4 space-y-4">
+                    <div
+                      v-if="selectedCollectionMainImage"
+                      class="relative h-[320px] sm:h-[380px] rounded-xl overflow-hidden border border-border"
+                    >
+                      <button
+                        type="button"
+                        class="block h-full w-full text-left"
+                        @click="openCollectionLightbox()"
+                      >
+                        <img
+                          :src="selectedCollectionMainImage"
+                          :alt="selectedCollection.name"
+                          class="h-full w-full object-cover"
+                        >
+                      </button>
+                    </div>
+
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                      <button
+                        v-for="(img, index) in selectedCollectionImages"
+                        :key="`${selectedCollection.id}-${index}`"
+                        type="button"
+                        class="relative h-20 sm:h-24 rounded-lg overflow-hidden border transition-all"
+                        :class="selectedCollectionImageIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'"
+                        @click="openCollectionLightbox(index)"
+                      >
+                        <img
+                          :src="img"
+                          :alt="`${selectedCollection.name} ${index + 1}`"
+                          class="h-full w-full object-cover"
+                        >
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
               <!-- Additional Info -->
-              <Card class="p-6">
+              <Card id="store-section-infos" class="p-6 scroll-mt-28">
                 <h2 class="text-2xl font-bold mb-4">Informações Adicionais</h2>
                 <div class="space-y-3">
                   <div class="flex items-start gap-3">
@@ -648,7 +975,7 @@ function scrollPrev() {
                 <!-- Location Button -->
                 <Button
                   v-if="!isVirtualOnlyStore"
-                  @click="openLocation"
+                  @click="openMapWidget"
                   size="lg"
                   variant="outline"
                   class="w-full mb-6"
@@ -656,25 +983,6 @@ function scrollPrev() {
                   <Icon icon="lucide:map-pin" class="size-5 mr-2" />
                   Ver no Mapa
                 </Button>
-
-                <!-- Contact Info -->
-                <div v-if="store.email || store.phone" class="border-t pt-4 mb-4 space-y-2">
-                  <h4 class="font-semibold mb-3">Informações de Contato</h4>
-
-                  <div v-if="store.email" class="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Icon icon="lucide:mail" class="size-4 flex-shrink-0" />
-                    <a :href="`mailto:${store.email}`" class="hover:text-primary transition-colors break-all">
-                      {{ store.email }}
-                    </a>
-                  </div>
-
-                  <div v-if="store.phone" class="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Icon icon="lucide:phone" class="size-4 flex-shrink-0" />
-                    <a :href="`tel:${store.phone}`" @click="trackPhoneClick" class="hover:text-primary transition-colors">
-                      {{ store.phone }}
-                    </a>
-                  </div>
-                </div>
 
                 <!-- Location -->
                 <div v-if="!isVirtualOnlyStore" class="border-t pt-4 mb-4">
@@ -762,59 +1070,126 @@ function scrollPrev() {
       </section>
     </div>
 
-    <!-- Lead Capture Modal -->
-    <Dialog v-model:open="showLeadModal">
-      <DialogContent class="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>
-            {{ leadAction === 'whatsapp' ? 'Entrar em Contato' : leadAction === 'map' ? 'Ver Localização' : 'Visitar Site' }}
-          </DialogTitle>
-          <DialogDescription>
-            Para continuar, precisamos de algumas informações suas.
-          </DialogDescription>
-        </DialogHeader>
-        <div class="grid gap-4 py-4">
-          <div class="grid gap-2">
-            <Label for="lead-name">Seu Nome *</Label>
-            <Input
-              id="lead-name"
-              v-model="leadForm.name"
-              placeholder="Digite seu nome"
-              :disabled="isSubmittingLead"
-            />
+    <Dialog v-model:open="isGalleryLightboxOpen">
+      <DialogContent class="max-w-[98vw] sm:max-w-6xl p-0 overflow-hidden border-0 bg-transparent shadow-none">
+        <div class="relative rounded-2xl border border-[#d9c38a]/20 bg-[linear-gradient(160deg,rgba(7,56,58,0.96),rgba(8,25,33,0.97)_55%,rgba(18,14,22,0.97))] backdrop-blur-xl overflow-hidden shadow-[0_24px_80px_rgba(3,16,19,0.55)]">
+          <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(255,214,102,0.16),transparent_42%),radial-gradient(circle_at_88%_12%,rgba(99,235,220,0.12),transparent_38%),radial-gradient(circle_at_50%_100%,rgba(255,255,255,0.06),transparent_40%)]" />
+
+          <div class="relative z-10 flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3 sm:px-5 bg-white/[0.02]">
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-white">
+                {{ activeLightboxTitle }}
+              </p>
+              <p class="text-xs text-white/70">
+                {{ activeLightboxIndex + 1 }} de {{ activeLightboxItems.length }} mídias
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                v-if="canZoomActiveItem"
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-full border border-[#d9c38a]/25 bg-white/5 px-3 py-1.5 text-xs text-white/90 hover:bg-white/10"
+                @click="toggleLightboxZoom"
+              >
+                <Icon :icon="isLightboxZoomed ? 'lucide:zoom-out' : 'lucide:zoom-in'" class="size-3.5 text-[#f4d37a]" />
+                {{ isLightboxZoomed ? 'Reduzir' : 'Zoom' }}
+              </button>
+              <button
+                type="button"
+                class="rounded-full border border-[#d9c38a]/25 bg-white/5 p-2 text-white hover:bg-white/10"
+                @click="closeGalleryLightbox"
+                aria-label="Fechar galeria"
+              >
+                <Icon icon="lucide:x" class="size-5" />
+              </button>
+            </div>
           </div>
-          <div class="grid gap-2">
-            <Label for="lead-whatsapp">Seu WhatsApp *</Label>
-            <Input
-              id="lead-whatsapp"
-              v-model="leadForm.whatsapp"
-              type="tel"
-              placeholder="(00) 00000-0000"
-              maxlength="15"
-              :disabled="isSubmittingLead"
-              @input="handlePhoneInput"
-            />
+
+          <div class="absolute left-1/2 top-14 z-10 h-px w-[80%] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#f4d37a]/20 to-transparent" />
+
+          <button
+            v-if="activeLightboxItems.length > 1"
+            type="button"
+            class="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-[#d9c38a]/25 bg-white/10 p-2.5 text-white backdrop-blur-sm hover:bg-white/15 sm:left-4"
+            @click="prevGalleryImage"
+            aria-label="Imagem anterior"
+          >
+            <Icon icon="lucide:chevron-left" class="size-6" />
+          </button>
+
+          <div
+            class="relative z-10 flex items-center justify-center min-h-[52vh] sm:min-h-[72vh] px-3 py-4 sm:px-6"
+            @touchstart="onLightboxTouchStart"
+            @touchmove="onLightboxTouchMove"
+            @touchend="onLightboxTouchEnd"
+          >
+            <button
+              v-if="activeLightboxMainItem"
+              type="button"
+              class="group relative max-h-[82vh] max-w-full cursor-zoom-in overflow-hidden rounded-xl border border-white/15 bg-white/[0.03] shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+              :class="{ 'cursor-zoom-out': isLightboxZoomed, 'cursor-default': !canZoomActiveItem }"
+              @click="toggleLightboxZoom"
+              :aria-label="isLightboxZoomed ? 'Reduzir zoom' : 'Ampliar imagem'"
+            >
+              <div class="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-white/10" />
+              <img
+                v-if="activeLightboxMainItem.type === 'image'"
+                :src="activeLightboxMainItem.url"
+                :alt="activeLightboxTitle || 'Imagem da coleção'"
+                class="max-h-[82vh] w-auto max-w-full object-contain transition-transform duration-200"
+                :class="isLightboxZoomed ? 'scale-125' : 'scale-100'"
+              >
+              <iframe
+                v-else-if="activeLightboxMainItem.type === 'video-embed'"
+                :src="activeLightboxMainItem.url"
+                class="h-[52vh] sm:h-[72vh] w-[90vw] sm:w-[80vw] max-w-5xl"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              />
+              <video
+                v-else-if="activeLightboxMainItem.type === 'video-upload'"
+                :src="activeLightboxMainItem.url"
+                class="max-h-[82vh] w-auto max-w-full object-contain"
+                controls
+                autoplay
+                playsinline
+              />
+            </button>
+          </div>
+
+          <button
+            v-if="activeLightboxItems.length > 1"
+            type="button"
+            class="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-[#d9c38a]/25 bg-white/10 p-2.5 text-white backdrop-blur-sm hover:bg-white/15 sm:right-4"
+            @click="nextGalleryImage"
+            aria-label="Próxima imagem"
+          >
+            <Icon icon="lucide:chevron-right" class="size-6" />
+          </button>
+
+          <div v-if="activeLightboxItems.length > 1" class="relative z-10 border-t border-white/10 bg-white/[0.03] px-4 py-3 sm:px-5">
+            <div class="flex gap-2 overflow-x-auto pb-1">
+              <button
+                v-for="(media, index) in activeLightboxItems"
+                :key="`lightbox-thumb-${lightboxSource}-${index}`"
+                type="button"
+                class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border transition-all"
+                :class="activeLightboxIndex === index ? 'border-[#f4d37a] ring-2 ring-[#f4d37a]/20' : 'border-white/15 hover:border-white/35'"
+                @click="activeLightboxIndex = index"
+              >
+                <div
+                  class="absolute inset-0 z-10 transition-colors"
+                  :class="activeLightboxIndex === index ? 'bg-transparent' : 'bg-black/25'"
+                />
+                <img v-if="media.type === 'image'" :src="media.url" :alt="`Miniatura ${index + 1}`" class="h-full w-full object-cover">
+                <div v-else class="flex h-full w-full items-center justify-center bg-black/50">
+                  <Icon :icon="media.type === 'video-embed' ? 'lucide:youtube' : 'lucide:film'" class="size-5 text-white" />
+                </div>
+              </button>
+            </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            @click="showLeadModal = false"
-            :disabled="isSubmittingLead"
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            @click="submitLead"
-            :disabled="isSubmittingLead"
-            class="bg-teal-600 hover:bg-teal-700"
-          >
-            <Icon v-if="isSubmittingLead" icon="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
-            {{ leadAction === 'whatsapp' ? 'Abrir WhatsApp' : leadAction === 'map' ? 'Ver no Mapa' : 'Visitar Site' }}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
 
@@ -829,5 +1204,12 @@ function scrollPrev() {
       <Icon icon="lucide:arrow-up" class="size-4 text-white" />
       <span class="text-sm font-medium text-white">Voltar ao topo</span>
     </button>
+
+    <FloatingMap
+      v-if="storesForMap.length > 0"
+      ref="floatingMapRef"
+      :stores="storesForMap"
+      title="Mapa de Lojas Físicas"
+    />
   </WebLayout>
 </template>

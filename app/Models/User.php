@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Filament\Panel;
 use Carbon\CarbonImmutable;
+use App\Models\Coupon;
 use Laravel\Cashier\Billable;
 use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Illuminate\Notifications\DatabaseNotification;
 use App\Notifications\VerifyEmailNotification;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -99,6 +101,7 @@ final class User extends Authenticatable implements FilamentUser
     use HasFactory;
 
     use HasProfilePhoto;
+    use SoftDeletes;
     use HasTeams  {
         ownedTeams as public ownedTeamsBase;
     }
@@ -115,7 +118,7 @@ final class User extends Authenticatable implements FilamentUser
         'stripe_id', 'pm_type', 'pm_last_four', 'trial_ends_at',
         'onboarding_completed', 'onboarding_data',
         'player_order_status', 'player_tracking_code', 'delivery_address',
-        'is_superadmin'
+        'is_superadmin', 'is_partner', 'is_partner_active',
     ];
 
     /**
@@ -154,6 +157,11 @@ final class User extends Authenticatable implements FilamentUser
         return $this->hasMany(OauthConnection::class);
     }
 
+    public function coupons(): HasMany
+    {
+        return $this->hasMany(Coupon::class, 'partner_id');
+    }
+
     /**
      * Get the stores that the user has favorited.
      *
@@ -190,7 +198,16 @@ final class User extends Authenticatable implements FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_superadmin === true;
+        if ($panel->getId() === 'admin') {
+            return $this->is_superadmin === true;
+        }
+
+        if ($panel->getId() === 'parceiros') {
+            return $this->is_superadmin === true
+                || ($this->is_partner === true && $this->is_partner_active === true);
+        }
+
+        return false;
     }
 
     /**
@@ -224,6 +241,8 @@ final class User extends Authenticatable implements FilamentUser
             'delivery_address' => 'array',
             'onboarding_completed' => 'boolean',
             'is_superadmin' => 'boolean',
+            'is_partner' => 'boolean',
+            'is_partner_active' => 'boolean',
         ];
     }
 }

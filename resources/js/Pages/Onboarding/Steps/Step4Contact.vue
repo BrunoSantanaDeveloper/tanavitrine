@@ -31,22 +31,23 @@ const states = [
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
 ]
 
+const requiresLocation = computed(() => form.value.store_type !== 'virtual')
+
 const isValid = computed(() => {
+  if (!form.value.whatsapp) return false
+
+  if (!requiresLocation.value) return true
+
   return (
     form.value.address.cep
     && form.value.address.street
     && form.value.address.city
     && form.value.address.state
-    && form.value.whatsapp
   )
 })
 
 function handleWhatsAppInput(e) {
   form.value.whatsapp = formatPhone(e.target.value)
-}
-
-function handlePhoneInput(e) {
-  form.value.phone = formatPhone(e.target.value)
 }
 
 function handleCepInput(e) {
@@ -220,7 +221,7 @@ watch(
 
     <div class="space-y-6">
       <!-- Localização -->
-      <div>
+      <div v-if="requiresLocation">
         <h3 class="font-semibold text-lg mb-4">
           Localização
         </h3>
@@ -336,6 +337,18 @@ watch(
         </div>
       </div>
 
+      <div v-else class="rounded-lg border border-dashed border-teal-300 bg-teal-50/60 p-4">
+        <div class="flex items-start gap-3">
+          <Icon icon="lucide:monitor" class="h-5 w-5 text-teal-700 mt-0.5" />
+          <div>
+            <p class="font-medium text-teal-900">Loja virtual selecionada</p>
+            <p class="text-sm text-teal-800/90">
+              A etapa de localização foi ocultada. Você poderá informar apenas os canais de contato.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Contato -->
       <div class="border-t pt-6">
         <h3 class="font-semibold text-lg mb-4">
@@ -355,22 +368,6 @@ watch(
             />
             <p class="text-xs text-muted-foreground mt-1">
               Formato: (00) 00000-0000
-            </p>
-          </div>
-
-          <div>
-            <Label for="phone">Telefone Fixo (opcional)</Label>
-            <Input
-              id="phone"
-              v-model="form.phone"
-              type="tel"
-              placeholder="(00) 0000-0000"
-              maxlength="14"
-              class="mt-2"
-              @input="handlePhoneInput"
-            />
-            <p class="text-xs text-muted-foreground mt-1">
-              Formato: (00) 0000-0000
             </p>
           </div>
 

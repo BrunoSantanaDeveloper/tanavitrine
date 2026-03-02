@@ -464,6 +464,12 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         Route::get('/{slug}/photos', [DashboardStoreController::class, 'photos'])->name('photos');
         Route::post('/{slug}/photos', [DashboardStoreController::class, 'uploadPhoto'])->name('photos.upload');
         Route::delete('/{slug}/photos/{photo}', [DashboardStoreController::class, 'deletePhoto'])->name('photos.delete');
+        Route::post('/{slug}/collections', [DashboardStoreController::class, 'createCollection'])->name('collections.create');
+        Route::put('/{slug}/collections/{collection}', [DashboardStoreController::class, 'updateCollection'])->name('collections.update');
+        Route::delete('/{slug}/collections/{collection}', [DashboardStoreController::class, 'deleteCollection'])->name('collections.delete');
+        Route::put('/{slug}/collections/{collection}/featured', [DashboardStoreController::class, 'setFeaturedCollection'])->name('collections.featured');
+        Route::post('/{slug}/collections/{collection}/photos', [DashboardStoreController::class, 'uploadCollectionPhoto'])->name('collections.photos.upload');
+        Route::delete('/{slug}/collections/{collection}/photos/{photo}', [DashboardStoreController::class, 'deleteCollectionPhoto'])->name('collections.photos.delete');
         Route::put('/{slug}/video', [DashboardStoreController::class, 'updateVideo'])->name('video.update');
         Route::get('/{slug}/analytics', [DashboardStoreController::class, 'analytics'])->name('analytics');
     });

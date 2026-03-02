@@ -19,7 +19,7 @@ class StoreController extends Controller
     {
         $query = Team::where('slug', $slug)
             ->where('personal_team', false)
-            ->with(['category', 'media']);
+            ->with(['category', 'photos', 'collections.media', 'plan']);
 
         // Only filter by 'ativo' status in production
         if (config('app.env') === 'production') {
@@ -27,6 +27,35 @@ class StoreController extends Controller
         }
 
         $store = $query->firstOrFail();
+        $featuredMedia = $store->photos
+            ->where('type', 'image')
+            ->where('is_active', true)
+            ->where('team_collection_id', null)
+            ->where('category', '!=', 'logo')
+            ->values();
+        $collections = $store->collections
+            ->map(function ($collection) {
+                $photos = $collection->media
+                    ->where('type', 'image')
+                    ->where('is_active', true)
+                    ->values()
+                    ->map(function ($photo) {
+                        return asset('storage/' . $photo->path);
+                    })
+                    ->toArray();
+
+                return [
+                    'id' => $collection->id,
+                    'name' => $collection->name,
+                    'description' => $collection->description,
+                    'is_featured' => (bool) $collection->is_featured,
+                    'photos_count' => count($photos),
+                    'cover' => $photos[0] ?? null,
+                    'photos' => $photos,
+                ];
+            })
+            ->sortByDesc('is_featured')
+            ->values();
 
         // Increment views
         $store->incrementViews();
@@ -47,6 +76,8 @@ class StoreController extends Controller
             'minOrder' => $store->min_order,
             'location' => $store->city && $store->state ? "{$store->city} - {$store->state}" : null,
             'address' => $store->address,
+            'latitude' => $store->latitude,
+            'longitude' => $store->longitude,
             'whatsapp' => $store->whatsapp,
             'phone' => $store->phone,
             'email' => $store->email,
@@ -57,12 +88,15 @@ class StoreController extends Controller
             'featured' => $store->isFeatured(),
             'logo' => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
             'video_url' => $store->video_url,
-            'images' => $store->media->map(function ($photo) {
+            'images' => $featuredMedia->map(function ($photo) {
                 return [
                     'id' => $photo->id,
                     'url' => asset('storage/' . $photo->path),
                 ];
             })->toArray(),
+            'collections' => $collections->toArray(),
+            'has_collections' => $collections->isNotEmpty(),
+            'show_on_map' => $store->plan?->show_on_map ?? false,
             'views_count' => $store->views_count,
             'is_favorited' => auth()->check()
                 ? auth()->user()->favoriteStores()->where('team_id', $store->id)->exists()
@@ -286,6 +320,12 @@ class StoreController extends Controller
             ->orderBy('favorites.created_at', 'desc')
             ->get()
             ->map(function ($store) {
+                $cardMedia = $store->media
+                    ->where('type', 'image')
+                    ->where('team_collection_id', null)
+                    ->where('category', '!=', 'logo')
+                    ->first();
+
                 return [
                     'id' => $store->id,
                     'code' => 'TV' . str_pad((string)$store->id, 4, '0', STR_PAD_LEFT),
@@ -299,8 +339,8 @@ class StoreController extends Controller
                     'minOrder' => $store->min_order,
                     'location' => $store->city && $store->state ? "{$store->city} - {$store->state}" : null,
                     'whatsapp' => $store->whatsapp,
-                    'image' => $store->media->first()?->path
-                        ? asset('storage/' . $store->media->first()->path)
+                    'image' => $cardMedia?->path
+                        ? asset('storage/' . $cardMedia->path)
                         : null,
                     'featured' => $store->isFeatured(),
                     'favorited_at' => $store->pivot->created_at->format('d/m/Y'),

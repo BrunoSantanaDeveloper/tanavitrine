@@ -239,19 +239,28 @@ class DashboardStoreController extends Controller
     {
         $store = Team::where('slug', $slug)
             ->where('user_id', auth()->id())
-            ->with(['media', 'plan'])
+            ->with(['media', 'collections.media', 'plan'])
             ->firstOrFail();
 
-        // Get plan limits
-        $maxPhotos = $store->plan ? $store->plan->getModuleLimit('store', 'photos_per_vitrine') : 3;
-        $currentPhotos = $store->media()->count();
+        $currentPhotos = $store->media()
+            ->where('type', 'image')
+            ->where(function ($query) {
+                $query->whereNull('category')->orWhere('category', '!=', 'logo');
+            })
+            ->count();
+
+        $featuredPhotos = $store->media
+            ->where('type', 'image')
+            ->where('team_collection_id', null)
+            ->where('category', '!=', 'logo')
+            ->values();
 
         return Inertia::render('Dashboard/StorePhotos', [
             'store' => [
                 'id' => $store->id,
                 'slug' => $store->slug,
                 'name' => $store->name,
-                'photos' => $store->media->map(function ($photo) {
+                'featured_photos' => $featuredPhotos->map(function ($photo) {
                     return [
                         'id' => $photo->id,
                         'url' => $photo->url ?? asset('storage/' . $photo->path),
@@ -259,9 +268,27 @@ class DashboardStoreController extends Controller
                         'size' => $photo->size,
                     ];
                 }),
+                'collections' => $store->collections->map(function ($collection) {
+                    return [
+                        'id' => $collection->id,
+                        'name' => $collection->name,
+                        'description' => $collection->description,
+                        'is_featured' => $collection->is_featured,
+                        'photos_count' => $collection->media->count(),
+                        'cover_url' => $collection->media->first()?->url ?? null,
+                        'photos' => $collection->media->map(function ($photo) {
+                            return [
+                                'id' => $photo->id,
+                                'url' => $photo->url ?? asset('storage/' . $photo->path),
+                                'name' => $photo->name,
+                                'size' => $photo->size,
+                            ];
+                        })->values(),
+                    ];
+                })->values(),
                 'photos_count' => $currentPhotos,
-                'max_photos' => $maxPhotos,
-                'can_upload_more' => $currentPhotos < $maxPhotos,
+                'max_photos' => null,
+                'can_upload_more' => true,
                 'video_url' => $store->video_url,
             ],
         ]);
@@ -329,14 +356,6 @@ class DashboardStoreController extends Controller
             ->with(['plan'])
             ->firstOrFail();
 
-        // Check photo limit from plan
-        $maxPhotos = $store->plan ? $store->plan->getModuleLimit('store', 'photos_per_vitrine') : 3;
-        $currentPhotos = $store->media()->count();
-
-        if ($currentPhotos >= $maxPhotos) {
-            return redirect()->back()->with('error', "Você atingiu o limite de {$maxPhotos} fotos do seu plano. Faça upgrade para adicionar mais fotos.");
-        }
-
         $request->validate([
             'photo' => 'required|image|mimes:jpeg,jpg,png,webp|max:5120', // 5MB
         ]);
@@ -350,10 +369,11 @@ class DashboardStoreController extends Controller
             'type' => 'image',
             'size' => $photo->getSize() / 1024, // Convert to KB
             'is_generic' => false,
-            'category' => 'product',
+            'category' => 'highlight',
+            'team_collection_id' => null,
         ]);
 
-        return redirect()->back()->with('success', 'Foto adicionada com sucesso!');
+        return redirect()->back()->with('success', 'Foto de destaque adicionada com sucesso!');
     }
 
     /**
@@ -365,7 +385,9 @@ class DashboardStoreController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
-        $media = $store->media()->findOrFail($photo);
+        $media = $store->media()
+            ->whereNull('team_collection_id')
+            ->findOrFail($photo);
 
         // Delete file from storage
         if (\Storage::disk('public')->exists($media->path)) {
@@ -375,7 +397,134 @@ class DashboardStoreController extends Controller
         // Delete record from database
         $media->delete();
 
-        return redirect()->back()->with('success', 'Foto removida com sucesso!');
+        return redirect()->back()->with('success', 'Foto de destaque removida com sucesso!');
+    }
+
+    public function createCollection(Request $request, string $slug): RedirectResponse
+    {
+        $store = Team::where('slug', $slug)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'description' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $sortOrder = (int) $store->collections()->max('sort_order') + 1;
+
+        $store->collections()->create([
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'sort_order' => $sortOrder,
+        ]);
+
+        return redirect()->back()->with('success', 'Coleção criada com sucesso!');
+    }
+
+    public function updateCollection(Request $request, string $slug, int $collection): RedirectResponse
+    {
+        $store = Team::where('slug', $slug)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $teamCollection = $store->collections()->findOrFail($collection);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'description' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $teamCollection->update([
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        return redirect()->back()->with('success', 'Coleção atualizada com sucesso!');
+    }
+
+    public function deleteCollection(string $slug, int $collection): RedirectResponse
+    {
+        $store = Team::where('slug', $slug)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $teamCollection = $store->collections()->with('media')->findOrFail($collection);
+
+        foreach ($teamCollection->media as $media) {
+            if (\Storage::disk('public')->exists($media->path)) {
+                \Storage::disk('public')->delete($media->path);
+            }
+            $media->delete();
+        }
+
+        $teamCollection->delete();
+
+        return redirect()->back()->with('success', 'Coleção removida com sucesso!');
+    }
+
+    public function setFeaturedCollection(string $slug, int $collection): RedirectResponse
+    {
+        $store = Team::where('slug', $slug)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $teamCollection = $store->collections()->findOrFail($collection);
+
+        $store->collections()->update(['is_featured' => false]);
+        $teamCollection->update(['is_featured' => true]);
+
+        return redirect()->back()->with('success', 'Coleção em destaque atualizada!');
+    }
+
+    public function uploadCollectionPhoto(Request $request, string $slug, int $collection): RedirectResponse
+    {
+        $store = Team::where('slug', $slug)
+            ->where('user_id', auth()->id())
+            ->with(['plan'])
+            ->firstOrFail();
+
+        $teamCollection = $store->collections()->findOrFail($collection);
+
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,jpg,png,webp|max:5120', // 5MB
+        ]);
+
+        $photo = $request->file('photo');
+        $path = $photo->store("stores/store_{$store->id}/collections/{$teamCollection->id}", 'public');
+
+        $store->media()->create([
+            'team_collection_id' => $teamCollection->id,
+            'name' => $photo->getClientOriginalName(),
+            'path' => $path,
+            'type' => 'image',
+            'size' => $photo->getSize() / 1024, // Convert to KB
+            'is_generic' => false,
+            'category' => 'collection',
+        ]);
+
+        return redirect()->back()->with('success', 'Foto adicionada na coleção com sucesso!');
+    }
+
+    public function deleteCollectionPhoto(string $slug, int $collection, int $photo): RedirectResponse
+    {
+        $store = Team::where('slug', $slug)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $teamCollection = $store->collections()->findOrFail($collection);
+
+        $media = $store->media()
+            ->where('team_collection_id', $teamCollection->id)
+            ->findOrFail($photo);
+
+        if (\Storage::disk('public')->exists($media->path)) {
+            \Storage::disk('public')->delete($media->path);
+        }
+
+        $media->delete();
+
+        return redirect()->back()->with('success', 'Foto da coleção removida com sucesso!');
     }
 
     /**

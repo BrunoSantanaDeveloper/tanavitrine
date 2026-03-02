@@ -30,17 +30,15 @@ const hasMetric = (metric) => {
 const showViews = computed(() => hasMetric('views'))
 const showWhatsappClicks = computed(() => hasMetric('whatsapp_clicks'))
 const showWebsiteClicks = computed(() => hasMetric('website_clicks'))
-const showPhoneClicks = computed(() => hasMetric('phone_clicks'))
 const showMapClicks = computed(() => hasMetric('map_clicks'))
 const showShares = computed(() => hasMetric('shares'))
-const showLeads = computed(() => hasMetric('leads'))
 const showInstagramClicks = computed(() => hasMetric('instagram_clicks'))
 const showFacebookClicks = computed(() => hasMetric('facebook_clicks'))
 const showTikTokClicks = computed(() => hasMetric('tiktok_clicks'))
 
 // Show upgrade message if not all metrics are available
 const hasAllMetrics = computed(() => {
-  const allMetrics = ['views', 'whatsapp_clicks', 'website_clicks', 'phone_clicks', 'map_clicks', 'shares', 'leads', 'instagram_clicks', 'facebook_clicks', 'tiktok_clicks']
+  const allMetrics = ['views', 'whatsapp_clicks', 'website_clicks', 'map_clicks', 'shares', 'instagram_clicks', 'facebook_clicks', 'tiktok_clicks']
   return allMetrics.every(metric => props.availableMetrics.includes(metric))
 })
 
@@ -52,10 +50,8 @@ const getMetricValue = (metric) => {
       'views': props.store.views_count,
       'whatsapp_clicks': props.store.whatsapp_clicks,
       'website_clicks': props.store.website_clicks,
-      'phone_clicks': props.store.phone_clicks,
       'map_clicks': props.store.map_clicks,
       'shares': props.store.shares_count,
-      'leads': props.leads?.length,
       'instagram_clicks': props.store.instagram_clicks,
       'facebook_clicks': props.store.facebook_clicks,
       'tiktok_clicks': props.store.tiktok_clicks,
@@ -66,7 +62,6 @@ const getMetricValue = (metric) => {
   // Return placeholder value for locked metrics
   const placeholders = {
     'website_clicks': 127,
-    'phone_clicks': 89,
     'map_clicks': 156,
     'shares': 43,
     'instagram_clicks': 234,
@@ -186,31 +181,6 @@ const getMetricValue = (metric) => {
             </div>
           </Card>
 
-          <!-- Phone Clicks -->
-          <Card class="relative overflow-hidden">
-            <CardHeader class="flex flex-row items-center justify-between pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">
-                Cliques Telefone
-              </CardTitle>
-              <Icon icon="lucide:phone" class="h-5 w-5 text-orange-600" />
-            </CardHeader>
-            <CardContent :class="{ 'blur-sm select-none': !showPhoneClicks }">
-              <div class="text-3xl font-bold">{{ getMetricValue('phone_clicks') }}</div>
-              <p class="text-xs text-muted-foreground mt-1">
-                Cliques no número de telefone
-              </p>
-            </CardContent>
-            <div v-if="!showPhoneClicks" class="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
-              <div class="text-center px-4">
-                <Icon icon="lucide:lock" class="h-6 w-6 text-gray-500 mx-auto mb-1" />
-                <p class="text-xs font-medium text-gray-600 mb-1.5">Plano Destaque</p>
-                <Button size="sm" :as="Link" :href="route('subscriptions.create')" class="h-7 text-xs px-3">
-                  Upgrade
-                </Button>
-              </div>
-            </div>
-          </Card>
-
           <!-- Map Clicks -->
           <Card class="relative overflow-hidden">
             <CardHeader class="flex flex-row items-center justify-between pb-2">
@@ -259,22 +229,6 @@ const getMetricValue = (metric) => {
                 </Button>
               </div>
             </div>
-          </Card>
-
-          <!-- Leads -->
-          <Card v-if="showLeads">
-            <CardHeader class="flex flex-row items-center justify-between pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">
-                Leads Capturados
-              </CardTitle>
-              <Icon icon="lucide:users" class="h-5 w-5 text-teal-600" />
-            </CardHeader>
-            <CardContent>
-              <div class="text-3xl font-bold">{{ leads?.length || 0 }}</div>
-              <p class="text-xs text-muted-foreground mt-1">
-                Pessoas interessadas cadastradas
-              </p>
-            </CardContent>
           </Card>
 
           <!-- Instagram Clicks -->
@@ -391,21 +345,6 @@ const getMetricValue = (metric) => {
                 </div>
               </div>
 
-              <div v-if="showPhoneClicks">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-sm font-medium">Telefone</span>
-                  <span class="text-sm text-muted-foreground">
-                    {{ store.views_count > 0 ? Math.round((store.phone_clicks / store.views_count) * 100) : 0 }}%
-                  </span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    class="bg-orange-600 h-2 rounded-full transition-all"
-                    :style="{ width: `${store.views_count > 0 ? (store.phone_clicks / store.views_count) * 100 : 0}%` }"
-                  />
-                </div>
-              </div>
-
               <div v-if="showMapClicks">
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-sm font-medium">Mapa</span>
@@ -470,70 +409,10 @@ const getMetricValue = (metric) => {
                 <div class="flex items-center justify-between">
                   <span class="text-sm font-medium">Total de Conversões</span>
                   <span class="text-lg font-bold text-teal-600">
-                    {{ (store.whatsapp_clicks || 0) + (store.website_clicks || 0) + (store.phone_clicks || 0) + (store.map_clicks || 0) + (store.instagram_clicks || 0) + (store.facebook_clicks || 0) + (store.tiktok_clicks || 0) }}
+                    {{ (store.whatsapp_clicks || 0) + (store.website_clicks || 0) + (store.map_clicks || 0) + (store.instagram_clicks || 0) + (store.facebook_clicks || 0) + (store.tiktok_clicks || 0) }}
                   </span>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <!-- Leads Table -->
-        <Card v-if="showLeads" class="mt-6">
-          <CardHeader>
-            <CardTitle>Leads Capturados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div v-if="leads && leads.length > 0" class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b">
-                    <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Nome</th>
-                    <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">WhatsApp</th>
-                    <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Ação</th>
-                    <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Data</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="lead in leads" :key="lead.id" class="border-b hover:bg-muted/50 transition-colors">
-                    <td class="py-3 px-4 text-sm">{{ lead.name }}</td>
-                    <td class="py-3 px-4 text-sm">{{ lead.whatsapp }}</td>
-                    <td class="py-3 px-4">
-                      <div class="flex items-center gap-2">
-                        <Icon
-                          v-if="lead.action === 'whatsapp'"
-                          icon="lucide:message-circle"
-                          class="h-4 w-4 text-green-600"
-                        />
-                        <Icon
-                          v-else-if="lead.action === 'map'"
-                          icon="lucide:map-pin"
-                          class="h-4 w-4 text-blue-600"
-                        />
-                        <Icon
-                          v-else-if="lead.action === 'website'"
-                          icon="lucide:globe"
-                          class="h-4 w-4 text-purple-600"
-                        />
-                        <Icon
-                          v-else-if="lead.action === 'phone'"
-                          icon="lucide:phone"
-                          class="h-4 w-4 text-orange-600"
-                        />
-                        <span class="text-sm capitalize">{{ lead.action }}</span>
-                      </div>
-                    </td>
-                    <td class="py-3 px-4 text-sm text-muted-foreground">{{ lead.created_at }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div v-else class="py-12 text-center">
-              <Icon icon="lucide:users" class="h-16 w-16 mx-auto text-gray-400 mb-4" />
-              <h3 class="text-lg font-semibold mb-2">Nenhum Lead Capturado</h3>
-              <p class="text-sm text-muted-foreground">
-                Quando visitantes interagirem com sua vitrine, os dados deles aparecerão aqui
-              </p>
             </div>
           </CardContent>
         </Card>

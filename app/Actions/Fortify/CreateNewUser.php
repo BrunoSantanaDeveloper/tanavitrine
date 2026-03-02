@@ -38,6 +38,7 @@ final class CreateNewUser implements CreatesNewUsers
             // Validação dos dados da loja (TanaVitrine)
             'store_name' => ['nullable', 'string', 'max:255'],
             'sale_type' => ['nullable', 'in:atacado,varejo,ambos'],
+            'store_type' => ['nullable', 'in:fisica,virtual,ambos'],
             'category_id' => ['nullable', 'exists:categories,id'],
             'subcategory' => ['nullable', 'array'],
             'subcategory.*' => ['string', 'max:255'],
@@ -227,7 +228,7 @@ final class CreateNewUser implements CreatesNewUsers
             'gender' => $input['gender'] ?? null,
             'description' => $input['description'] ?? '',
             'min_order' => $input['min_order'] ?? null,
-            'store_type' => 'virtual', // Default
+            'store_type' => $input['store_type'] ?? 'virtual',
             'city' => $address['city'] ?? null,
             'state' => $address['state'] ?? null,
             'address' => $addressString,

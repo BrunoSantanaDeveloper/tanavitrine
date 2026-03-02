@@ -32,17 +32,6 @@ const props = defineProps({
   },
 })
 
-const normalizedStoreType = computed(() => String(props.store?.storeType || '').trim().toLowerCase())
-const hasVirtualStore = computed(() => {
-  const raw = normalizedStoreType.value
-  return raw === 'virtual' || raw === 'online' || raw === 'ambos' || raw.includes('online')
-})
-const hasPhysicalStore = computed(() => {
-  const raw = normalizedStoreType.value
-  return raw === 'fisica' || raw === 'física' || raw === 'ambos' || raw.includes('fisica') || raw.includes('física')
-})
-const isVirtualOnlyStore = computed(() => hasVirtualStore.value && !hasPhysicalStore.value)
-
 const activeSectionTab = ref('sobre')
 const showAllCollections = ref(false)
 const selectedCollectionId = ref('vestidos')
@@ -672,7 +661,7 @@ function scrollPrev() {
 </script>
 
 <template>
-  <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="false">
+  <WebLayout :can-login="canLogin" :can-register="canRegister" :showFloatingWhatsApp="false">
     <div class="min-h-screen bg-background">
       <!-- Photo Carousel Section -->
       <section class="bg-muted/30 py-2">
@@ -781,7 +770,6 @@ function scrollPrev() {
 
             <!-- Location Button -->
             <button
-              v-if="!isVirtualOnlyStore"
               @click="openLocation"
               class="absolute bottom-4 left-4 bg-white hover:bg-gray-100 text-foreground px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2 font-medium z-10"
             >
@@ -823,8 +811,6 @@ function scrollPrev() {
                         <Badge v-else variant="secondary">
                           {{ store.badge }}
                         </Badge>
-                        <Badge v-if="hasPhysicalStore" variant="secondary">Loja Física</Badge>
-                        <Badge v-if="hasVirtualStore" variant="secondary">Loja Virtual</Badge>
                       </div>
                       <h1 class="text-4xl font-bold text-foreground mb-2">
                         {{ store.name }}
@@ -1211,7 +1197,6 @@ function scrollPrev() {
 
                 <!-- Location Button -->
                 <Button
-                  v-if="!isVirtualOnlyStore"
                   @click="openLocation"
                   size="lg"
                   variant="outline"
@@ -1241,7 +1226,7 @@ function scrollPrev() {
                 </div>
 
                 <!-- Location -->
-                <div v-if="!isVirtualOnlyStore" class="border-t pt-4 mb-4">
+                <div class="border-t pt-4 mb-4">
                   <h4 class="font-semibold mb-3">Localização</h4>
                   <p class="text-sm text-muted-foreground flex items-start gap-2">
                     <Icon icon="lucide:map-pin" class="size-4 mt-1 flex-shrink-0" />

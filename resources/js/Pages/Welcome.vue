@@ -2,6 +2,7 @@
 import FeaturesCard from '@/Components/FeaturesCard.vue'
 import PricingCard from '@/Components/PricingCard.vue'
 import StoreCard from '@/Components/StoreCard.vue'
+import FloatingMap from '@/Components/FloatingMap.vue'
 import Accordion from '@/Components/shadcn/ui/accordion/Accordion.vue'
 import AccordionContent from '@/Components/shadcn/ui/accordion/AccordionContent.vue'
 import AccordionItem from '@/Components/shadcn/ui/accordion/AccordionItem.vue'
@@ -25,7 +26,7 @@ import { Checkbox } from '@/Components/shadcn/ui/checkbox'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
 import WebLayout from '@/Layouts/WebLayout.vue'
 import { Icon } from '@iconify/vue'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   canLogin: {
@@ -51,6 +52,10 @@ const props = defineProps({
     default: () => [],
   },
   categories: {
+    type: Array,
+    default: () => [],
+  },
+  states: {
     type: Array,
     default: () => [],
   },
@@ -113,7 +118,11 @@ const searchFilters = ref({
 })
 
 const categorias = computed(() => props.categories.map(c => c.name))
-const tiposLoja = ['Física', 'Virtual']
+const tiposLoja = [
+  { value: 'virtual', label: 'Loja Virtual' },
+  { value: 'ambos', label: 'Virtual / Física' },
+]
+const estados = computed(() => props.states || [])
 const generos = ['Masculino', 'Feminino', 'Unissex']
 
 function toggleCategoria(categoria) {
@@ -135,13 +144,19 @@ function handleSearch() {
   // Redirecionar para a página apropriada (Atacado ou Varejo) com filtros
   const route = searchType.value === 'atacado' ? '/atacado' : '/varejo'
   const params = new URLSearchParams()
+  const selectedType = searchFilters.value.tipoLoja
+  const isVirtualOnly = selectedType === 'virtual'
 
   // Adicionar filtros preenchidos aos query parameters
   if (searchFilters.value.categorias.length > 0) {
     searchFilters.value.categorias.forEach(cat => params.append('categorias[]', cat))
   }
-  if (searchFilters.value.tipoLoja) params.append('tipoLoja', searchFilters.value.tipoLoja)
-  if (searchFilters.value.estado) params.append('estado', searchFilters.value.estado)
+  if (selectedType) params.append('tipoLoja', selectedType)
+  if (searchFilters.value.estado && !isVirtualOnly) {
+    params.append('estado', searchFilters.value.estado)
+    // State-based search only applies to stores with physical presence.
+    if (!selectedType) params.append('tipoLoja', 'ambos')
+  }
   if (searchFilters.value.cidade) params.append('cidade', searchFilters.value.cidade)
   if (searchFilters.value.genero) params.append('genero', searchFilters.value.genero)
 
@@ -216,6 +231,60 @@ onUnmounted(() => {
 // Filter listings based on selected type
 const filteredListings = computed(() => {
   return allStores.value[selectedListingType.value] || []
+})
+
+function normalizeStoreType(type) {
+  return String(type || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+const storesForMap = computed(() => {
+  return filteredListings.value.filter((store) => {
+    const storeType = normalizeStoreType(store.storeType)
+    const hasPhysicalPresence = storeType === 'ambos' || storeType === 'fisica'
+    const hasCoordinates = store.latitude !== null && store.longitude !== null
+    return store.show_on_map === true && hasPhysicalPresence && hasCoordinates
+  })
+})
+
+const showBackToTop = ref(false)
+const lastScrollTop = ref(0)
+
+function handleBackToTopVisibility() {
+  const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0
+  const delta = scrollTop - lastScrollTop.value
+
+  if (scrollTop <= 180) {
+    showBackToTop.value = false
+    lastScrollTop.value = Math.max(scrollTop, 0)
+    return
+  }
+
+  if (delta > 6) {
+    showBackToTop.value = true
+  } else if (delta < -6) {
+    showBackToTop.value = false
+  }
+
+  lastScrollTop.value = Math.max(scrollTop, 0)
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleBackToTopVisibility, { passive: true })
+  document.addEventListener('scroll', handleBackToTopVisibility, { passive: true, capture: true })
+  handleBackToTopVisibility()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleBackToTopVisibility)
+  document.removeEventListener('scroll', handleBackToTopVisibility, true)
 })
 
 </script>
@@ -338,16 +407,16 @@ const filteredListings = computed(() => {
                     <label class="text-sm font-medium text-foreground">Categoria</label>
                     <Popover>
                       <PopoverTrigger as-child>
-                        <Button
-                          variant="outline"
+                        <button
+                          type="button"
                           role="combobox"
-                          class="w-full justify-between font-normal"
+                          class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {{ selectedCategoriasText }}
                           <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
+                        </button>
                       </PopoverTrigger>
-                      <PopoverContent class="w-full p-0" align="start">
+                      <PopoverContent class="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                         <div class="max-h-64 overflow-y-auto p-4 space-y-2">
                           <div
                             v-for="cat in categorias"
@@ -379,8 +448,8 @@ const filteredListings = computed(() => {
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem v-for="tipo in tiposLoja" :key="tipo" :value="tipo">
-                          {{ tipo }}
+                        <SelectItem v-for="tipo in tiposLoja" :key="tipo.value" :value="tipo.value">
+                          {{ tipo.label }}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -390,13 +459,13 @@ const filteredListings = computed(() => {
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Localização</label>
                     <Select v-model="searchFilters.estado">
-                      <SelectTrigger>
+                      <SelectTrigger :disabled="searchFilters.tipoLoja === 'virtual'">
                         <SelectValue placeholder="Estado" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="SP">São Paulo</SelectItem>
-                        <SelectItem value="RJ">Rio de Janeiro</SelectItem>
-                        <SelectItem value="MG">Minas Gerais</SelectItem>
+                        <SelectItem v-for="estado in estados" :key="estado" :value="estado">
+                          {{ estado }}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -432,16 +501,16 @@ const filteredListings = computed(() => {
                     <label class="text-sm font-medium text-foreground">Categoria</label>
                     <Popover>
                       <PopoverTrigger as-child>
-                        <Button
-                          variant="outline"
+                        <button
+                          type="button"
                           role="combobox"
-                          class="w-full justify-between font-normal"
+                          class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {{ selectedCategoriasText }}
                           <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
+                        </button>
                       </PopoverTrigger>
-                      <PopoverContent class="w-full p-0" align="start">
+                      <PopoverContent class="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                         <div class="max-h-64 overflow-y-auto p-4 space-y-2">
                           <div
                             v-for="cat in categorias"
@@ -473,8 +542,8 @@ const filteredListings = computed(() => {
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem v-for="tipo in tiposLoja" :key="tipo" :value="tipo">
-                          {{ tipo }}
+                        <SelectItem v-for="tipo in tiposLoja" :key="tipo.value" :value="tipo.value">
+                          {{ tipo.label }}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -484,13 +553,13 @@ const filteredListings = computed(() => {
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Localização</label>
                     <Select v-model="searchFilters.estado">
-                      <SelectTrigger>
+                      <SelectTrigger :disabled="searchFilters.tipoLoja === 'virtual'">
                         <SelectValue placeholder="Estado" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="SP">São Paulo</SelectItem>
-                        <SelectItem value="RJ">Rio de Janeiro</SelectItem>
-                        <SelectItem value="MG">Minas Gerais</SelectItem>
+                        <SelectItem v-for="estado in estados" :key="estado" :value="estado">
+                          {{ estado }}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -527,24 +596,6 @@ const filteredListings = computed(() => {
           <p class="text-sm text-yellow-500">
             As Melhores marcas no atacado
           </p>
-          <div class="mt-4 flex flex-wrap items-center justify-center gap-6 sm:gap-8">
-            <Icon
-              icon="logos:laravel"
-              class="size-8 opacity-75 brightness-0 grayscale invert transition-all hover:opacity-100 hover:brightnes-0"
-            />
-            <Icon
-              icon="logos:vue"
-              class="size-8 opacity-75 brightness-0 grayscale invert transition-all hover:opacity-100 hover:grayscale-0"
-            />
-            <Icon
-              icon="simple-icons:inertia"
-              class="size-8 opacity-75 brightness-0 grayscale invert transition-all hover:opacity-100 hover:grayscale-0 text-purple-500"
-            />
-            <Icon
-              icon="logos:tailwindcss-icon"
-              class="size-8 opacity-75 brightness-0 grayscale invert transition-all hover:opacity-100 hover:grayscale-0"
-            />
-          </div>
         </div>
       </div>
 
@@ -648,4 +699,21 @@ const filteredListings = computed(() => {
     </section>
 
   </WebLayout>
+  <button
+    v-show="showBackToTop"
+    type="button"
+    class="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 inline-flex items-center gap-2 rounded-full border border-green-700 bg-green-600 px-4 py-2.5 shadow-lg transition hover:bg-green-700 hover:shadow-xl"
+    aria-label="Voltar ao topo"
+    title="Voltar ao topo"
+    @click="scrollToTop"
+  >
+    <Icon icon="lucide:arrow-up" class="size-4 text-white" />
+    <span class="text-sm font-medium text-white">Voltar ao topo</span>
+  </button>
+
+  <FloatingMap
+    v-if="storesForMap.length > 0"
+    :stores="storesForMap"
+    title="Mapa de Lojas Físicas"
+  />
 </template>

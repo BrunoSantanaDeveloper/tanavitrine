@@ -153,6 +153,11 @@ function handleMarkerClick(store) {
 function handleMarkerHover(store) {
   emit('marker-hover', store)
 }
+
+defineExpose({
+  openWidget,
+  invalidateMapSize: () => mapRef.value?.invalidateMapSize?.(),
+})
 </script>
 
 <template>
@@ -169,17 +174,25 @@ function handleMarkerHover(store) {
       <div
         v-show="isVisible && !isMobile"
         :class="widgetClasses"
-        class="fixed z-50 bg-background border border-border rounded-lg shadow-2xl transition-all duration-300"
+        class="fixed z-50 transition-all duration-300"
+        :style="isMinimized ? {} : undefined"
+        :data-minimized="isMinimized"
+      >
+        <div
+          :class="isMinimized
+            ? 'bg-transparent border-0 shadow-none rounded-full'
+            : 'bg-background border border-border rounded-lg shadow-2xl h-full'"
       >
         <!-- Minimized State (Button Only) -->
         <div v-if="isMinimized" class="p-0">
           <Button
             size="lg"
-            class="rounded-lg shadow-lg"
+            class="rounded-full shadow-2xl h-14 w-14 p-0"
             @click="toggleMinimize"
+            aria-label="Abrir mapa"
+            title="Abrir mapa"
           >
-            <Icon icon="lucide:map" class="size-5 mr-2" />
-            Ver Mapa
+            <Icon icon="lucide:map" class="size-6" />
           </Button>
         </div>
 
@@ -236,6 +249,7 @@ function handleMarkerHover(store) {
               @marker-hover="handleMarkerHover"
             />
           </div>
+        </div>
         </div>
       </div>
     </Transition>

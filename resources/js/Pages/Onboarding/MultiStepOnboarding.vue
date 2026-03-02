@@ -51,6 +51,7 @@ const form = useForm({
   // Step 1 - Nome da Loja
   store_name: '',
   sale_type: '', // atacado, varejo, ambos
+  store_type: '', // fisica, virtual, ambos
 
   // Step 2 - Categoria e Produtos
   category_id: '',
@@ -120,6 +121,7 @@ watch(form, async (newForm) => {
   const dataToSave = {
     store_name: newForm.store_name,
     sale_type: newForm.sale_type,
+    store_type: newForm.store_type,
     category_id: newForm.category_id,
     subcategory: newForm.subcategory,
     gender: newForm.gender,
@@ -281,6 +283,7 @@ function submitForm() {
   // Dados da loja
   formData.append('store_name', form.store_name)
   formData.append('sale_type', form.sale_type)
+  formData.append('store_type', form.store_type)
   formData.append('category_id', form.category_id)
 
   // Subcategory as array
@@ -333,13 +336,13 @@ function submitForm() {
         // Se houver erros, voltar para a etapa correspondente
         if (errors.email || errors.password || errors.name || errors.user_phone) {
           currentStep.value = 6 // Step 6: User Data
-        } else if (errors.store_name || errors.sale_type) {
+        } else if (errors.store_name || errors.sale_type || errors.store_type) {
           currentStep.value = 1 // Step 1: Store Name
         } else if (errors.category_id || errors.description || errors.subcategory) {
           currentStep.value = 2 // Step 2: Category
         } else if (errors.logo || errors.photos || errors.video) {
           currentStep.value = 3 // Step 3: Media
-        } else if (errors.whatsapp || errors.address || errors.phone || errors.social_media) {
+        } else if (errors.whatsapp || errors.address || errors.social_media) {
           currentStep.value = 4 // Step 4: Contact
         }
       },

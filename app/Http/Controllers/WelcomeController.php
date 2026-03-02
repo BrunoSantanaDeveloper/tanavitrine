@@ -50,12 +50,22 @@ final class WelcomeController extends Controller
                 ];
             });
 
+        // Get unique states from active stores for home filters
+        $states = Team::active()
+            ->where('personal_team', false)
+            ->whereNotNull('state')
+            ->distinct()
+            ->pluck('state')
+            ->sort()
+            ->values();
+
         return Inertia::render('Welcome', [
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'featuredStores' => $featuredStores,
             'recentStores' => $recentStores,
             'categories' => $categories,
+            'states' => $states,
             'plans' => Plan::where('is_active', true)
                 ->with('intervals')
                 ->orderBy('sort_order')
@@ -303,7 +313,13 @@ final class WelcomeController extends Controller
      */
     private function transformStore($store): array
     {
-        $photos = $store->media->map(fn($photo) => $photo->url)->toArray();
+        $photos = $store->media
+            ->where('type', 'image')
+            ->where('is_active', true)
+            ->where('category', '!=', 'logo')
+            ->values()
+            ->map(fn ($photo) => $photo->url)
+            ->toArray();
 
         return [
             'id' => $store->id,

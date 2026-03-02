@@ -7,9 +7,11 @@ namespace App\Providers\Filament;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\Widgets;
+use Filament\View\PanelsRenderHook;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Http\Middleware\Authenticate;
+use Illuminate\Support\HtmlString;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Routing\Middleware\SubstituteBindings;
@@ -68,6 +70,22 @@ final class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): HtmlString => new HtmlString(<<<'HTML'
+<style>
+  /* In reorder mode, lock primary featured photo row from drag interaction. */
+  .fi-ta-row.tv-primary-photo-locked.cursor-move {
+    pointer-events: none;
+    opacity: .75;
+  }
+
+  .fi-ta-row.tv-primary-photo-locked.cursor-move .fi-icon-btn {
+    opacity: .45;
+  }
+</style>
+HTML)
+            )
             ->tenantBillingProvider(new BillingProvider('default'));
     }
 }

@@ -7,17 +7,7 @@ import { Icon } from '@iconify/vue'
 import { Link, router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import axios from 'axios'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/Components/shadcn/ui/dialog'
-import { Input } from '@/Components/shadcn/ui/input'
-import { Label } from '@/Components/shadcn/ui/label'
-import { formatPhone, formatWhatsAppNumber } from '@/utils/formatters'
+import { formatWhatsAppNumber } from '@/utils/formatters'
 
 const props = defineProps({
   store: {
@@ -33,15 +23,6 @@ const props = defineProps({
 const isFavorited = ref(props.store.is_favorited || false)
 const isFavoriting = ref(false)
 const currentImageIndex = ref(0)
-
-// Lead capture modal
-const showLeadModal = ref(false)
-const leadAction = ref('whatsapp')
-const leadForm = ref({
-  name: '',
-  whatsapp: ''
-})
-const isSubmittingLead = ref(false)
 
 // Get all images from store (assuming store has an 'images' array, fallback to single 'image')
 const images = computed(() => {
@@ -59,13 +40,19 @@ const images = computed(() => {
 const currentImage = computed(() => images.value[currentImageIndex.value])
 const storeDetailHref = computed(() => props.store.previewDetailUrl || `/loja/${props.store.slug}`)
 const normalizedStoreType = computed(() => String(props.store.storeType || '').trim().toLowerCase())
-const hasVirtualStore = computed(() => {
+const storeTypeTagLabel = computed(() => {
   const raw = normalizedStoreType.value
-  return raw === 'virtual' || raw === 'online' || raw === 'ambos' || raw.includes('online')
+  if (raw === 'ambos')
+    return 'Virtual / Física'
+  if (raw === 'virtual' || raw === 'online')
+    return 'Loja Virtual'
+  if (raw === 'fisica' || raw === 'física')
+    return 'Loja Física'
+  return null
 })
-const hasPhysicalStore = computed(() => {
+const showLocationTag = computed(() => {
   const raw = normalizedStoreType.value
-  return raw === 'fisica' || raw === 'física' || raw === 'ambos' || raw.includes('fisica') || raw.includes('física')
+  return raw !== 'virtual' && raw !== 'online'
 })
 
 const hasMultipleImages = computed(() => images.value.length > 1)
@@ -103,48 +90,17 @@ async function toggleFavorite() {
   }
 }
 
-function openWhatsApp() {
-  leadAction.value = 'whatsapp'
-  showLeadModal.value = true
-}
-
-function handlePhoneInput(event) {
-  const formatted = formatPhone(event.target.value)
-  leadForm.value.whatsapp = formatted
-}
-
-async function submitLead() {
-  if (!leadForm.value.name || !leadForm.value.whatsapp) {
-    alert('Por favor, preencha todos os campos.')
-    return
-  }
-
-  isSubmittingLead.value = true
-
+async function openWhatsApp() {
   try {
-    await axios.post(`/loja/${props.store.slug}/lead`, {
-      name: leadForm.value.name,
-      whatsapp: leadForm.value.whatsapp,
-      action: leadAction.value
-    })
-
-    showLeadModal.value = false
-
-    // Execute the action
-    if (leadAction.value === 'whatsapp') {
-      const phone = formatWhatsAppNumber(props.store.whatsapp)
-      const message = `Olá! Sou ${leadForm.value.name}. Vi a vitrine de ${props.store.name} no TanaVitrine e gostaria de saber mais.`
-      const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-      window.open(url, '_blank')
-    }
-
-    // Reset form
-    leadForm.value = { name: '', whatsapp: '' }
+    await axios.post(`/loja/${props.store.slug}/track/whatsapp`)
   } catch (error) {
-    alert('Erro ao enviar informações. Tente novamente.')
-  } finally {
-    isSubmittingLead.value = false
+    // Continue even if tracking fails
   }
+
+  const phone = formatWhatsAppNumber(props.store.whatsapp)
+  const message = `Olá! Vi a vitrine de ${props.store.name} no TanaVitrine e gostaria de saber mais.`
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+  window.open(url, '_blank')
 }
 
 async function shareStore() {
@@ -171,7 +127,7 @@ async function shareStore() {
 
 <template>
   <Card
-    class="overflow-hidden hover:shadow-lg transition-shadow duration-300"
+    class="h-full overflow-hidden hover:shadow-lg transition-shadow duration-300"
     :class="{ 'ring-2 ring-primary/20': store.featured }"
   >
     <div class="grid grid-cols-1 sm:grid-cols-5 gap-0">
@@ -180,7 +136,7 @@ async function shareStore() {
         <!-- Placeholder quando não houver imagem -->
         <div
           v-if="!currentImage"
-          class="w-full h-64 sm:h-full bg-muted flex flex-col items-center justify-center"
+          class="w-full h-64 sm:h-[320px] lg:h-[340px] bg-muted flex flex-col items-center justify-center"
         >
           <Icon icon="lucide:image-off" class="size-12 text-muted-foreground mb-2" />
           <p class="text-muted-foreground text-sm">Sem imagem</p>
@@ -191,7 +147,7 @@ async function shareStore() {
           v-else
           :src="currentImage"
           :alt="store.name"
-          class="w-full h-64 sm:h-full object-cover transition-opacity duration-300"
+          class="w-full h-64 sm:h-[320px] lg:h-[340px] object-cover object-center transition-opacity duration-300"
         />
 
         <!-- Featured Badge -->
@@ -234,7 +190,7 @@ async function shareStore() {
         </template>
       </div>
       <!-- Content Section -->
-      <div class="sm:col-span-3 p-6 flex flex-col justify-between">
+      <div class="sm:col-span-3 p-6 flex h-full flex-col justify-between">
         <!-- Header -->
         <div>
           <div class="flex items-start justify-between mb-3">
@@ -255,14 +211,11 @@ async function shareStore() {
                   <Badge v-else variant="secondary" class="text-xs">
                     {{ store.badge }}
                   </Badge>
-                  <Badge v-if="hasPhysicalStore" variant="secondary" class="text-xs">
-                    Loja Física
-                  </Badge>
-                  <Badge v-if="hasVirtualStore" variant="secondary" class="text-xs">
-                    Loja Virtual
+                  <Badge v-if="storeTypeTagLabel" variant="secondary" class="text-xs">
+                    {{ storeTypeTagLabel }}
                   </Badge>
                 </div>
-                <h3 class="text-xl font-bold text-foreground mb-2">
+                <h3 class="text-xl font-bold text-foreground mb-2 line-clamp-2 min-h-[3.5rem]">
                   {{ store.name }}
                 </h3>
               </div>
@@ -313,7 +266,7 @@ async function shareStore() {
               <Icon icon="lucide:tag" class="size-4" />
               <span>{{ store.category }}</span>
             </div>
-            <div v-if="store.location" class="flex items-center gap-1 text-muted-foreground">
+            <div v-if="store.location && showLocationTag" class="flex items-center gap-1 text-muted-foreground">
               <Icon icon="lucide:map-pin" class="size-4" />
               <span>{{ store.location }}</span>
             </div>
@@ -352,57 +305,4 @@ async function shareStore() {
     </div>
   </Card>
 
-  <!-- Lead Capture Modal -->
-  <Dialog v-model:open="showLeadModal">
-    <DialogContent class="sm:max-w-[425px]">
-      <DialogHeader>
-        <DialogTitle>Entrar em Contato</DialogTitle>
-        <DialogDescription>
-          Para continuar, precisamos de algumas informações suas.
-        </DialogDescription>
-      </DialogHeader>
-      <div class="grid gap-4 py-4">
-        <div class="grid gap-2">
-          <Label for="lead-name">Seu Nome *</Label>
-          <Input
-            id="lead-name"
-            v-model="leadForm.name"
-            placeholder="Digite seu nome"
-            :disabled="isSubmittingLead"
-          />
-        </div>
-        <div class="grid gap-2">
-          <Label for="lead-whatsapp">Seu WhatsApp *</Label>
-          <Input
-            id="lead-whatsapp"
-            v-model="leadForm.whatsapp"
-            type="tel"
-            placeholder="(00) 00000-0000"
-            maxlength="15"
-            :disabled="isSubmittingLead"
-            @input="handlePhoneInput"
-          />
-        </div>
-      </div>
-      <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          @click="showLeadModal = false"
-          :disabled="isSubmittingLead"
-        >
-          Cancelar
-        </Button>
-        <Button
-          type="button"
-          @click="submitLead"
-          :disabled="isSubmittingLead"
-          class="bg-green-600 hover:bg-green-700"
-        >
-          <Icon v-if="isSubmittingLead" icon="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
-          Abrir WhatsApp
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
 </template>

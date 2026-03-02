@@ -5,7 +5,7 @@ import { Link } from '@inertiajs/vue3'
 import { useColorMode } from '@vueuse/core'
 import { ref } from 'vue'
 
-defineProps({
+const props = defineProps({
   canLogin: {
     type: Boolean,
   },
@@ -321,7 +321,7 @@ function sendWhatsApp() {
     </footer>
 
     <!-- WhatsApp Floating Button -->
-    <div v-if="showFloatingWhatsApp" class="fixed bottom-6 right-6 z-50">
+    <div v-if="props.showFloatingWhatsApp" class="fixed bottom-6 right-6 z-50">
       <!-- Chat Box -->
       <Transition
         enter-active-class="transition ease-out duration-200"

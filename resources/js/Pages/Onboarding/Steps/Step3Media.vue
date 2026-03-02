@@ -245,7 +245,7 @@ const isValid = () => {
 
       <!-- Upload de Fotos -->
       <div class="border-t pt-6">
-        <Label class="text-base mb-2 block">Fotos dos Produtos * (mínimo 3, máximo 10)</Label>
+        <Label class="text-base mb-2 block">Fotos de Destaque da Loja * (mínimo 3, máximo 10)</Label>
         <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-teal-500 transition-colors">
           <input
             id="photos-upload"

@@ -98,12 +98,15 @@ final class TeamResource extends Resource
                             ->default('varejo'),
                         Forms\Components\Select::make('store_type')
                             ->label('Tipo de Loja')
+                            ->formatStateUsing(fn ($state) => $state === 'fisica' ? 'ambos' : $state)
                             ->options([
-                                'fabricante' => 'Fabricante',
-                                'distribuidor' => 'Distribuidor',
-                                'lojista' => 'Lojista',
-                                'representante' => 'Representante',
-                            ]),
+                                'virtual' => 'Loja Virtual',
+                                'ambos' => 'Virtual / Física',
+                            ])
+                            ->live()
+                            ->required()
+                            ->default('virtual')
+                            ->helperText('Loja Virtual: atendimento por redes sociais, WhatsApp ou site. Virtual / Física: atendimento online e também em loja física.'),
                         Forms\Components\Select::make('category_id')
                             ->label('Categoria')
                             ->relationship('category', 'name')
@@ -184,11 +187,6 @@ final class TeamResource extends Resource
                             ->tel()
                             ->maxLength(20)
                             ->placeholder('(00) 00000-0000'),
-                        Forms\Components\TextInput::make('phone')
-                            ->label('Telefone')
-                            ->tel()
-                            ->maxLength(20)
-                            ->placeholder('(00) 0000-0000'),
                         Forms\Components\TextInput::make('email')
                             ->label('E-mail')
                             ->email()
@@ -214,6 +212,7 @@ final class TeamResource extends Resource
 
                 Forms\Components\Section::make('Endereço')
                     ->description('Preencha o CEP para carregar automaticamente o endereço. As coordenadas GPS são preenchidas automaticamente ao salvar.')
+                    ->disabled(fn (Forms\Get $get) => $get('store_type') === 'virtual')
                     ->schema([
                         Forms\Components\TextInput::make('zip_code')
                             ->label('CEP')
@@ -752,7 +751,7 @@ final class TeamResource extends Resource
     {
         return [
             RelationManagers\PhotosRelationManager::class,
-            RelationManagers\LeadsRelationManager::class,
+            RelationManagers\CollectionsRelationManager::class,
         ];
     }
 

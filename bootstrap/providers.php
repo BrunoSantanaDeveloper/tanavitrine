@@ -6,10 +6,12 @@ use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use App\Providers\JetstreamServiceProvider;
 use App\Providers\Filament\AdminPanelProvider;
+use App\Providers\Filament\PartnerPanelProvider;
 
 return [
     AppServiceProvider::class,
     AdminPanelProvider::class,
+    PartnerPanelProvider::class,
     FortifyServiceProvider::class,
     JetstreamServiceProvider::class,
 ];

@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\User;
 
 class Coupon extends Model
 {
@@ -14,6 +15,7 @@ class Coupon extends Model
 
     protected $fillable = [
         'code',
+        'partner_id',
         'name',
         'description',
         'type',
@@ -160,5 +162,10 @@ class Coupon extends Model
     public function scopeExitIntent($query)
     {
         return $query->where('is_exit_intent', true);
+    }
+
+    public function partner()
+    {
+        return $this->belongsTo(User::class, 'partner_id');
     }
 }
