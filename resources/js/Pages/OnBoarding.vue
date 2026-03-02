@@ -150,7 +150,7 @@ const isStepValid = computed(() => {
     <div class="max-w-3xl mx-auto">
       <!-- Header -->
       <div class="text-center mb-8">
-        <img src="/tanavitrine_light_icon.png" alt="TanaVitrine" class="h-20 mx-auto mb-4">
+        <img src="/tanavitrine_light_icon1.png" alt="TanaVitrine" class="h-20 mx-auto mb-4">
         <h1 class="text-3xl font-bold mb-2">
           Bem-vindo ao Tá na Vitrine!
         </h1>

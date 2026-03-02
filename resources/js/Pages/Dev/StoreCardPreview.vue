@@ -15,7 +15,7 @@ const mockStores = [
     location: 'Goiânia, GO',
     description: 'Loja especializada em moda feminina casual e social, com peças de alta rotatividade e envio para todo o Brasil.',
     whatsapp: '(62) 99999-0001',
-    logo: '/tanavitrine_light_icon.png',
+    logo: '/tanavitrine_light_icon1.png',
     image: '/images/brand-image.png',
     images: [
       '/images/brand-image.png',
@@ -56,7 +56,7 @@ const mockStores = [
     location: 'Belo Horizonte, MG',
     description: 'Coleções infantis com foco em conforto e estampas exclusivas. Este card está sem imagem para testar o placeholder.',
     whatsapp: '(31) 97777-0003',
-    logo: '/tanavitrine_light_icon.png',
+    logo: '/tanavitrine_light_icon1.png',
     image: null,
     images: [],
   },

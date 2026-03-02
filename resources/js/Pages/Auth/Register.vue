@@ -60,7 +60,7 @@ function submit() {
     <Card class="mx-auto w-[420px] shadow-lg transition-all duration-300 hover:shadow-xl">
       <CardHeader>
         <CardTitle class="flex justify-center">
-          <img src="/tanavitrine_light_icon.png" alt="Tanavitrine" class="w-20 h-20">
+          <img src="/tanavitrine_light_icon1.png" alt="Tanavitrine" class="w-20 h-20">
         </CardTitle>
         <CardDescription class="text-center text-2xl font-light">
           {{ __('register.description') }}

@@ -100,7 +100,7 @@ useSeoMetaTags({
         <!-- Header -->
         <CardHeader>
           <CardTitle class="flex justify-center">
-            <img src="/tanavitrine_light_icon.png" alt="Tanavitrine" class="w-20 h-20">
+            <img src="/tanavitrine_light_icon1.png" alt="Tanavitrine" class="w-20 h-20">
           </CardTitle>
           <CardDescription class="text-center text-2xl font-light">
             {{ __('login.welcome_back') }}

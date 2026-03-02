@@ -76,7 +76,7 @@ function sendWhatsApp() {
       <div class="container flex h-16 items-center justify-between">
         <div class="flex items-center">
           <a class="flex items-center text-white text-2xl font-bold " href="/" :aria-label="$page.props.name">
-            <img src="/tanavitrine_light_icon.png" alt="tanavitrine" class="h-12">
+            <img src="/tanavitrine_light_icon1.png" alt="tanavitrine" class="h-12">
             <div class="">
                 <span class="block mt-2">Tá na</span>
                 <span class="block -mt-3">Vitrine</span>
@@ -206,7 +206,7 @@ function sendWhatsApp() {
           <!-- Brand Column -->
           <div class="space-y-4">
             <a class="flex items-center text-teal-900 text-2xl font-bold " href="/" :aria-label="$page.props.name">
-            <img src="/tanavitrine_light_icon.png" alt="tanavitrine" class="h-12">
+            <img src="/tanavitrine_light_icon1.png" alt="tanavitrine" class="h-12">
             <div class="">
                 <span class="block mt-2">Tá na</span>
                 <span class="block -mt-3">Vitrine</span>
@@ -339,7 +339,7 @@ function sendWhatsApp() {
           <div class="bg-[#25D366] p-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="relative">
-                <img src="/tanavitrine_light_icon.png" alt="Tanavitrine" class="h-10 w-10 rounded-full bg-white p-1">
+                <img src="/tanavitrine_light_icon1.png" alt="Tanavitrine" class="h-10 w-10 rounded-full bg-white p-1">
                 <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-[#25D366]" />
               </div>
               <div class="text-white">

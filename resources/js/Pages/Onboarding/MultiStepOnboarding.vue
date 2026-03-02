@@ -356,7 +356,7 @@ function submitForm() {
       <!-- Header com logo e progresso -->
       <div class="text-center mb-8">
         <a href="/" class="flex justify-center items-center mb-6">
-          <img src="/tanavitrine_light_icon.png" alt="TanaVitrine" class="h-16">
+          <img src="/tanavitrine_light_icon1.png" alt="TanaVitrine" class="h-16">
         </a>
         <h1 class="text-3xl font-bold mb-2 text-teal-900">Crie sua Vitrine no TanaVitrine</h1>
         <p class="text-muted-foreground">Etapa {{ currentStep }} de {{ totalSteps }}</p>
