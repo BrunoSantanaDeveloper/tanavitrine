@@ -28,8 +28,8 @@ const activeTab = useLocalStorage('login-active-tab', 'password')
 
 // Form state
 const passwordForm = useForm({
-  email: 'test@example.com',
-  password: 'password',
+  email: '',
+  password: '',
   remember: false,
 })
 

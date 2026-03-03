@@ -56,6 +56,8 @@ const showLocationTag = computed(() => {
 })
 
 const hasMultipleImages = computed(() => images.value.length > 1)
+const touchStartX = ref(0)
+const touchStartY = ref(0)
 
 function nextImage() {
   if (hasMultipleImages.value) {
@@ -66,6 +68,52 @@ function nextImage() {
 function prevImage() {
   if (hasMultipleImages.value) {
     currentImageIndex.value = (currentImageIndex.value - 1 + images.value.length) % images.value.length
+  }
+}
+
+function openStoreDetails() {
+  router.visit(storeDetailHref.value)
+}
+
+function handleCardContentClick(event) {
+  const interactiveTarget = event.target?.closest?.('a, button, [role="button"]')
+  if (interactiveTarget) return
+  openStoreDetails()
+}
+
+function isMobileCardView() {
+  return typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
+}
+
+function handleImageTap() {
+  if (!hasMultipleImages.value || !isMobileCardView()) return
+  nextImage()
+}
+
+function onImageTouchStart(event) {
+  const touch = event.changedTouches?.[0]
+  if (!touch) return
+  touchStartX.value = touch.clientX
+  touchStartY.value = touch.clientY
+}
+
+function onImageTouchEnd(event) {
+  if (!hasMultipleImages.value) return
+
+  const touch = event.changedTouches?.[0]
+  if (!touch) return
+
+  const deltaX = touch.clientX - touchStartX.value
+  const deltaY = touch.clientY - touchStartY.value
+  const minSwipe = 40
+
+  // Only treat as swipe when horizontal gesture is dominant.
+  if (Math.abs(deltaX) < minSwipe || Math.abs(deltaX) <= Math.abs(deltaY)) return
+
+  if (deltaX < 0) {
+    nextImage()
+  } else {
+    prevImage()
   }
 }
 
@@ -131,11 +179,11 @@ async function shareStore() {
   >
     <div class="grid grid-cols-1 sm:grid-cols-5 gap-0">
       <!-- Image Section with Carousel -->
-      <div class="sm:col-span-2 relative group">
+      <div class="sm:col-span-2 relative group h-64 sm:h-auto sm:self-stretch sm:min-h-[320px] lg:min-h-[340px] overflow-hidden">
         <!-- Placeholder quando não houver imagem -->
         <div
           v-if="!currentImage"
-          class="w-full h-64 sm:h-[320px] lg:h-[340px] bg-muted flex flex-col items-center justify-center"
+          class="absolute inset-0 w-full h-full bg-muted flex flex-col items-center justify-center"
         >
           <Icon icon="lucide:image-off" class="size-12 text-muted-foreground mb-2" />
           <p class="text-muted-foreground text-sm">Sem imagem</p>
@@ -146,7 +194,10 @@ async function shareStore() {
           v-else
           :src="currentImage"
           :alt="store.name"
-          class="w-full h-64 sm:h-[320px] lg:h-[340px] object-cover object-center transition-opacity duration-300"
+          class="absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-300"
+          @click="handleImageTap"
+          @touchstart.passive="onImageTouchStart"
+          @touchend.passive="onImageTouchEnd"
         />
 
         <!-- Featured Badge -->
@@ -162,17 +213,17 @@ async function shareStore() {
         <template v-if="hasMultipleImages">
           <button
             @click.prevent="prevImage"
-            class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-md transition-opacity z-10 bg-black/25 text-white backdrop-blur-sm opacity-90 sm:opacity-0 sm:bg-black/25 sm:text-white sm:backdrop-blur-sm sm:group-hover:opacity-100 sm:hover:bg-black/35"
             aria-label="Imagem anterior"
           >
-            <Icon icon="lucide:chevron-left" class="size-5 text-foreground" />
+            <Icon icon="lucide:chevron-left" class="size-5" />
           </button>
           <button
             @click.prevent="nextImage"
-            class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-md transition-opacity z-10 bg-black/25 text-white backdrop-blur-sm opacity-90 sm:opacity-0 sm:bg-black/25 sm:text-white sm:backdrop-blur-sm sm:group-hover:opacity-100 sm:hover:bg-black/35"
             aria-label="Próxima imagem"
           >
-            <Icon icon="lucide:chevron-right" class="size-5 text-foreground" />
+            <Icon icon="lucide:chevron-right" class="size-5" />
           </button>
 
           <!-- Image Indicators -->
@@ -189,7 +240,7 @@ async function shareStore() {
         </template>
       </div>
       <!-- Content Section -->
-      <div class="sm:col-span-3 p-6 flex h-full flex-col justify-between">
+      <div class="sm:col-span-3 p-6 flex h-full flex-col justify-between cursor-pointer" @click="handleCardContentClick">
         <!-- Header -->
         <div>
           <div class="flex items-start justify-between mb-3">
@@ -244,14 +295,6 @@ async function shareStore() {
               >
                 <Icon icon="lucide:share-2" class="size-5 text-muted-foreground" />
               </button>
-              <Link
-                :href="storeDetailHref"
-                class="p-2 hover:bg-muted rounded-lg transition-colors"
-                aria-label="Ver detalhes"
-                title="Ver detalhes da loja"
-              >
-                <Icon icon="lucide:eye" class="size-5 text-muted-foreground" />
-              </Link>
             </div>
           </div>
 
