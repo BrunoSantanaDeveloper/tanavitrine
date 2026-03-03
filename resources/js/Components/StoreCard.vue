@@ -4,7 +4,7 @@ import Button from '@/Components/shadcn/ui/button/Button.vue'
 import Card from '@/Components/shadcn/ui/card/Card.vue'
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/shadcn/ui/avatar'
 import { Icon } from '@iconify/vue'
-import { Link, router } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import { formatWhatsAppNumber } from '@/utils/formatters'
@@ -58,6 +58,7 @@ const showLocationTag = computed(() => {
 const hasMultipleImages = computed(() => images.value.length > 1)
 const touchStartX = ref(0)
 const touchStartY = ref(0)
+const isNavigatingToDetails = ref(false)
 
 function nextImage() {
   if (hasMultipleImages.value) {
@@ -72,7 +73,17 @@ function prevImage() {
 }
 
 function openStoreDetails() {
-  router.visit(storeDetailHref.value)
+  if (isNavigatingToDetails.value) return
+  isNavigatingToDetails.value = true
+
+  router.visit(storeDetailHref.value, {
+    onFinish: () => {
+      // Short lock to prevent duplicate history entries on touch/click combo in mobile Chrome.
+      setTimeout(() => {
+        isNavigatingToDetails.value = false
+      }, 250)
+    },
+  })
 }
 
 function handleCardContentClick(event) {
@@ -327,9 +338,7 @@ async function shareStore() {
               size="sm"
               variant="outline"
               class="flex-1 cursor-pointer"
-              :as="Link"
-              :href="storeDetailHref"
-              @click.stop
+              @click.stop="openStoreDetails"
             >
               <Icon icon="lucide:eye" class="size-4 mr-1" />
               Detalhes
