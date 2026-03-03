@@ -212,14 +212,14 @@ async function shareStore() {
         <!-- Navigation Arrows (only show if multiple images) -->
         <template v-if="hasMultipleImages">
           <button
-            @click.prevent="prevImage"
+            @click.prevent.stop="prevImage"
             class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-md transition-opacity z-10 bg-black/25 text-white backdrop-blur-sm opacity-90 sm:opacity-0 sm:bg-black/25 sm:text-white sm:backdrop-blur-sm sm:group-hover:opacity-100 sm:hover:bg-black/35"
             aria-label="Imagem anterior"
           >
             <Icon icon="lucide:chevron-left" class="size-5" />
           </button>
           <button
-            @click.prevent="nextImage"
+            @click.prevent.stop="nextImage"
             class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-md transition-opacity z-10 bg-black/25 text-white backdrop-blur-sm opacity-90 sm:opacity-0 sm:bg-black/25 sm:text-white sm:backdrop-blur-sm sm:group-hover:opacity-100 sm:hover:bg-black/35"
             aria-label="Próxima imagem"
           >
@@ -231,7 +231,7 @@ async function shareStore() {
             <button
               v-for="(_, index) in images"
               :key="index"
-              @click.prevent="currentImageIndex = index"
+              @click.prevent.stop="currentImageIndex = index"
               class="w-2 h-2 rounded-full transition-all"
               :class="currentImageIndex === index ? 'bg-white w-6' : 'bg-white/60'"
               :aria-label="`Ver imagem ${index + 1}`"
@@ -288,7 +288,7 @@ async function shareStore() {
                 />
               </button>-->
               <button
-                @click="shareStore"
+                @click.stop="shareStore"
                 class="p-2 hover:bg-muted rounded-lg transition-colors"
                 aria-label="Compartilhar"
                 title="Compartilhar loja"
@@ -329,6 +329,7 @@ async function shareStore() {
               class="flex-1 cursor-pointer"
               :as="Link"
               :href="storeDetailHref"
+              @click.stop
             >
               <Icon icon="lucide:eye" class="size-4 mr-1" />
               Detalhes
@@ -336,7 +337,7 @@ async function shareStore() {
             <Button
               size="sm"
               class="flex-1 bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-              @click="openWhatsApp"
+              @click.stop="openWhatsApp"
             >
               <Icon icon="lucide:message-circle" class="size-4 mr-1" />
               WhatsApp
