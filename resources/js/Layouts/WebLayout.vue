@@ -69,7 +69,7 @@ function sendWhatsApp() {
 </script>
 
 <template>
-  <div class="min-h-screen">
+  <div class="min-h-screen overflow-x-hidden">
     <header
       class="sticky top-0 z-50 w-full bg-linear-to-r from-teal-900 via-teal-700 to-teal-900 backdrop-blur-sm supports-backdrop-filter:bg-orange-100/40"
     >

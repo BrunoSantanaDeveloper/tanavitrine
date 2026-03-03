@@ -198,11 +198,16 @@
 
   html {
     scroll-behavior: smooth;
+    /* Prevent horizontal page drift/elastic side scroll on mobile browsers */
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
   }
   body {
     @apply bg-background text-foreground;
     font-family: Outfit, sans-serif !important;
     letter-spacing: var(--tracking-normal);
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
   }
 
   * {

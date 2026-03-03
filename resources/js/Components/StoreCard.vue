@@ -91,16 +91,15 @@ async function toggleFavorite() {
 }
 
 async function openWhatsApp() {
-  try {
-    await axios.post(`/loja/${props.store.slug}/track/whatsapp`)
-  } catch (error) {
-    // Continue even if tracking fails
-  }
-
   const phone = formatWhatsAppNumber(props.store.whatsapp)
   const message = `Olá! Vi a vitrine de ${props.store.name} no TanaVitrine e gostaria de saber mais.`
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
   window.open(url, '_blank')
+
+  // Fire-and-forget tracking to keep Safari/iOS popup flow tied to user gesture.
+  axios.post(`/loja/${props.store.slug}/track/whatsapp`).catch(() => {
+    // Ignore tracking errors to avoid blocking WhatsApp navigation.
+  })
 }
 
 async function shareStore() {
