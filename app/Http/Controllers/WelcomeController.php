@@ -6,9 +6,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Models\Team;
-use App\Models\Category;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 
 final class WelcomeController extends Controller
@@ -37,18 +37,22 @@ final class WelcomeController extends Controller
                 return $this->transformStore($store);
             });
 
-        // Get categories for filters
-        $categories = Category::active()
-            ->parents()
-            ->orderBy('sort_order')
-            ->get()
-            ->map(function ($category) {
-                return [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                ];
-            });
+        // Category filters for home tabs (only categories that have active stores in each context).
+        $categoriesAtacado = $this->buildCategoryOptionsFromTeams(
+            Team::active()
+                ->where('personal_team', false)
+                ->atacado()
+                ->with('category')
+                ->get()
+        );
+
+        $categoriesVarejo = $this->buildCategoryOptionsFromTeams(
+            Team::active()
+                ->where('personal_team', false)
+                ->varejo()
+                ->with('category')
+                ->get()
+        );
 
         // Get unique states from active stores for home filters
         $states = Team::active()
@@ -64,7 +68,8 @@ final class WelcomeController extends Controller
             'canRegister' => Route::has('register'),
             'featuredStores' => $featuredStores,
             'recentStores' => $recentStores,
-            'categories' => $categories,
+            'categoriesAtacado' => $categoriesAtacado,
+            'categoriesVarejo' => $categoriesVarejo,
             'states' => $states,
             'plans' => Plan::where('is_active', true)
                 ->with('intervals')
@@ -133,23 +138,14 @@ final class WelcomeController extends Controller
             ->sort()
             ->values();
 
-        $categories = Category::active()
-            ->parents()
-            ->orderBy('sort_order')
-            ->get()
-            ->map(function ($category) {
-                return [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                ];
-            });
+        [$categories, $subcategories] = $this->buildFilterOptionsFromStores($allStores);
 
         return Inertia::render('Atacado', [
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'stores' => $allStores,
             'categories' => $categories,
+            'subcategories' => $subcategories,
             'states' => $states,
             'cities' => $cities,
             'seo' => [
@@ -193,23 +189,14 @@ final class WelcomeController extends Controller
             ->sort()
             ->values();
 
-        $categories = Category::active()
-            ->parents()
-            ->orderBy('sort_order')
-            ->get()
-            ->map(function ($category) {
-                return [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                ];
-            });
+        [$categories, $subcategories] = $this->buildFilterOptionsFromStores($allStores);
 
         return Inertia::render('Varejo', [
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'stores' => $allStores,
             'categories' => $categories,
+            'subcategories' => $subcategories,
             'states' => $states,
             'cities' => $cities,
             'seo' => [
@@ -370,5 +357,71 @@ final class WelcomeController extends Controller
         }
 
         return $result;
+    }
+
+    /**
+     * Build category/subcategory filter options based on active stores in the current listing.
+     *
+     * @return array{0: array<int, array{name: string, count: int}>, 1: array<int, array{name: string, count: int}>}
+     */
+    private function buildFilterOptionsFromStores(Collection $stores): array
+    {
+        $categoryCounts = [];
+        $subcategoryCounts = [];
+
+        foreach ($stores as $store) {
+            $categoryName = trim((string) ($store['category'] ?? ''));
+            if ($categoryName !== '') {
+                $categoryCounts[$categoryName] = ($categoryCounts[$categoryName] ?? 0) + 1;
+            }
+
+            $subcategory = $store['subcategory'] ?? [];
+            $subItems = is_array($subcategory) ? $subcategory : [$subcategory];
+
+            foreach ($subItems as $sub) {
+                $subName = trim((string) $sub);
+                if ($subName === '') {
+                    continue;
+                }
+                $subcategoryCounts[$subName] = ($subcategoryCounts[$subName] ?? 0) + 1;
+            }
+        }
+
+        ksort($categoryCounts, SORT_NATURAL | SORT_FLAG_CASE);
+        ksort($subcategoryCounts, SORT_NATURAL | SORT_FLAG_CASE);
+
+        $categories = collect($categoryCounts)->map(
+            fn (int $count, string $name) => ['name' => $name, 'count' => $count]
+        )->values()->all();
+
+        $subcategories = collect($subcategoryCounts)->map(
+            fn (int $count, string $name) => ['name' => $name, 'count' => $count]
+        )->values()->all();
+
+        return [$categories, $subcategories];
+    }
+
+    /**
+     * Build category filter options (name + count) from a team collection.
+     *
+     * @return array<int, array{name: string, count: int}>
+     */
+    private function buildCategoryOptionsFromTeams(Collection $teams): array
+    {
+        $categoryCounts = [];
+
+        foreach ($teams as $team) {
+            $categoryName = trim((string) ($team->category?->name ?? ''));
+            if ($categoryName === '') {
+                continue;
+            }
+            $categoryCounts[$categoryName] = ($categoryCounts[$categoryName] ?? 0) + 1;
+        }
+
+        ksort($categoryCounts, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return collect($categoryCounts)->map(
+            fn (int $count, string $name) => ['name' => $name, 'count' => $count]
+        )->values()->all();
     }
 }

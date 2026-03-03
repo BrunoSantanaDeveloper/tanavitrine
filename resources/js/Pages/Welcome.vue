@@ -26,7 +26,7 @@ import { Checkbox } from '@/Components/shadcn/ui/checkbox'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
 import WebLayout from '@/Layouts/WebLayout.vue'
 import { Icon } from '@iconify/vue'
-import { ref, computed, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
 
 const props = defineProps({
   canLogin: {
@@ -51,7 +51,11 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
-  categories: {
+  categoriesAtacado: {
+    type: Array,
+    default: () => [],
+  },
+  categoriesVarejo: {
     type: Array,
     default: () => [],
   },
@@ -117,7 +121,10 @@ const searchFilters = ref({
   genero: ''
 })
 
-const categorias = computed(() => props.categories.map(c => c.name))
+const categorias = computed(() =>
+  (searchType.value === 'atacado' ? props.categoriesAtacado : props.categoriesVarejo)
+    .map(c => ({ name: c.name, count: Number(c.count || 0) }))
+)
 const tiposLoja = [
   { value: 'virtual', label: 'Loja Virtual' },
   { value: 'ambos', label: 'Virtual / Física' },
@@ -138,6 +145,10 @@ const selectedCategoriasText = computed(() => {
   if (searchFilters.value.categorias.length === 0) return 'Selecione'
   if (searchFilters.value.categorias.length === 1) return searchFilters.value.categorias[0]
   return `${searchFilters.value.categorias.length} selecionadas`
+})
+
+watch(searchType, () => {
+  searchFilters.value.categorias = []
 })
 
 function handleSearch() {
@@ -431,19 +442,19 @@ onBeforeUnmount(() => {
                         <div class="max-h-64 overflow-y-auto p-4 space-y-2">
                           <div
                             v-for="cat in categorias"
-                            :key="cat"
+                            :key="cat.name"
                             class="flex items-center space-x-2 cursor-pointer hover:bg-muted p-2 rounded"
-                            @click="toggleCategoria(cat)"
+                            @click="toggleCategoria(cat.name)"
                           >
                             <Checkbox
-                              :id="`cat-atacado-${cat}`"
-                              :checked="searchFilters.categorias.includes(cat)"
+                              :id="`cat-atacado-${cat.name}`"
+                              :checked="searchFilters.categorias.includes(cat.name)"
                             />
                             <label
-                              :for="`cat-atacado-${cat}`"
+                              :for="`cat-atacado-${cat.name}`"
                               class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
                             >
-                              {{ cat }}
+                              {{ cat.name }} ({{ cat.count }})
                             </label>
                           </div>
                         </div>
@@ -525,19 +536,19 @@ onBeforeUnmount(() => {
                         <div class="max-h-64 overflow-y-auto p-4 space-y-2">
                           <div
                             v-for="cat in categorias"
-                            :key="cat"
+                            :key="cat.name"
                             class="flex items-center space-x-2 cursor-pointer hover:bg-muted p-2 rounded"
-                            @click="toggleCategoria(cat)"
+                            @click="toggleCategoria(cat.name)"
                           >
                             <Checkbox
-                              :id="`cat-varejo-${cat}`"
-                              :checked="searchFilters.categorias.includes(cat)"
+                              :id="`cat-varejo-${cat.name}`"
+                              :checked="searchFilters.categorias.includes(cat.name)"
                             />
                             <label
-                              :for="`cat-varejo-${cat}`"
+                              :for="`cat-varejo-${cat.name}`"
                               class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
                             >
-                              {{ cat }}
+                              {{ cat.name }} ({{ cat.count }})
                             </label>
                           </div>
                         </div>

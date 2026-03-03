@@ -34,6 +34,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  subcategories: {
+    type: Array,
+    default: () => [],
+  },
   states: {
     type: Array,
     default: () => [],
@@ -78,8 +82,18 @@ watch(() => filters.value.tipoLoja, (newType) => {
   }
 })
 
-const categorias = computed(() => props.categories.map(c => c.name))
-const subcategorias = ['Feminino', 'Masculino', 'Infantil', 'Plus Size', 'Moda Praia', 'Lingerie']
+const categorias = computed(() =>
+  (props.categories || []).map(category => ({
+    name: category.name,
+    count: Number(category.count || 0),
+  })),
+)
+const subcategorias = computed(() =>
+  (props.subcategories || []).map(subcategory => ({
+    name: subcategory.name,
+    count: Number(subcategory.count || 0),
+  })),
+)
 const estados = computed(() => props.states)
 const cidades = computed(() => {
   // Filter cities by selected state if needed
@@ -362,19 +376,19 @@ onBeforeUnmount(() => {
               <div class="max-h-64 overflow-y-auto p-4 space-y-2">
                 <div
                   v-for="cat in categorias"
-                  :key="cat"
+                  :key="cat.name"
                   class="flex items-center space-x-2 cursor-pointer hover:bg-muted p-2 rounded"
-                  @click="toggleCategoria(cat)"
+                  @click="toggleCategoria(cat.name)"
                 >
                   <Checkbox
-                    :id="`cat-${cat}`"
-                    :checked="filters.categorias.includes(cat)"
+                    :id="`cat-${cat.name}`"
+                    :checked="filters.categorias.includes(cat.name)"
                   />
                   <label
-                    :for="`cat-${cat}`"
+                    :for="`cat-${cat.name}`"
                     class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
                   >
-                    {{ cat }}
+                    {{ cat.name }} ({{ cat.count }})
                   </label>
                 </div>
               </div>
@@ -397,19 +411,19 @@ onBeforeUnmount(() => {
               <div class="max-h-64 overflow-y-auto p-4 space-y-2">
                 <div
                   v-for="sub in subcategorias"
-                  :key="sub"
+                  :key="sub.name"
                   class="flex items-center space-x-2 cursor-pointer hover:bg-muted p-2 rounded"
-                  @click="toggleSubcategoria(sub)"
+                  @click="toggleSubcategoria(sub.name)"
                 >
                   <Checkbox
-                    :id="`sub-${sub}`"
-                    :checked="filters.subcategorias.includes(sub)"
+                    :id="`sub-${sub.name}`"
+                    :checked="filters.subcategorias.includes(sub.name)"
                   />
                   <label
-                    :for="`sub-${sub}`"
+                    :for="`sub-${sub.name}`"
                     class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
                   >
-                    {{ sub }}
+                    {{ sub.name }} ({{ sub.count }})
                   </label>
                 </div>
               </div>

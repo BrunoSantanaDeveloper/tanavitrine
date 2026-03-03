@@ -24,6 +24,16 @@ const props = defineProps({
   },
 })
 const normalizedStoreType = computed(() => String(props.store?.storeType || '').trim().toLowerCase())
+const normalizedSaleType = computed(() =>
+  String(props.store?.saleType || '')
+    .trim()
+    .toLowerCase(),
+)
+const saleTypeDisplayLabel = computed(() => {
+  if (normalizedSaleType.value === 'ambos')
+    return 'Atacado / Varejo'
+  return props.store?.saleType || ''
+})
 const storeTypeTagLabel = computed(() => {
   const raw = normalizedStoreType.value
   if (raw === 'ambos')
@@ -235,6 +245,18 @@ const selectedCollectionImages = computed(() => selectedCollection.value?.photos
 const selectedCollectionMainImage = computed(() =>
   selectedCollectionImages.value[selectedCollectionImageIndex.value] ?? selectedCollectionImages.value[0] ?? null
 )
+const hasMinOrder = computed(() => {
+  const value = props.store?.minOrder
+  if (value === null || value === undefined) return false
+  const normalized = String(value).trim()
+  if (!normalized) return false
+
+  // If it's numeric, only show when greater than zero.
+  const numeric = Number(normalized.replace(',', '.'))
+  if (!Number.isNaN(numeric)) return numeric > 0
+
+  return true
+})
 const activeLightboxItems = computed(() => {
   if (lightboxSource.value === 'collection') {
     return selectedCollectionImages.value.map(url => ({ type: 'image', url }))
@@ -738,13 +760,13 @@ function scrollToSection(sectionId) {
                     <Icon icon="lucide:map-pin" class="size-5 text-primary" />
                     <span>{{ store.location }}</span>
                   </div>
-                  <div class="flex items-center gap-2 text-muted-foreground">
+                  <div v-if="hasMinOrder" class="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="lucide:package" class="size-5 text-primary" />
                     <span>{{ store.minOrder }}</span>
                   </div>
                   <div class="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="lucide:store" class="size-5 text-primary" />
-                    <span>{{ store.saleType }}</span>
+                    <span>{{ saleTypeDisplayLabel }}</span>
                   </div>
                 </div>
 
@@ -919,7 +941,7 @@ function scrollToSection(sectionId) {
               <Card id="store-section-infos" class="p-6 scroll-mt-28">
                 <h2 class="text-2xl font-bold mb-4">Informações Adicionais</h2>
                 <div class="space-y-3">
-                  <div class="flex items-start gap-3">
+                  <div v-if="hasMinOrder" class="flex items-start gap-3">
                     <Icon icon="lucide:check-circle" class="size-5 text-primary mt-1" />
                     <div>
                       <p class="font-medium">Pedido Mínimo</p>
@@ -937,7 +959,7 @@ function scrollToSection(sectionId) {
                     <Icon icon="lucide:check-circle" class="size-5 text-primary mt-1" />
                     <div>
                       <p class="font-medium">Tipo de Venda</p>
-                      <p class="text-sm text-muted-foreground">{{ store.saleType }}</p>
+                      <p class="text-sm text-muted-foreground">{{ saleTypeDisplayLabel }}</p>
                     </div>
                   </div>
                 </div>
