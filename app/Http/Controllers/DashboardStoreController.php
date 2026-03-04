@@ -557,23 +557,39 @@ class DashboardStoreController extends Controller
         $teamCollection = $store->collections()->findOrFail($collection);
 
         $request->validate([
-            'photo' => 'required|image|mimes:jpeg,jpg,png,webp|max:5120', // 5MB
+            'photo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120', // backward compatibility
+            'photos' => 'nullable|array',
+            'photos.*' => 'image|mimes:jpeg,jpg,png,webp|max:5120',
         ]);
 
-        $photo = $request->file('photo');
-        $path = $photo->store("stores/store_{$store->id}/collections/{$teamCollection->id}", 'public');
+        $photos = [];
+        if ($request->hasFile('photos')) {
+            $photos = $request->file('photos');
+        } elseif ($request->hasFile('photo')) {
+            $photos = [$request->file('photo')];
+        }
 
-        $store->media()->create([
-            'team_collection_id' => $teamCollection->id,
-            'name' => $photo->getClientOriginalName(),
-            'path' => $path,
-            'type' => 'image',
-            'size' => $photo->getSize() / 1024, // Convert to KB
-            'is_generic' => false,
-            'category' => 'collection',
-        ]);
+        if (count($photos) === 0) {
+            return redirect()->back()->with('error', 'Selecione ao menos uma foto.');
+        }
 
-        return redirect()->back()->with('success', 'Foto adicionada na coleção com sucesso!');
+        foreach ($photos as $photo) {
+            $path = $photo->store("stores/store_{$store->id}/collections/{$teamCollection->id}", 'public');
+
+            $store->media()->create([
+                'team_collection_id' => $teamCollection->id,
+                'name' => $photo->getClientOriginalName(),
+                'path' => $path,
+                'type' => 'image',
+                'size' => $photo->getSize() / 1024, // Convert to KB
+                'is_generic' => false,
+                'category' => 'collection',
+            ]);
+        }
+
+        return redirect()->back()->with('success', count($photos) > 1
+            ? 'Fotos adicionadas na coleção com sucesso!'
+            : 'Foto adicionada na coleção com sucesso!');
     }
 
     public function deleteCollectionPhoto(string $slug, int $collection, int $photo): RedirectResponse

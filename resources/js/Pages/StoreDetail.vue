@@ -511,6 +511,16 @@ function openCollectionLightbox(index = selectedCollectionImageIndex.value) {
   isGalleryLightboxOpen.value = true
 }
 
+function nextSelectedCollectionImage() {
+  if (!selectedCollectionImages.value.length) return
+  selectedCollectionImageIndex.value = (selectedCollectionImageIndex.value + 1) % selectedCollectionImages.value.length
+}
+
+function prevSelectedCollectionImage() {
+  if (!selectedCollectionImages.value.length) return
+  selectedCollectionImageIndex.value = (selectedCollectionImageIndex.value - 1 + selectedCollectionImages.value.length) % selectedCollectionImages.value.length
+}
+
 function closeGalleryLightbox() {
   isLightboxZoomed.value = false
   isGalleryLightboxOpen.value = false
@@ -799,7 +809,7 @@ function scrollToSection(sectionId) {
               </Card>
 
               <Card v-if="hasCollections" id="store-section-galeria" class="p-6 scroll-mt-28">
-                <h2 class="text-2xl font-bold mb-4">Galeria de Fotos</h2>
+                <h2 class="text-2xl font-bold mb-4">Galeria de Fotos / Coleções</h2>
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
                   <button
                     v-if="featuredCollection"
@@ -899,39 +909,72 @@ function scrollToSection(sectionId) {
                     </span>
                   </div>
 
-                  <div class="p-4 space-y-4">
-                    <div
-                      v-if="selectedCollectionMainImage"
-                      class="relative h-[320px] sm:h-[380px] rounded-xl overflow-hidden border border-border"
-                    >
-                      <button
-                        type="button"
-                        class="block h-full w-full text-left"
-                        @click="openCollectionLightbox()"
-                      >
-                        <img
-                          :src="selectedCollectionMainImage"
-                          :alt="selectedCollection.name"
-                          class="h-full w-full object-cover"
-                        >
-                      </button>
-                    </div>
+                  <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:h-[420px]">
+                      <div class="md:col-span-4 lg:col-span-3 border border-border rounded-xl p-2 md:overflow-y-auto md:h-full">
+                        <div class="grid grid-cols-4 md:grid-cols-1 gap-2">
+                          <button
+                            v-for="(img, index) in selectedCollectionImages"
+                            :key="`${selectedCollection.id}-${index}`"
+                            type="button"
+                            class="relative h-16 sm:h-20 md:h-24 rounded-lg overflow-hidden border transition-all"
+                            :class="selectedCollectionImageIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'"
+                            @click="selectedCollectionImageIndex = index"
+                          >
+                            <img
+                              :src="img"
+                              :alt="`${selectedCollection.name} ${index + 1}`"
+                              class="h-full w-full object-cover"
+                            >
+                          </button>
+                        </div>
+                      </div>
 
-                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                      <button
-                        v-for="(img, index) in selectedCollectionImages"
-                        :key="`${selectedCollection.id}-${index}`"
-                        type="button"
-                        class="relative h-20 sm:h-24 rounded-lg overflow-hidden border transition-all"
-                        :class="selectedCollectionImageIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'"
-                        @click="openCollectionLightbox(index)"
-                      >
-                        <img
-                          :src="img"
-                          :alt="`${selectedCollection.name} ${index + 1}`"
-                          class="h-full w-full object-cover"
+                      <div class="md:col-span-8 lg:col-span-9 relative border border-border rounded-xl overflow-hidden md:h-full">
+                        <div
+                          v-if="selectedCollectionMainImage"
+                          class="relative h-[300px] sm:h-[360px] md:h-full"
                         >
-                      </button>
+                          <div class="absolute inset-0">
+                            <img
+                              :src="selectedCollectionMainImage"
+                              :alt="`${selectedCollection.name} fundo`"
+                              class="h-full w-full object-cover scale-110 blur-2xl opacity-45"
+                            >
+                            <div class="absolute inset-0 bg-black/10" />
+                          </div>
+                          <button
+                            type="button"
+                            class="relative z-10 block h-full w-full text-left"
+                            @click="openCollectionLightbox()"
+                          >
+                            <img
+                              :src="selectedCollectionMainImage"
+                              :alt="selectedCollection.name"
+                              class="h-full w-full object-contain"
+                            >
+                          </button>
+
+                          <button
+                            v-if="selectedCollectionImages.length > 1"
+                            type="button"
+                            class="absolute left-3 top-1/2 z-20 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/30 bg-black/45 text-white shadow-sm backdrop-blur-sm hover:bg-black/60"
+                            aria-label="Imagem anterior"
+                            @click.stop="prevSelectedCollectionImage"
+                          >
+                            <Icon icon="lucide:chevron-left" class="size-5" />
+                          </button>
+                          <button
+                            v-if="selectedCollectionImages.length > 1"
+                            type="button"
+                            class="absolute right-3 top-1/2 z-20 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/30 bg-black/45 text-white shadow-sm backdrop-blur-sm hover:bg-black/60"
+                            aria-label="Próxima imagem"
+                            @click.stop="nextSelectedCollectionImage"
+                          >
+                            <Icon icon="lucide:chevron-right" class="size-5" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

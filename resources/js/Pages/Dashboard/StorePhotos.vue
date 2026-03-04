@@ -168,22 +168,22 @@ function triggerCollectionPhotoUpload(collectionId) {
 }
 
 function handleCollectionFileSelect(event) {
-  const file = event.target.files[0]
+  const files = Array.from(event.target.files || [])
   const collectionId = uploadingCollectionId.value
 
-  if (!file || !collectionId)
+  if (!files.length || !collectionId)
     return
 
   router.post(route('dashboard.stores.collections.photos.upload', {
     slug: props.store.slug,
     collection: collectionId,
   }), {
-    photo: file,
+    photos: files,
   }, {
     preserveScroll: true,
     forceFormData: true,
     onSuccess: () => {
-      toast.success('Foto adicionada na coleção!')
+      toast.success(files.length > 1 ? 'Fotos adicionadas na coleção!' : 'Foto adicionada na coleção!')
       if (collectionPhotoInput.value)
         collectionPhotoInput.value.value = ''
       uploadingCollectionId.value = null
@@ -590,6 +590,7 @@ function submitVideo() {
               ref="collectionPhotoInput"
               type="file"
               accept="image/*"
+              multiple
               class="hidden"
               @change="handleCollectionFileSelect"
             >
