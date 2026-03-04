@@ -98,7 +98,7 @@ final class WelcomeController extends Controller
                     ];
                 }),
             'seo' => [
-                'title' => config('app.name') . ' - O maior catálogo de fornecedores de moda do Brasil',
+                'title' => 'Tá na Vitrine - O maior catálogo de fornecedores de moda do Brasil',
                 'description' => 'Conecte-se com as melhores lojas e fornecedores de moda. Atacado e varejo com os melhores preços.',
             ],
         ]);
@@ -149,7 +149,7 @@ final class WelcomeController extends Controller
             'states' => $states,
             'cities' => $cities,
             'seo' => [
-                'title' => 'Atacado - ' . config('app.name'),
+                'title' => 'Atacado - Tá na Vitrine',
                 'description' => 'Encontre os melhores fornecedores atacadistas de moda do Brasil',
             ],
         ]);
@@ -200,7 +200,7 @@ final class WelcomeController extends Controller
             'states' => $states,
             'cities' => $cities,
             'seo' => [
-                'title' => 'Varejo - ' . config('app.name'),
+                'title' => 'Varejo - Tá na Vitrine',
                 'description' => 'Descubra as melhores lojas varejistas de moda',
             ],
         ]);
@@ -238,8 +238,8 @@ final class WelcomeController extends Controller
                     ];
                 }),
             'seo' => [
-                'title' => 'Planos - ' . config('app.name'),
-                'description' => 'Escolha o plano ideal para anunciar seus produtos no TanaVitrine',
+                'title' => 'Planos - Tá na Vitrine',
+                'description' => 'Escolha o plano ideal para anunciar seus produtos no Tá na Vitrine',
             ],
         ]);
     }
@@ -250,8 +250,8 @@ final class WelcomeController extends Controller
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'seo' => [
-                'title' => 'Sobre - ' . config('app.name'),
-                'description' => 'Conheça a TanaVitrine, o maior marketplace de moda atacado e varejo do Brasil. Conectando fornecedores e lojistas.',
+                'title' => 'Sobre - Tá na Vitrine',
+                'description' => 'Conheça o Tá na Vitrine, o maior marketplace de moda atacado e varejo do Brasil. Conectando fornecedores e lojistas.',
             ],
         ]);
     }

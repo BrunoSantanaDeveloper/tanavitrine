@@ -28,14 +28,14 @@ function getDefaultSeoMeta() {
   return {
     title: 'Home',
     titleTemplate: '%s | Tá na Vitrine',
-    description: 'Tá na Vitrine conecta fornecedores e lojistas de moda em todo o Brasil. Encontre lojas de atacado e varejo, com contato direto via WhatsApp, Instagram e site.',
-    keywords: 'tá na vitrine, tanavitrine, atacado de moda, varejo de moda, fornecedores de moda, catálogo de lojas, marketplace de moda, lojas atacadistas, lojas varejistas',
+    description: 'Tá na Vitrine conecta fornecedores e lojistas de moda em todo o Brasil. Também conhecida como Tanavitrine, reúne lojas de atacado e varejo com contato direto.',
+    keywords: 'tá na vitrine, tanavitrine, tana vitrine, ta na vitrine, atacado de moda, varejo de moda, fornecedores de moda, catálogo de lojas, marketplace de moda, lojas atacadistas, lojas varejistas',
     robots: 'index, follow',
     themeColor: '#0f766e',
 
     // Open Graph
     ogTitle: '%s | Tá na Vitrine',
-    ogDescription: 'Descubra fornecedores e lojas de moda em um só lugar. Atacado e varejo com contato direto.',
+    ogDescription: 'Descubra fornecedores e lojas de moda em um só lugar. Tá na Vitrine (Tanavitrine) conecta atacado e varejo com contato direto.',
     ogUrl: siteUrl,
     ogType: 'website',
     ogImage: defaultOgImage,
@@ -44,7 +44,7 @@ function getDefaultSeoMeta() {
 
     // Twitter
     twitterTitle: '%s | Tá na Vitrine',
-    twitterDescription: 'Conecte-se com lojas e fornecedores de moda no maior catálogo de atacado e varejo do Brasil.',
+    twitterDescription: 'Conecte-se com lojas e fornecedores de moda no maior catálogo de atacado e varejo do Brasil. Tá na Vitrine (Tanavitrine).',
     twitterCard: 'summary_large_image',
     twitterImage: defaultOgImage,
     twitterSite: '@tanavitrine',

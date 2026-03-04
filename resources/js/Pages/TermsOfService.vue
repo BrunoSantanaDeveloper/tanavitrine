@@ -4,8 +4,8 @@ import { useSeoMetaTags } from '@/Composables/useSeoMetaTags'
 import WebLayout from '@/Layouts/WebLayout.vue'
 
 useSeoMetaTags({
-  title: 'Termos de Serviço - TanaVitrine',
-  description: 'Leia os Termos de Serviço da TanaVitrine e entenda as regras de uso da plataforma para lojistas e compradores.',
+  title: 'Termos de Serviço - Tá na Vitrine',
+  description: 'Leia os Termos de Serviço da Tá na Vitrine e entenda as regras de uso da plataforma para lojistas e compradores.',
 })
 
 const currentDate = new Date().toLocaleDateString('pt-BR', {
@@ -25,16 +25,16 @@ const currentDate = new Date().toLocaleDateString('pt-BR', {
           </div>
 
           <div class="prose prose-slate dark:prose-invert mt-6 w-full max-w-4xl overflow-hidden p-8 shadow-md sm:rounded-lg bg-white">
-            <h1 class="text-3xl font-bold mb-4">Termos de Serviço – TanaVitrine</h1>
+            <h1 class="text-3xl font-bold mb-4">Termos de Serviço – Tá na Vitrine</h1>
             <p class="text-sm text-gray-600 mb-6">Última atualização: {{ currentDate }}</p>
 
             <p class="mb-4">
-              Ao criar uma vitrine ou utilizar os serviços da TanaVitrine, você concorda com os seguintes termos e condições:
+              Ao criar uma vitrine ou utilizar os serviços da Tá na Vitrine, você concorda com os seguintes termos e condições:
             </p>
 
             <h2 class="text-2xl font-semibold mt-8 mb-4">1. Descrição do Serviço</h2>
             <p class="mb-4">
-              A TanaVitrine é um marketplace online que conecta fornecedores atacadistas e lojistas varejistas de moda em todo o Brasil. O serviço inclui:
+              A Tá na Vitrine é um marketplace online que conecta fornecedores atacadistas e lojistas varejistas de moda em todo o Brasil. O serviço inclui:
             </p>
             <ul class="list-disc pl-6 mb-4">
               <li>Criação e gerenciamento de vitrine online para exibição de produtos.</li>
@@ -47,7 +47,7 @@ const currentDate = new Date().toLocaleDateString('pt-BR', {
 
             <h2 class="text-2xl font-semibold mt-8 mb-4">2. Planos e Assinaturas</h2>
             <p class="mb-4">
-              O acesso à plataforma TanaVitrine é feito mediante a contratação de um dos planos disponíveis. Cada plano oferece diferentes funcionalidades, limites de fotos, destaque e recursos adicionais, conforme descrito em nosso site.
+              O acesso à plataforma Tá na Vitrine é feito mediante a contratação de um dos planos disponíveis. Cada plano oferece diferentes funcionalidades, limites de fotos, destaque e recursos adicionais, conforme descrito em nosso site.
             </p>
             <p class="mb-4">
               O pagamento é realizado através de processadores seguros e os valores são cobrados conforme a periodicidade escolhida (mensal ou anual).
@@ -66,8 +66,8 @@ const currentDate = new Date().toLocaleDateString('pt-BR', {
               <li>Não utilizar a plataforma para práticas fraudulentas ou enganosas.</li>
             </ul>
 
-            <h2 class="text-2xl font-semibold mt-8 mb-4">4. Direitos da TanaVitrine</h2>
-            <p class="mb-4">A TanaVitrine se reserva o direito de:</p>
+            <h2 class="text-2xl font-semibold mt-8 mb-4">4. Direitos da Tá na Vitrine</h2>
+            <p class="mb-4">A Tá na Vitrine se reserva o direito de:</p>
             <ul class="list-disc pl-6 mb-4">
               <li>Atualizar e modificar os termos a qualquer momento, com aviso prévio de 30 dias aos usuários.</li>
               <li>Remover conteúdos que violem estes termos ou qualquer lei aplicável.</li>
@@ -78,14 +78,14 @@ const currentDate = new Date().toLocaleDateString('pt-BR', {
 
             <h2 class="text-2xl font-semibold mt-8 mb-4">5. Propriedade Intelectual</h2>
             <ul class="list-disc pl-6 mb-4">
-              <li>A marca TanaVitrine, logotipos, design da plataforma e códigos-fonte são propriedade exclusiva da empresa e protegidos por direitos autorais.</li>
+              <li>A marca Tá na Vitrine, logotipos, design da plataforma e códigos-fonte são propriedade exclusiva da empresa e protegidos por direitos autorais.</li>
               <li>As fotos e descrições enviadas pelos lojistas são de sua responsabilidade e propriedade.</li>
-              <li>Ao publicar conteúdo na plataforma, o lojista concede à TanaVitrine licença não exclusiva para exibir, reproduzir e distribuir esse conteúdo exclusivamente para fins de operação do marketplace.</li>
+              <li>Ao publicar conteúdo na plataforma, o lojista concede à Tá na Vitrine licença não exclusiva para exibir, reproduzir e distribuir esse conteúdo exclusivamente para fins de operação do marketplace.</li>
               <li>O lojista garante ter todos os direitos necessários sobre as imagens e textos publicados.</li>
             </ul>
 
             <h2 class="text-2xl font-semibold mt-8 mb-4">6. Responsabilidades e Limitações</h2>
-            <p class="mb-4">A TanaVitrine não se responsabiliza por:</p>
+            <p class="mb-4">A Tá na Vitrine não se responsabiliza por:</p>
             <ul class="list-disc pl-6 mb-4">
               <li>Negociações, transações e acordos comerciais realizados entre lojistas e compradores.</li>
               <li>Qualidade, autenticidade ou legalidade dos produtos anunciados.</li>
@@ -95,7 +95,7 @@ const currentDate = new Date().toLocaleDateString('pt-BR', {
               <li>Conteúdos publicados diretamente pelos lojistas.</li>
             </ul>
             <p class="mb-4">
-              A plataforma atua apenas como intermediadora, conectando fornecedores e compradores. A TanaVitrine não participa das negociações comerciais.
+              A plataforma atua apenas como intermediadora, conectando fornecedores e compradores. A Tá na Vitrine não participa das negociações comerciais.
             </p>
 
             <h2 class="text-2xl font-semibold mt-8 mb-4">7. Cancelamento e Reembolso</h2>
@@ -113,12 +113,12 @@ const currentDate = new Date().toLocaleDateString('pt-BR', {
 
             <h2 class="text-2xl font-semibold mt-8 mb-4">8. Modificações no Serviço</h2>
             <p class="mb-4">
-              A TanaVitrine pode, a qualquer momento, adicionar, modificar ou remover funcionalidades da plataforma. Alterações substanciais que afetem planos contratados serão comunicadas com antecedência mínima de 30 dias.
+              A Tá na Vitrine pode, a qualquer momento, adicionar, modificar ou remover funcionalidades da plataforma. Alterações substanciais que afetem planos contratados serão comunicadas com antecedência mínima de 30 dias.
             </p>
 
             <h2 class="text-2xl font-semibold mt-8 mb-4">9. Lei Aplicável e Foro</h2>
             <p class="mb-4">
-              Estes Termos são regidos pelas leis brasileiras. Eventuais disputas serão resolvidas no foro da comarca da sede da TanaVitrine, salvo disposição legal em contrário.
+              Estes Termos são regidos pelas leis brasileiras. Eventuais disputas serão resolvidas no foro da comarca da sede da Tá na Vitrine, salvo disposição legal em contrário.
             </p>
 
             <hr class="my-8" />
@@ -130,7 +130,7 @@ const currentDate = new Date().toLocaleDateString('pt-BR', {
 
             <h2 class="text-2xl font-semibold mt-8 mb-4">Aceite dos Termos</h2>
             <p class="mb-4">
-              Ao criar uma vitrine ou contratar qualquer plano da TanaVitrine, você declara estar de acordo com estes <strong>Termos de Serviço</strong> e com a <strong>Política de Privacidade</strong>, ciente de seus direitos e obrigações.
+              Ao criar uma vitrine ou contratar qualquer plano da Tá na Vitrine, você declara estar de acordo com estes <strong>Termos de Serviço</strong> e com a <strong>Política de Privacidade</strong>, ciente de seus direitos e obrigações.
             </p>
           </div>
         </div>

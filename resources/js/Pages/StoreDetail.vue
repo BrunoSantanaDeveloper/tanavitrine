@@ -376,7 +376,7 @@ function openMapWidget() {
 
 function openWhatsApp() {
   const phone = formatWhatsAppNumber(props.store.whatsapp)
-  const message = `Olá! Vi a vitrine de ${props.store.name} no TanaVitrine e gostaria de saber mais.`
+  const message = `Olá! Vi a vitrine de ${props.store.name} no Tá na Vitrine e gostaria de saber mais.`
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
   window.open(url, '_blank')
   trackWhatsAppClick()
@@ -439,7 +439,7 @@ async function shareOnFacebook() {
 async function shareOnTwitter() {
   await trackShare()
   const url = encodeURIComponent(window.location.href)
-  const text = encodeURIComponent(`Confira ${props.store.name} no TanaVitrine!`)
+  const text = encodeURIComponent(`Confira ${props.store.name} no Tá na Vitrine!`)
   window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank', 'width=600,height=400')
 }
 

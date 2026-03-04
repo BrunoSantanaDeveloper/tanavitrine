@@ -4,8 +4,8 @@ import { useSeoMetaTags } from '@/Composables/useSeoMetaTags'
 import WebLayout from '@/Layouts/WebLayout.vue'
 
 useSeoMetaTags({
-  title: 'Política de Privacidade - TanaVitrine',
-  description: 'Conheça a Política de Privacidade da TanaVitrine e como tratamos os dados dos usuários da plataforma.',
+  title: 'Política de Privacidade - Tá na Vitrine',
+  description: 'Conheça a Política de Privacidade da Tá na Vitrine e como tratamos os dados dos usuários da plataforma.',
 })
 
 const currentDate = new Date().toLocaleDateString('pt-BR', {
@@ -25,11 +25,11 @@ const currentDate = new Date().toLocaleDateString('pt-BR', {
           </div>
 
           <div class="prose prose-slate dark:prose-invert mt-6 w-full max-w-4xl overflow-hidden p-8 shadow-md sm:rounded-lg bg-white">
-            <h1 class="text-3xl font-bold mb-4">Política de Privacidade – TanaVitrine</h1>
+            <h1 class="text-3xl font-bold mb-4">Política de Privacidade – Tá na Vitrine</h1>
             <p class="text-sm text-gray-600 mb-6">Última atualização: {{ currentDate }}</p>
 
             <p class="mb-4">
-              A TanaVitrine se compromete com a privacidade dos dados dos seus usuários. Esta Política descreve como coletamos, usamos e protegemos as informações pessoais.
+              A Tá na Vitrine se compromete com a privacidade dos dados dos seus usuários. Esta Política descreve como coletamos, usamos e protegemos as informações pessoais.
             </p>
 
             <h2 class="text-2xl font-semibold mt-8 mb-4">1. Coleta de Dados</h2>
@@ -96,7 +96,7 @@ const currentDate = new Date().toLocaleDateString('pt-BR', {
 
             <h2 class="text-2xl font-semibold mt-8 mb-4">Aceite dos Termos</h2>
             <p class="mb-4">
-              Ao criar uma vitrine ou contratar qualquer plano da TanaVitrine, você declara estar de acordo com estes <strong>Termos de Serviço</strong> e com a <strong>Política de Privacidade</strong>, ciente de seus direitos e obrigações.
+              Ao criar uma vitrine ou contratar qualquer plano da Tá na Vitrine, você declara estar de acordo com estes <strong>Termos de Serviço</strong> e com a <strong>Política de Privacidade</strong>, ciente de seus direitos e obrigações.
             </p>
           </div>
         </div>

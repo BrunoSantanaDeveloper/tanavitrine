@@ -61,7 +61,7 @@ function toggleWhatsApp() {
 
 function sendWhatsApp() {
   const phone = '556231900204'
-  const message = whatsappMessage.value || 'Olá! Gostaria de saber mais sobre a TanaVitrine.'
+  const message = whatsappMessage.value || 'Olá! Gostaria de saber mais sobre a Tá na Vitrine.'
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
   window.open(url, '_blank')
   toggleWhatsApp()
@@ -302,7 +302,7 @@ function sendWhatsApp() {
         <!-- Bottom Footer -->
         <div class="border-t pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p class="text-sm text-muted-foreground text-center sm:text-left">
-            © {{ new Date().getFullYear() }} TanaVitrine. Todos os direitos reservados.
+            © {{ new Date().getFullYear() }} Tá na Vitrine. Todos os direitos reservados.
           </p>
           <div class="flex items-center gap-4">
             <button
@@ -339,11 +339,11 @@ function sendWhatsApp() {
           <div class="bg-[#25D366] p-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="relative">
-                <img src="/tanavitrine_light_icon1.png" alt="Tanavitrine" class="h-10 w-10 rounded-full bg-white p-1">
+                <img src="/tanavitrine_light_icon1.png" alt="Tá na Vitrine" class="h-10 w-10 rounded-full bg-white p-1">
                 <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-[#25D366]" />
               </div>
               <div class="text-white">
-                <h3 class="font-semibold text-sm">TanaVitrine</h3>
+                <h3 class="font-semibold text-sm">Tá na Vitrine</h3>
                 <p class="text-xs opacity-90">Online</p>
               </div>
             </div>

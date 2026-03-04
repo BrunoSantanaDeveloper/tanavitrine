@@ -94,7 +94,7 @@ const averageYearlyDiscount = computed(() => {
 // Function to open WhatsApp chat
 function openWhatsAppChat() {
   const phone = '556231900204'
-  const message = 'Olá! Gostaria de falar com um especialista sobre a Tanavitrine.'
+  const message = 'Olá! Gostaria de falar com um especialista sobre a Tá na Vitrine.'
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
   window.open(url, '_blank')
 }
@@ -160,17 +160,17 @@ const sponsorLinks = {
 const faqItems = [
   {
     value: 'item-1',
-    title: 'O que é a TanaVitrine?',
-    content: 'A TanaVitrine é uma plataforma de anúncios para lojas de moda no atacado e varejo. Cada loja cria uma vitrine com suas fotos, informações e contatos, conectando-se diretamente com compradores interessados.',
+    title: 'O que é a Tá na Vitrine?',
+    content: 'A Tá na Vitrine é uma plataforma de anúncios para lojas de moda no atacado e varejo. Cada loja cria uma vitrine com suas fotos, informações e contatos, conectando-se diretamente com compradores interessados.',
   },
   {
     value: 'item-2',
-    title: 'A TanaVitrine vende ou processa pagamentos?',
+    title: 'A Tá na Vitrine vende ou processa pagamentos?',
     content: 'Não. A plataforma não realiza vendas nem intermedia pagamentos. Nosso foco é gerar visibilidade e leads qualificados para as lojas.',
   },
   {
     value: 'item-3',
-    title: 'Quem pode anunciar na TanaVitrine?',
+    title: 'Quem pode anunciar na Tá na Vitrine?',
     content: 'Qualquer loja, marca, fabricante ou fornecedor do segmento de moda que queira divulgar seus produtos e atrair compradores de todo o Brasil.',
   },
   {
@@ -185,8 +185,8 @@ const faqItems = [
   },
   {
     value: 'item-6',
-    title: 'Quanto custa anunciar na TanaVitrine?',
-    content: 'A TanaVitrine oferece planos acessíveis e sem comissão sobre vendas. Você paga apenas pelo espaço da sua vitrine — o retorno vem em visibilidade e novos contatos.',
+    title: 'Quanto custa anunciar na Tá na Vitrine?',
+    content: 'A Tá na Vitrine oferece planos acessíveis e sem comissão sobre vendas. Você paga apenas pelo espaço da sua vitrine — o retorno vem em visibilidade e novos contatos.',
   },
   {
     value: 'item-7',
@@ -205,7 +205,7 @@ const faqItems = [
   },
   {
     value: 'item-9',
-    title: 'A TanaVitrine é segura?',
+    title: 'A Tá na Vitrine é segura?',
     content: 'Sim. Todos os dados são protegidos, e as comunicações ocorrem diretamente entre comprador e vendedor, sem intermediações nem acesso a informações sensíveis.',
   },
 ]
@@ -402,7 +402,7 @@ const githubUrl = 'https://github.com/shipfastlabs/larasonic-vue'
               Perguntas Frequentes
             </h2>
             <p class="mt-4 text-muted-foreground">
-              Tire suas dúvidas sobre a Tanavitrine
+              Tire suas dúvidas sobre a Tá na Vitrine
             </p>
           </div>
 
@@ -428,7 +428,7 @@ const githubUrl = 'https://github.com/shipfastlabs/larasonic-vue'
           <div class="absolute inset-0 -z-10 overflow-hidden">
             <img
               src="/images/bg-cta.png"
-              alt="Tanavitrine"
+              alt="Tá na Vitrine"
               class="w-full h-full object-cover"
             />
             <!-- Overlay with gradient -->

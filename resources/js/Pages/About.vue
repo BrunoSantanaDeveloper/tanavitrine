@@ -17,8 +17,8 @@ const props = defineProps({
   seo: {
     type: Object,
     default: () => ({
-      title: 'Sobre - TanaVitrine',
-      description: 'Conheça a TanaVitrine, o maior marketplace de moda atacado e varejo do Brasil. Conectando fornecedores e lojistas.',
+      title: 'Sobre - Tá na Vitrine',
+      description: 'Conheça a Tá na Vitrine, o maior marketplace de moda atacado e varejo do Brasil. Conectando fornecedores e lojistas.',
     }),
   },
 })
@@ -82,7 +82,7 @@ const benefits = {
         <div class="mb-8 inline-flex justify-center">
           <Badge variant="outline" class="rounded-full border border-yellow-500 bg-primary/10 px-4 py-1 text-xs text-white sm:text-sm">
             <Icon icon="lucide:sparkles" class="size-4 mr-1" aria-hidden="true" />
-            Sobre a TanaVitrine
+            Sobre a Tá na Vitrine
           </Badge>
         </div>
 
@@ -128,7 +128,7 @@ const benefits = {
 
           <div class="space-y-6 text-lg text-muted-foreground leading-relaxed">
             <p>
-              A <span class="font-semibold text-foreground">TanaVitrine</span> nasceu com o objetivo de revolucionar
+              A <span class="font-semibold text-foreground">Tá na Vitrine</span> nasceu com o objetivo de revolucionar
               a forma como fornecedores e compradores de moda se conectam no Brasil. Sabemos que encontrar fornecedores
               confiáveis no atacado ou descobrir novas lojas no varejo pode ser desafiador.
             </p>
@@ -151,7 +151,7 @@ const benefits = {
     <section class="py-20 bg-muted/30">
       <div class="container mx-auto px-4">
         <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl mb-12">
-          Por Que Escolher a TanaVitrine?
+          Por Que Escolher a Tá na Vitrine?
         </h2>
 
         <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 mt-12">
@@ -306,7 +306,7 @@ const benefits = {
           Pronto para Expandir Seu Negócio?
         </h2>
         <p class="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
-          Junte-se a centenas de fornecedores que já estão vendendo mais com a TanaVitrine
+          Junte-se a centenas de fornecedores que já estão vendendo mais com a Tá na Vitrine
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <Button as="a" href="/prices" size="lg" variant="secondary" class="text-lg">

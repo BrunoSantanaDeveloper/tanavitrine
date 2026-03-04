@@ -4,8 +4,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'Tá na Vitrine') }}</title>
+    <title>Tá na Vitrine</title>
     <meta name="description" content="Tá na Vitrine conecta fornecedores e lojistas de moda em todo o Brasil. Encontre lojas de atacado e varejo com contato direto.">
+    <meta name="keywords" content="tá na vitrine, tanavitrine, tana vitrine, ta na vitrine, atacado de moda, varejo de moda, fornecedores de moda">
     <meta name="robots" content="index, follow">
 
     <link rel="canonical" href="{{ url()->current() }}">
@@ -17,7 +18,7 @@
     <link rel="manifest" href="/site.webmanifest">
 
     @php
-        $appName = config('app.name', 'Tá na Vitrine');
+        $appName = 'Tá na Vitrine';
         $appUrl = rtrim(config('app.url', url('/')), '/');
         $defaultOgImage = $appUrl . '/images/og.webp';
         $schema = [
@@ -27,6 +28,7 @@
                     '@type' => 'Organization',
                     '@id' => $appUrl . '#organization',
                     'name' => $appName,
+                    'alternateName' => ['Tanavitrine', 'Tana Vitrine', 'Ta na Vitrine'],
                     'url' => $appUrl,
                     'logo' => $appUrl . '/android-chrome-512x512.png',
                     'sameAs' => [
@@ -38,6 +40,7 @@
                     '@id' => $appUrl . '#website',
                     'url' => $appUrl,
                     'name' => $appName,
+                    'alternateName' => ['Tanavitrine', 'Tana Vitrine', 'Ta na Vitrine'],
                     'publisher' => [
                         '@id' => $appUrl . '#organization',
                     ],
