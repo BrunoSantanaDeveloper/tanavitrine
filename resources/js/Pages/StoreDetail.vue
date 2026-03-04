@@ -911,13 +911,13 @@ function scrollToSection(sectionId) {
 
                   <div class="p-4">
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:h-[420px]">
-                      <div class="md:col-span-4 lg:col-span-3 border border-border rounded-xl p-2 md:overflow-y-auto md:h-full">
-                        <div class="grid grid-cols-4 md:grid-cols-1 gap-2">
+                      <div class="hidden md:block md:col-span-4 lg:col-span-3 border border-border rounded-xl p-2 md:overflow-y-auto md:h-full">
+                        <div class="grid grid-cols-1 gap-2">
                           <button
                             v-for="(img, index) in selectedCollectionImages"
                             :key="`${selectedCollection.id}-${index}`"
                             type="button"
-                            class="relative h-16 sm:h-20 md:h-24 rounded-lg overflow-hidden border transition-all"
+                            class="relative h-24 rounded-lg overflow-hidden border transition-all"
                             :class="selectedCollectionImageIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'"
                             @click="selectedCollectionImageIndex = index"
                           >
@@ -933,7 +933,7 @@ function scrollToSection(sectionId) {
                       <div class="md:col-span-8 lg:col-span-9 relative border border-border rounded-xl overflow-hidden md:h-full">
                         <div
                           v-if="selectedCollectionMainImage"
-                          class="relative h-[300px] sm:h-[360px] md:h-full"
+                          class="relative h-[260px] sm:h-[320px] md:h-full"
                         >
                           <div class="absolute inset-0">
                             <img
@@ -958,22 +958,41 @@ function scrollToSection(sectionId) {
                           <button
                             v-if="selectedCollectionImages.length > 1"
                             type="button"
-                            class="absolute left-3 top-1/2 z-20 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/30 bg-black/45 text-white shadow-sm backdrop-blur-sm hover:bg-black/60"
+                            class="absolute left-2 md:left-3 top-1/2 z-20 -translate-y-1/2 inline-flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full border border-black/30 bg-black/45 text-white shadow-sm backdrop-blur-sm hover:bg-black/60"
                             aria-label="Imagem anterior"
                             @click.stop="prevSelectedCollectionImage"
                           >
-                            <Icon icon="lucide:chevron-left" class="size-5" />
+                            <Icon icon="lucide:chevron-left" class="size-4 md:size-5" />
                           </button>
                           <button
                             v-if="selectedCollectionImages.length > 1"
                             type="button"
-                            class="absolute right-3 top-1/2 z-20 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/30 bg-black/45 text-white shadow-sm backdrop-blur-sm hover:bg-black/60"
+                            class="absolute right-2 md:right-3 top-1/2 z-20 -translate-y-1/2 inline-flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full border border-black/30 bg-black/45 text-white shadow-sm backdrop-blur-sm hover:bg-black/60"
                             aria-label="Próxima imagem"
                             @click.stop="nextSelectedCollectionImage"
                           >
-                            <Icon icon="lucide:chevron-right" class="size-5" />
+                            <Icon icon="lucide:chevron-right" class="size-4 md:size-5" />
                           </button>
                         </div>
+                      </div>
+                    </div>
+
+                    <div class="md:hidden mt-3 -mx-1 px-1 overflow-x-auto">
+                      <div class="flex gap-2 min-w-max">
+                        <button
+                          v-for="(img, index) in selectedCollectionImages"
+                          :key="`mobile-${selectedCollection.id}-${index}`"
+                          type="button"
+                          class="relative h-16 w-16 rounded-lg overflow-hidden border transition-all shrink-0"
+                          :class="selectedCollectionImageIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-border'"
+                          @click="selectedCollectionImageIndex = index"
+                        >
+                          <img
+                            :src="img"
+                            :alt="`${selectedCollection.name} ${index + 1}`"
+                            class="h-full w-full object-cover"
+                          >
+                        </button>
                       </div>
                     </div>
                   </div>
