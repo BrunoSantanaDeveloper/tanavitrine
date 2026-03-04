@@ -241,6 +241,22 @@ function removeVideo() {
   }
 }
 
+function deleteSavedVideo() {
+  if (!confirm('Tem certeza que deseja excluir o vídeo salvo da loja?'))
+    return
+
+  router.delete(route('dashboard.stores.video.delete', props.store.slug), {
+    preserveScroll: true,
+    onSuccess: () => {
+      removeVideo()
+      toast.success('Vídeo excluído com sucesso!')
+    },
+    onError: () => {
+      toast.error('Erro ao excluir vídeo!')
+    },
+  })
+}
+
 function extractVideoId(url) {
   if (!url) return null
 
@@ -720,6 +736,18 @@ function submitVideo() {
                 </div>
               </TabsContent>
             </Tabs>
+
+            <div v-if="store.video_url" class="pt-2">
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                @click="deleteSavedVideo"
+              >
+                <Icon icon="lucide:trash-2" class="mr-2 h-4 w-4" />
+                Excluir vídeo salvo
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

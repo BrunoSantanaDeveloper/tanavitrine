@@ -632,4 +632,24 @@ class DashboardStoreController extends Controller
 
         return redirect()->back()->with('success', 'Vídeo atualizado com sucesso!');
     }
+
+    /**
+     * Delete the saved video for the store.
+     */
+    public function deleteVideo(string $slug): RedirectResponse
+    {
+        $store = Team::where('slug', $slug)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        if ($store->video_url && !filter_var($store->video_url, FILTER_VALIDATE_URL)) {
+            if (\Storage::disk('public')->exists($store->video_url)) {
+                \Storage::disk('public')->delete($store->video_url);
+            }
+        }
+
+        $store->update(['video_url' => null]);
+
+        return redirect()->back()->with('success', 'Vídeo removido com sucesso!');
+    }
 }
