@@ -87,7 +87,7 @@ final class HandleInertiaRequests extends Middleware
 
         /** @var array<string, mixed> */
         return array_merge(parent::share($request), [
-            'name' => Config::get('app.name', 'Larasonic'),
+            'name' => Config::get('app.name', 'Tá na Vitrine'),
             'currentStore' => $currentStore,
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),

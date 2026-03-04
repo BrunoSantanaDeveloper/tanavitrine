@@ -1,2 +1,3 @@
 User-agent: *
 Disallow:
+Sitemap: https://tanavitrine.com.br/sitemap.xml

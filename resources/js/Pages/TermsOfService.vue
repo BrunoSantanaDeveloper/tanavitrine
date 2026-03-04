@@ -5,6 +5,7 @@ import WebLayout from '@/Layouts/WebLayout.vue'
 
 useSeoMetaTags({
   title: 'Termos de Serviço - TanaVitrine',
+  description: 'Leia os Termos de Serviço da TanaVitrine e entenda as regras de uso da plataforma para lojistas e compradores.',
 })
 
 const currentDate = new Date().toLocaleDateString('pt-BR', {

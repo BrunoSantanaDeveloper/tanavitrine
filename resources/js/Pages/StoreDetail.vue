@@ -2,6 +2,7 @@
 import Badge from '@/Components/shadcn/ui/badge/Badge.vue'
 import Button from '@/Components/shadcn/ui/button/Button.vue'
 import Card from '@/Components/shadcn/ui/card/Card.vue'
+import { useSeoMetaTags } from '@/Composables/useSeoMetaTags'
 import { Dialog, DialogContent } from '@/Components/shadcn/ui/dialog'
 import FloatingMap from '@/Components/FloatingMap.vue'
 import WebLayout from '@/Layouts/WebLayout.vue'
@@ -23,6 +24,70 @@ const props = defineProps({
     type: Boolean,
   },
 })
+
+function truncateText(value, maxLength = 160) {
+  const normalizedValue = String(value || '').trim().replace(/\s+/g, ' ')
+  if (!normalizedValue)
+    return ''
+
+  if (normalizedValue.length <= maxLength)
+    return normalizedValue
+
+  return `${normalizedValue.slice(0, maxLength - 1)}…`
+}
+
+function toAbsoluteUrl(path) {
+  const fallbackBaseUrl = 'https://tanavitrine.com.br'
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : fallbackBaseUrl
+
+  if (!path)
+    return `${baseUrl}/images/og.webp`
+
+  if (String(path).startsWith('http://') || String(path).startsWith('https://'))
+    return path
+
+  const normalizedPath = String(path).startsWith('/') ? String(path) : `/${String(path)}`
+  return `${baseUrl}${normalizedPath}`
+}
+
+const storePageTitle = computed(() => {
+  const storeName = props.store?.name || 'Loja'
+  return `${storeName} | Tá na Vitrine`
+})
+
+const storePageDescription = computed(() => {
+  const fallbackDescription = `Conheça ${props.store?.name || 'esta loja'} na Tá na Vitrine e entre em contato direto para atacado e varejo.`
+  return truncateText(props.store?.description || fallbackDescription)
+})
+
+const storePageImage = computed(() => {
+  const logo = props.store?.logo
+  const firstImage = props.store?.images?.[0]?.url
+  return toAbsoluteUrl(logo || firstImage || '/images/og.webp')
+})
+
+const storePageUrl = computed(() => {
+  if (typeof window !== 'undefined')
+    return window.location.href
+
+  return toAbsoluteUrl(`/loja/${props.store?.slug || ''}`)
+})
+
+useSeoMetaTags({
+  title: storePageTitle,
+  description: storePageDescription,
+  robots: 'index, follow',
+  ogTitle: storePageTitle,
+  ogDescription: storePageDescription,
+  ogType: 'website',
+  ogImage: storePageImage,
+  ogUrl: storePageUrl,
+  twitterTitle: storePageTitle,
+  twitterDescription: storePageDescription,
+  twitterImage: storePageImage,
+  twitterCard: 'summary_large_image',
+})
+
 const normalizedStoreType = computed(() => String(props.store?.storeType || '').trim().toLowerCase())
 const normalizedSaleType = computed(() =>
   String(props.store?.saleType || '')

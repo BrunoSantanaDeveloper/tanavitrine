@@ -1,29 +1,54 @@
 import { useSeoMeta } from '@unhead/vue'
 
-// Default SEO meta tags
-const defaultSeoMeta = {
-  title: 'Home',
-  titleTemplate: '%s | Larasonic Modern Laravel SaaS Starter Kit',
-  description: 'Larasonic is a modern Laravel boilerplate for the VILT stack (Vue, Inertia, Laravel, TailwindCSS). Clone and start building scalable, maintainable, and production-ready applications quickly.',
-  keywords: 'Larasonic, Laravel boilerplate, Laravel VILT, Vue, Inertia, TailwindCSS, Laravel Octane, Docker, FilamentPHP, OpenAI integration, Laravel Cashier, Laravel Sanctum',
-  robots: 'index, follow',
-  themeColor: '#000000',
+const fallbackSiteUrl = 'https://tanavitrine.com.br'
 
-  // Open Graph
-  ogTitle: '%s | Larasonic Modern Laravel SaaS Starter Kit',
-  ogDescription: 'Larasonic is a modern Laravel SaaS starter kit for the VILT stack. Clone the repo, start building scalable and maintainable applications quickly.',
-  ogUrl: 'https://larasonic.com',
-  ogType: 'website',
-  ogImage: 'https://larasonic.com/images/og.webp',
-  ogSiteName: 'Larasonic',
-  ogLocale: 'en_US',
+function getSiteUrl() {
+  if (typeof window !== 'undefined' && window.location?.origin)
+    return window.location.origin
 
-  // Twitter
-  twitterTitle: '%s | Larasonic Modern Laravel SaaS Starter Kit',
-  twitterDescription: 'Larasonic is a modern Laravel SaaS starter kit for the VILT stack. Clone the repo, start building scalable and maintainable applications quickly.',
-  twitterCard: 'summary_large_image',
-  twitterImage: 'https://larasonic.com/images/og.webp',
-  twitterSite: '@pushpak1300',
+  return fallbackSiteUrl
+}
+
+function toAbsoluteUrl(path) {
+  if (!path)
+    return `${getSiteUrl()}/images/og.webp`
+
+  if (path.startsWith('http://') || path.startsWith('https://'))
+    return path
+
+  const baseUrl = getSiteUrl()
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${baseUrl}${normalizedPath}`
+}
+
+function getDefaultSeoMeta() {
+  const siteUrl = getSiteUrl()
+  const defaultOgImage = toAbsoluteUrl('/images/og.webp')
+
+  return {
+    title: 'Home',
+    titleTemplate: '%s | Tá na Vitrine',
+    description: 'Tá na Vitrine conecta fornecedores e lojistas de moda em todo o Brasil. Encontre lojas de atacado e varejo, com contato direto via WhatsApp, Instagram e site.',
+    keywords: 'tá na vitrine, tanavitrine, atacado de moda, varejo de moda, fornecedores de moda, catálogo de lojas, marketplace de moda, lojas atacadistas, lojas varejistas',
+    robots: 'index, follow',
+    themeColor: '#0f766e',
+
+    // Open Graph
+    ogTitle: '%s | Tá na Vitrine',
+    ogDescription: 'Descubra fornecedores e lojas de moda em um só lugar. Atacado e varejo com contato direto.',
+    ogUrl: siteUrl,
+    ogType: 'website',
+    ogImage: defaultOgImage,
+    ogSiteName: 'Tá na Vitrine',
+    ogLocale: 'pt_BR',
+
+    // Twitter
+    twitterTitle: '%s | Tá na Vitrine',
+    twitterDescription: 'Conecte-se com lojas e fornecedores de moda no maior catálogo de atacado e varejo do Brasil.',
+    twitterCard: 'summary_large_image',
+    twitterImage: defaultOgImage,
+    twitterSite: '@tanavitrine',
+  }
 }
 
 /**
@@ -37,12 +62,26 @@ const defaultSeoMeta = {
  * @returns {void}
  */
 export function useSeoMetaTags(seoMeta, options = { merge: true }) {
-  if (!seoMeta)
-    return useSeoMeta(defaultSeoMeta)
+  const defaultSeoMeta = getDefaultSeoMeta()
+  const currentPageUrl = typeof window !== 'undefined' ? window.location.href : defaultSeoMeta.ogUrl
 
-  return useSeoMeta(
-    options.merge
-      ? { ...defaultSeoMeta, ...seoMeta }
-      : seoMeta,
-  )
+  if (!seoMeta)
+    return useSeoMeta({ ...defaultSeoMeta, ogUrl: currentPageUrl })
+
+  const mergedSeoMeta = options.merge
+    ? { ...defaultSeoMeta, ...seoMeta }
+    : seoMeta
+
+  if (options.merge) {
+    if (!('ogUrl' in seoMeta))
+      mergedSeoMeta.ogUrl = currentPageUrl
+
+    if (!('ogImage' in seoMeta))
+      mergedSeoMeta.ogImage = defaultSeoMeta.ogImage
+
+    if (!('twitterImage' in seoMeta))
+      mergedSeoMeta.twitterImage = mergedSeoMeta.ogImage
+  }
+
+  return useSeoMeta(mergedSeoMeta)
 }

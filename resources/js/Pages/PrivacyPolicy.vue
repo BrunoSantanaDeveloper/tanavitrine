@@ -5,6 +5,7 @@ import WebLayout from '@/Layouts/WebLayout.vue'
 
 useSeoMetaTags({
   title: 'Política de Privacidade - TanaVitrine',
+  description: 'Conheça a Política de Privacidade da TanaVitrine e como tratamos os dados dos usuários da plataforma.',
 })
 
 const currentDate = new Date().toLocaleDateString('pt-BR', {
