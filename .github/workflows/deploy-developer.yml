@@ -58,6 +58,12 @@ jobs:
             echo "📊 Executando migrações..."
             docker exec $(docker ps -q --filter "name=tanavitrine_app_app_tanavitrine" --filter "status=running" | head -1) php artisan migrate --force
 
+            echo "🗺️ Gerando sitemap..."
+            docker exec $(docker ps -q --filter "name=tanavitrine_app_app_tanavitrine" --filter "status=running" | head -1) php artisan sitemap:generate
+
+            echo "✅ Validando se o sitemap foi gerado..."
+            docker exec $(docker ps -q --filter "name=tanavitrine_app_app_tanavitrine" --filter "status=running" | head -1) ls -l public/sitemap.xml
+
             echo "🔍 Verificando status dos serviços..."
             docker service ls | grep tanavitrine
 
