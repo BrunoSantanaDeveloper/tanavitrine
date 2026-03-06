@@ -104,7 +104,7 @@ async function lookupCep(cep) {
 
 // Geocoding function using Nominatim (OpenStreetMap)
 async function geocodeAddress() {
-  const { cep, street, city, state } = form.value.address
+  const { cep, street, number, city, state } = form.value.address
 
   // Check if at least city and state are filled
   if (!city || !state) {
@@ -120,13 +120,15 @@ async function geocodeAddress() {
     // Priority: CEP + Street > Street + City > City only
     let query = ''
 
-    if (cep && street) {
+    const streetWithNumber = [street, number].filter(Boolean).join(', ')
+
+    if (cep && streetWithNumber) {
       // Most precise: use CEP and street
-      query = `${street}, ${cep}, ${city}, ${state}, Brazil`
+      query = `${streetWithNumber}, ${cep}, ${city}, ${state}, Brazil`
     }
-    else if (street) {
+    else if (streetWithNumber) {
       // Use street with city and state
-      query = `${street}, ${city}, ${state}, Brazil`
+      query = `${streetWithNumber}, ${city}, ${state}, Brazil`
     }
     else {
       // Fallback: city and state only (less precise)
@@ -160,7 +162,7 @@ async function geocodeAddress() {
         query,
         lat: form.value.latitude,
         lng: form.value.longitude,
-        precision: street ? 'street-level' : 'city-level',
+        precision: streetWithNumber ? 'street-level' : 'city-level',
       })
     }
     else {
@@ -285,6 +287,17 @@ watch(
           </div>
         </div>
 
+        <!-- Complement -->
+        <div class="mb-4">
+          <Label for="complement">Complemento</Label>
+          <Input
+            id="complement"
+            v-model="form.address.complement"
+            placeholder="Ex: Sala 3, Bloco B"
+            class="mt-2"
+          />
+        </div>
+
         <!-- City and State -->
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -309,6 +322,20 @@ watch(
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div class="mt-4">
+          <Label for="google_maps_url">Link do Google Maps (opcional)</Label>
+          <Input
+            id="google_maps_url"
+            v-model="form.google_maps_url"
+            type="url"
+            placeholder="https://maps.app.goo.gl/... ou https://www.google.com/maps/..."
+            class="mt-2"
+          />
+          <p class="text-xs text-muted-foreground mt-1">
+            Cole o link de compartilhamento da sua loja no Google Maps para direcionar clientes com maior precisão.
+          </p>
         </div>
 
         <!-- Geocoding Feedback -->

@@ -12,6 +12,28 @@ use Illuminate\Support\Facades\Route;
 
 class StoreController extends Controller
 {
+    private function formatFullAddress(Team $store): ?string
+    {
+        $streetLine = trim(implode(', ', array_filter([
+            $store->address,
+            $store->address_number,
+        ])));
+
+        $cityState = trim(implode(' - ', array_filter([
+            $store->city,
+            $store->state,
+        ])));
+
+        $parts = array_filter([
+            $streetLine ?: null,
+            $store->address_complement ?: null,
+            $cityState ?: null,
+            $store->zip_code ? 'CEP: ' . $store->zip_code : null,
+        ]);
+
+        return !empty($parts) ? implode(', ', $parts) : null;
+    }
+
     /**
      * Display the specified store by slug.
      */
@@ -75,7 +97,12 @@ class StoreController extends Controller
             'storeType' => ucfirst($store->store_type),
             'minOrder' => $store->min_order,
             'location' => $store->city && $store->state ? "{$store->city} - {$store->state}" : null,
+            'full_address' => $this->formatFullAddress($store),
             'address' => $store->address,
+            'address_number' => $store->address_number,
+            'address_complement' => $store->address_complement,
+            'google_maps_url' => $store->google_maps_url,
+            'zip_code' => $store->zip_code,
             'latitude' => $store->latitude,
             'longitude' => $store->longitude,
             'whatsapp' => $store->whatsapp,

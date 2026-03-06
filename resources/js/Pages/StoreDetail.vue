@@ -113,6 +113,9 @@ const isVirtualOnlyStore = computed(() => {
   const raw = normalizedStoreType.value
   return raw === 'virtual' || raw === 'online'
 })
+const fullAddressDisplay = computed(() => {
+  return props.store?.full_address || props.store?.location || ''
+})
 const storesForMap = computed(() => {
   if (isVirtualOnlyStore.value) return []
   if (props.store.show_on_map !== true) return []
@@ -127,7 +130,7 @@ const storesForMap = computed(() => {
       category: props.store.category,
       description: props.store.description,
       featured: props.store.featured,
-      location: props.store.location,
+      location: fullAddressDisplay.value || props.store.location,
       latitude: props.store.latitude,
       longitude: props.store.longitude,
       logo: props.store.logo,
@@ -364,7 +367,24 @@ const formattedSubcategories = computed(() => {
 })
 
 async function openLocation() {
-  const query = encodeURIComponent(props.store.location || props.store.name)
+  const mapsUrl = props.store.google_maps_url
+  const latitude = props.store.latitude
+  const longitude = props.store.longitude
+
+  if (mapsUrl) {
+    window.open(mapsUrl, '_blank')
+    trackMapClick()
+    return
+  }
+
+  if (latitude && longitude) {
+    const destination = encodeURIComponent(`${latitude},${longitude}`)
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank')
+    trackMapClick()
+    return
+  }
+
+  const query = encodeURIComponent(fullAddressDisplay.value || props.store.name)
   window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
   trackMapClick()
 }
@@ -833,7 +853,7 @@ function scrollToSection(sectionId) {
                   </div>
                   <div v-if="!isVirtualOnlyStore" class="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="lucide:map-pin" class="size-5 text-primary" />
-                    <span>{{ store.location }}</span>
+                    <span>{{ fullAddressDisplay }}</span>
                   </div>
                   <div v-if="hasMinOrder" class="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="lucide:package" class="size-5 text-primary" />
@@ -1138,7 +1158,7 @@ function scrollToSection(sectionId) {
                   <h4 class="font-semibold mb-3">Localização</h4>
                   <p class="text-sm text-muted-foreground flex items-start gap-2">
                     <Icon icon="lucide:map-pin" class="size-4 mt-1 flex-shrink-0" />
-                    {{ store.location }}
+                    {{ fullAddressDisplay }}
                   </p>
                 </div>
 

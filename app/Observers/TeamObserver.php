@@ -150,7 +150,7 @@ class TeamObserver
         }
 
         // If coordinates already exist and address hasn't changed, skip
-        if ($team->latitude && $team->longitude && !$team->isDirty(['address', 'city', 'state', 'zip_code'])) {
+        if ($team->latitude && $team->longitude && !$team->isDirty(['address', 'address_number', 'city', 'state', 'zip_code', 'google_maps_url'])) {
             return false;
         }
 
@@ -163,6 +163,22 @@ class TeamObserver
     private function geocodeAddress(Team $team): void
     {
         try {
+            // Priority 1: if we have a Google Maps URL with embedded coordinates, use it directly.
+            $coordinatesFromGoogleMaps = $this->extractCoordinatesFromGoogleMapsUrl($team->google_maps_url);
+            if ($coordinatesFromGoogleMaps) {
+                $team->latitude = $coordinatesFromGoogleMaps['lat'];
+                $team->longitude = $coordinatesFromGoogleMaps['lng'];
+
+                Log::info('Coordinates extracted from Google Maps URL for team', [
+                    'team_id' => $team->id,
+                    'lat' => $team->latitude,
+                    'lng' => $team->longitude,
+                ]);
+
+                return;
+            }
+
+            // Priority 2: fallback to geocoding by address.
             // Build query with maximum detail available
             $query = $this->buildQuery($team);
 
@@ -200,6 +216,75 @@ class TeamObserver
     }
 
     /**
+     * Try to extract lat/lng from a Google Maps URL.
+     *
+     * Supported patterns:
+     * - .../@-16.6828852,-49.2065673,17z
+     * - ...?q=-16.6828852,-49.2065673
+     * - ...?query=-16.6828852,-49.2065673
+     * - ...!3d-16.6828852!4d-49.2065673
+     *
+     * @return array{lat: float, lng: float}|null
+     */
+    private function extractCoordinatesFromGoogleMapsUrl(?string $url): ?array
+    {
+        if (!$url || !is_string($url)) {
+            return null;
+        }
+
+        $cleanUrl = trim($url);
+        if ($cleanUrl === '') {
+            return null;
+        }
+
+        // Pattern: /@lat,lng
+        if (preg_match('/@(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/', $cleanUrl, $matches)) {
+            return $this->normalizeCoordinates((float) $matches[1], (float) $matches[2]);
+        }
+
+        // Pattern: !3dlat!4dlng
+        if (preg_match('/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/', $cleanUrl, $matches)) {
+            return $this->normalizeCoordinates((float) $matches[1], (float) $matches[2]);
+        }
+
+        // Patterns in query string: q=lat,lng or query=lat,lng
+        $parts = parse_url($cleanUrl);
+        if (!empty($parts['query'])) {
+            parse_str($parts['query'], $queryParams);
+            foreach (['q', 'query'] as $key) {
+                if (!empty($queryParams[$key]) && is_string($queryParams[$key])) {
+                    if (preg_match('/(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/', $queryParams[$key], $matches)) {
+                        return $this->normalizeCoordinates((float) $matches[1], (float) $matches[2]);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate latitude/longitude ranges.
+     *
+     * @return array{lat: float, lng: float}|null
+     */
+    private function normalizeCoordinates(float $lat, float $lng): ?array
+    {
+        if ($lat < -90 || $lat > 90) {
+            return null;
+        }
+
+        if ($lng < -180 || $lng > 180) {
+            return null;
+        }
+
+        return [
+            'lat' => $lat,
+            'lng' => $lng,
+        ];
+    }
+
+    /**
      * Build geocoding query with available data
      */
     private function buildQuery(Team $team): string
@@ -209,6 +294,10 @@ class TeamObserver
         // Add address (street + number)
         if (!empty($team->address)) {
             $parts[] = $team->address;
+        }
+
+        if (!empty($team->address_number)) {
+            $parts[] = $team->address_number;
         }
 
         // Add CEP if available

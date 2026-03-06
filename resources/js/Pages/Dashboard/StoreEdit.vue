@@ -59,6 +59,9 @@ const form = useForm({
   facebook: props.store.facebook || '',
   tiktok: props.store.tiktok || '',
   address: props.store.address || '',
+  address_number: props.store.address_number || '',
+  address_complement: props.store.address_complement || '',
+  google_maps_url: props.store.google_maps_url || '',
   city: props.store.city || '',
   state: props.store.state || '',
   zip_code: props.store.zip_code || '',
@@ -173,7 +176,7 @@ async function lookupCep(cep) {
 
 // Geocoding function using Nominatim (OpenStreetMap)
 async function geocodeAddress() {
-  const { zip_code, address, city, state } = form
+  const { zip_code, address, address_number, city, state } = form
 
   // Check if at least city and state are filled
   if (!city || !state) {
@@ -188,13 +191,15 @@ async function geocodeAddress() {
     // Build address query with maximum detail available
     let query = ''
 
-    if (zip_code && address) {
+    const addressWithNumber = [address, address_number].filter(Boolean).join(', ')
+
+    if (zip_code && addressWithNumber) {
       // Most precise: use CEP and address
-      query = `${address}, ${zip_code}, ${city}, ${state}, Brazil`
+      query = `${addressWithNumber}, ${zip_code}, ${city}, ${state}, Brazil`
     }
-    else if (address) {
+    else if (addressWithNumber) {
       // Use address with city and state
-      query = `${address}, ${city}, ${state}, Brazil`
+      query = `${addressWithNumber}, ${city}, ${state}, Brazil`
     }
     else {
       // Fallback: city and state only (less precise)
@@ -224,7 +229,7 @@ async function geocodeAddress() {
         query,
         lat: response.data[0].lat,
         lng: response.data[0].lon,
-        precision: address ? 'street-level' : 'city-level',
+        precision: addressWithNumber ? 'street-level' : 'city-level',
       })
     }
     else {
@@ -252,6 +257,9 @@ function submit() {
     facebook: data.facebook || null,
     tiktok: data.tiktok || null,
     address: data.address || null,
+    address_number: data.address_number || null,
+    address_complement: data.address_complement || null,
+    google_maps_url: data.google_maps_url || null,
     zip_code: data.zip_code || null,
     _method: 'PUT'
   })).post(route('dashboard.stores.update', props.store.slug), {
@@ -529,9 +537,30 @@ function submit() {
               </div>
 
               <!-- Address -->
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <Label for="address">Rua *</Label>
+                  <Input id="address" v-model="form.address" placeholder="Ex: Rua Augusta" required />
+                </div>
+                <div>
+                  <Label for="address_number">Número</Label>
+                  <Input id="address_number" v-model="form.address_number" placeholder="Ex: 123" />
+                </div>
+              </div>
+
               <div>
-                <Label for="address">Endereço (Rua, Número) *</Label>
-                <Input id="address" v-model="form.address" placeholder="Ex: Rua Augusta, 123" required />
+                <Label for="address_complement">Complemento</Label>
+                <Input id="address_complement" v-model="form.address_complement" placeholder="Ex: Sala 3, Bloco B" />
+              </div>
+
+              <div>
+                <Label for="google_maps_url">Link do Google Maps (opcional)</Label>
+                <Input
+                  id="google_maps_url"
+                  v-model="form.google_maps_url"
+                  type="url"
+                  placeholder="https://maps.app.goo.gl/... ou https://www.google.com/maps/..."
+                />
               </div>
 
               <!-- City and State -->

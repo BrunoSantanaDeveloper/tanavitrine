@@ -277,11 +277,24 @@ final class TeamResource extends Resource
                             })
                             ->helperText('Digite o CEP completo para buscar automaticamente'),
                         Forms\Components\TextInput::make('address')
-                            ->label('Endereço (Rua, Nº)')
+                            ->label('Rua')
                             ->required()
                             ->maxLength(255)
-                            ->placeholder('Ex: Rua Augusta, 123')
+                            ->placeholder('Ex: Rua Augusta'),
+                        Forms\Components\TextInput::make('address_number')
+                            ->label('Número')
+                            ->maxLength(50)
+                            ->placeholder('Ex: 123'),
+                        Forms\Components\TextInput::make('address_complement')
+                            ->label('Complemento')
+                            ->maxLength(255)
+                            ->placeholder('Ex: Sala 3, Bloco B')
                             ->columnSpanFull(),
+                        Forms\Components\TextInput::make('google_maps_url')
+                            ->label('Link do Google Maps (opcional)')
+                            ->url()
+                            ->maxLength(500)
+                            ->placeholder('https://maps.app.goo.gl/... ou https://www.google.com/maps/...'),
                         Forms\Components\TextInput::make('city')
                             ->label('Cidade')
                             ->required()

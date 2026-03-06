@@ -44,6 +44,9 @@ const form = useForm({
 
   // Step 4: Localização
   address: '',
+  address_number: '',
+  address_complement: '',
+  google_maps_url: '',
   city: '',
   state: '',
   zip_code: '',
@@ -315,11 +318,39 @@ function handleCEPInput(e) {
             <!-- Step 4: Location -->
             <div v-if="currentStep === 4" class="space-y-4">
               <div>
-                <Label for="address">Endereço</Label>
+                <Label for="address">Rua</Label>
                 <Input
                   id="address"
                   v-model="form.address"
-                  placeholder="Rua, número, bairro"
+                  placeholder="Ex: Rua Augusta"
+                />
+              </div>
+
+              <div>
+                <Label for="address_number">Número</Label>
+                <Input
+                  id="address_number"
+                  v-model="form.address_number"
+                  placeholder="Ex: 123"
+                />
+              </div>
+
+              <div>
+                <Label for="address_complement">Complemento</Label>
+                <Input
+                  id="address_complement"
+                  v-model="form.address_complement"
+                  placeholder="Ex: Sala 3, Bloco B"
+                />
+              </div>
+
+              <div>
+                <Label for="google_maps_url">Link do Google Maps (opcional)</Label>
+                <Input
+                  id="google_maps_url"
+                  v-model="form.google_maps_url"
+                  type="url"
+                  placeholder="https://maps.app.goo.gl/... ou https://www.google.com/maps/..."
                 />
               </div>
 

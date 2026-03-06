@@ -47,6 +47,7 @@ final class CreateNewUser implements CreatesNewUsers
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'video_url' => ['nullable', 'string', 'max:500'],
+            'google_maps_url' => ['nullable', 'url', 'max:500'],
             'video' => ['nullable', 'file', 'mimes:mp4,mov,webm,avi', 'max:102400'], // 100MB
         ])->validate();
 
@@ -203,20 +204,6 @@ final class CreateNewUser implements CreatesNewUsers
             $subcategory = json_decode($subcategory, true);
         }
 
-        // Preparar endereço formatado como string para geocoding
-        $addressString = null;
-        if ($address) {
-            $parts = array_filter([
-                $address['street'] ?? null,
-                $address['number'] ?? null,
-                $address['neighborhood'] ?? null,
-                $address['city'] ?? null,
-                $address['state'] ?? null,
-                $address['cep'] ?? null,
-            ]);
-            $addressString = implode(', ', $parts);
-        }
-
         // Atualizar a personal team com os dados da vitrine e converter para vitrine pública
         $team->update([
             'name' => $input['store_name'],
@@ -231,8 +218,11 @@ final class CreateNewUser implements CreatesNewUsers
             'store_type' => $input['store_type'] ?? 'virtual',
             'city' => $address['city'] ?? null,
             'state' => $address['state'] ?? null,
-            'address' => $addressString,
+            'address' => $address['street'] ?? null,
+            'address_number' => $address['number'] ?? null,
+            'address_complement' => $address['complement'] ?? null,
             'zip_code' => $address['cep'] ?? null,
+            'google_maps_url' => $input['google_maps_url'] ?? null,
             'instagram' => $socialMedia['instagram'] ?? null,
             'facebook' => $socialMedia['facebook'] ?? null,
             'tiktok' => $socialMedia['tiktok'] ?? null,

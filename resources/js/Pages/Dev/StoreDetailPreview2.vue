@@ -437,6 +437,9 @@ const formattedSubcategories = computed(() => {
   // If it's a string, return it directly
   return subcategory
 })
+const fullAddressDisplay = computed(() => {
+  return props.store?.full_address || props.store?.location || ''
+})
 
 // Lead capture modal
 const showLeadModal = ref(false)
@@ -494,8 +497,15 @@ async function submitLead() {
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
       window.open(url, '_blank')
     } else if (leadAction.value === 'map') {
-      const query = encodeURIComponent(props.store.location || props.store.name)
+      if (props.store.google_maps_url) {
+        window.open(props.store.google_maps_url, '_blank')
+      } else if (props.store.latitude && props.store.longitude) {
+        const destination = encodeURIComponent(`${props.store.latitude},${props.store.longitude}`)
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank')
+      } else {
+      const query = encodeURIComponent(fullAddressDisplay.value || props.store.name)
       window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
+      }
     } else if (leadAction.value === 'website') {
       window.open(props.store.website, '_blank')
     }
@@ -828,7 +838,7 @@ function scrollPrev() {
                   </div>
                   <div class="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="lucide:map-pin" class="size-5 text-primary" />
-                    <span>{{ store.location }}</span>
+                    <span>{{ fullAddressDisplay }}</span>
                   </div>
                   <div class="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="lucide:package" class="size-5 text-primary" />
@@ -1230,7 +1240,7 @@ function scrollPrev() {
                   <h4 class="font-semibold mb-3">Localização</h4>
                   <p class="text-sm text-muted-foreground flex items-start gap-2">
                     <Icon icon="lucide:map-pin" class="size-4 mt-1 flex-shrink-0" />
-                    {{ store.location }}
+                    {{ fullAddressDisplay }}
                   </p>
                 </div>
 
