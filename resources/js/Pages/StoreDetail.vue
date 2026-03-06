@@ -116,6 +116,9 @@ const isVirtualOnlyStore = computed(() => {
 const fullAddressDisplay = computed(() => {
   return props.store?.full_address || props.store?.location || ''
 })
+const locationSummaryDisplay = computed(() => {
+  return props.store?.location || fullAddressDisplay.value || ''
+})
 const storesForMap = computed(() => {
   if (isVirtualOnlyStore.value) return []
   if (props.store.show_on_map !== true) return []
@@ -853,7 +856,7 @@ function scrollToSection(sectionId) {
                   </div>
                   <div v-if="!isVirtualOnlyStore" class="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="lucide:map-pin" class="size-5 text-primary" />
-                    <span>{{ fullAddressDisplay }}</span>
+                    <span>{{ locationSummaryDisplay }}</span>
                   </div>
                   <div v-if="hasMinOrder" class="flex items-center gap-2 text-muted-foreground">
                     <Icon icon="lucide:package" class="size-5 text-primary" />
