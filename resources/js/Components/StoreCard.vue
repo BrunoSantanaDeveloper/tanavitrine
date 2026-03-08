@@ -54,6 +54,39 @@ const showLocationTag = computed(() => {
   const raw = normalizedStoreType.value
   return raw !== 'virtual' && raw !== 'online'
 })
+const normalizedSubcategories = computed(() => {
+  const raw = props.store.subcategory
+
+  if (Array.isArray(raw)) {
+    return raw
+      .map(item => String(item || '').trim())
+      .filter(Boolean)
+  }
+
+  if (typeof raw === 'string' && raw.trim()) {
+    return [raw.trim()]
+  }
+
+  return []
+})
+const showSubcategoryTag = computed(() => {
+  const raw = normalizedStoreType.value
+  return (raw === 'virtual' || raw === 'online' || raw === 'ambos') && normalizedSubcategories.value.length > 0
+})
+const subcategoriesLabel = computed(() => {
+  const items = normalizedSubcategories.value
+  const raw = normalizedStoreType.value
+
+  if (raw === 'ambos') {
+    return items[0] || ''
+  }
+
+  if (items.length <= 2) {
+    return items.join(', ')
+  }
+
+  return `${items.slice(0, 2).join(', ')} +${items.length - 2}`
+})
 
 const hasMultipleImages = computed(() => images.value.length > 1)
 const touchStartX = ref(0)
@@ -311,17 +344,21 @@ async function shareStore() {
 
           <!-- Info Tags -->
           <div class="flex flex-wrap gap-2 mb-3 text-sm">
-            <div v-if="store.minOrder" class="flex items-center gap-1 text-muted-foreground">
-              <Icon icon="lucide:package" class="size-4" />
-              <span>{{ store.minOrder }}</span>
-            </div>
             <div v-if="store.category" class="flex items-center gap-1 text-muted-foreground">
               <Icon icon="lucide:tag" class="size-4" />
               <span>{{ store.category }}</span>
             </div>
+            <div v-if="showSubcategoryTag" class="flex items-center gap-1 text-muted-foreground">
+              <Icon icon="lucide:tags" class="size-4" />
+              <span>{{ subcategoriesLabel }}</span>
+            </div>
             <div v-if="store.location && showLocationTag" class="flex items-center gap-1 text-muted-foreground">
               <Icon icon="lucide:map-pin" class="size-4" />
               <span>{{ store.location }}</span>
+            </div>
+            <div v-if="store.minOrder" class="flex items-center gap-1 text-muted-foreground">
+              <Icon icon="lucide:package" class="size-4" />
+              <span>{{ store.minOrder }}</span>
             </div>
           </div>
 

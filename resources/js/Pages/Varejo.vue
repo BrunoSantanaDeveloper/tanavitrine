@@ -1,10 +1,5 @@
 <script setup>
 import Button from '@/Components/shadcn/ui/button/Button.vue'
-import Select from '@/Components/shadcn/ui/select/Select.vue'
-import SelectContent from '@/Components/shadcn/ui/select/SelectContent.vue'
-import SelectItem from '@/Components/shadcn/ui/select/SelectItem.vue'
-import SelectTrigger from '@/Components/shadcn/ui/select/SelectTrigger.vue'
-import SelectValue from '@/Components/shadcn/ui/select/SelectValue.vue'
 import Input from '@/Components/shadcn/ui/input/Input.vue'
 import { Popover, PopoverContent, PopoverTrigger } from '@/Components/shadcn/ui/popover'
 import { Checkbox } from '@/Components/shadcn/ui/checkbox'
@@ -143,6 +138,43 @@ const selectedSubcategoriasText = computed(() => {
   return `${filters.value.subcategorias.length} selecionadas`
 })
 
+const activeFilter = ref(null)
+
+function isFilterOpen(filter) {
+  return activeFilter.value === filter
+}
+
+function handleFilterOpenChange(filter, nextOpen) {
+  activeFilter.value = nextOpen ? filter : activeFilter.value === filter ? null : activeFilter.value
+}
+
+function closeFilters() {
+  activeFilter.value = null
+}
+
+const selectedEstadoText = computed(() => filters.value.estado || 'Estado')
+const selectedCidadeText = computed(() => filters.value.cidade || 'Cidade')
+const selectedTipoLojaText = computed(() => {
+  if (filters.value.tipoLoja === 'virtual') return 'Loja Virtual'
+  if (filters.value.tipoLoja === 'ambos') return 'Virtual / Física'
+  return 'Tipo Loja'
+})
+const selectedGeneroText = computed(() => filters.value.genero || 'Gênero')
+
+function setSingleFilterValue(key, value) {
+  filters.value[key] = value
+  closeFilters()
+}
+
+function handleTipoLojaSelect(value) {
+  filters.value.tipoLoja = value
+  if (value === 'virtual') {
+    filters.value.estado = ''
+    filters.value.cidade = ''
+  }
+  closeFilters()
+}
+
 // Client-side filtering
 const alternatedListings = computed(() => {
   let filtered = props.stores
@@ -255,6 +287,7 @@ function clearFilters() {
     faixaPreco: '',
     busca: ''
   }
+  closeFilters()
 }
 
 // Store hover state for map interaction
@@ -361,7 +394,7 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Categoria -->
-          <Popover>
+          <Popover :open="isFilterOpen('categoria')" @update:open="(open) => handleFilterOpenChange('categoria', open)">
             <PopoverTrigger as-child>
               <Button
                 variant="outline"
@@ -374,29 +407,27 @@ onBeforeUnmount(() => {
             </PopoverTrigger>
             <PopoverContent class="w-[200px] p-0" align="start">
               <div class="max-h-64 overflow-y-auto p-4 space-y-2">
-                <div
+                <button
                   v-for="cat in categorias"
                   :key="cat.name"
-                  class="flex items-center space-x-2 cursor-pointer hover:bg-muted p-2 rounded"
+                  type="button"
+                  class="flex w-full items-center space-x-2 rounded p-2 text-left hover:bg-muted"
                   @click="toggleCategoria(cat.name)"
                 >
                   <Checkbox
-                    :id="`cat-${cat.name}`"
+                    :id="undefined"
                     :checked="filters.categorias.includes(cat.name)"
                   />
-                  <label
-                    :for="`cat-${cat.name}`"
-                    class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                  >
+                  <span class="text-sm font-medium leading-none flex-1">
                     {{ cat.name }} ({{ cat.count }})
-                  </label>
-                </div>
+                  </span>
+                </button>
               </div>
             </PopoverContent>
           </Popover>
 
           <!-- Subcategoria -->
-          <Popover>
+          <Popover :open="isFilterOpen('subcategoria')" @update:open="(open) => handleFilterOpenChange('subcategoria', open)">
             <PopoverTrigger as-child>
               <Button
                 variant="outline"
@@ -409,73 +440,148 @@ onBeforeUnmount(() => {
             </PopoverTrigger>
             <PopoverContent class="w-[200px] p-0" align="start">
               <div class="max-h-64 overflow-y-auto p-4 space-y-2">
-                <div
+                <button
                   v-for="sub in subcategorias"
                   :key="sub.name"
-                  class="flex items-center space-x-2 cursor-pointer hover:bg-muted p-2 rounded"
+                  type="button"
+                  class="flex w-full items-center space-x-2 rounded p-2 text-left hover:bg-muted"
                   @click="toggleSubcategoria(sub.name)"
                 >
                   <Checkbox
-                    :id="`sub-${sub.name}`"
+                    :id="undefined"
                     :checked="filters.subcategorias.includes(sub.name)"
                   />
-                  <label
-                    :for="`sub-${sub.name}`"
-                    class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                  >
+                  <span class="text-sm font-medium leading-none flex-1">
                     {{ sub.name }} ({{ sub.count }})
-                  </label>
-                </div>
+                  </span>
+                </button>
               </div>
             </PopoverContent>
           </Popover>
 
           <!-- Estado -->
-          <Select v-model="filters.estado">
-            <SelectTrigger class="w-full" :disabled="filters.tipoLoja === 'virtual'">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="estado in estados" :key="estado" :value="estado">
-                {{ estado }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <Popover :open="isFilterOpen('estado')" @update:open="(open) => handleFilterOpenChange('estado', open)">
+            <PopoverTrigger as-child>
+              <Button
+                variant="outline"
+                role="combobox"
+                class="w-full justify-between font-normal"
+                :disabled="filters.tipoLoja === 'virtual'"
+              >
+                {{ selectedEstadoText }}
+                <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-[200px] p-0" align="start">
+              <div class="max-h-64 overflow-y-auto p-2">
+                <button
+                  v-for="(estado, index) in estados"
+                  :key="estado"
+                  type="button"
+                  :class="[
+                    'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
+                    index === 0 ? 'bg-muted' : '',
+                  ]"
+                  @click="setSingleFilterValue('estado', estado)"
+                >
+                  {{ estado }}
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <!-- Cidade -->
-          <Select v-model="filters.cidade">
-            <SelectTrigger class="w-full" :disabled="filters.tipoLoja === 'virtual'">
-              <SelectValue placeholder="Cidade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="cidade in cidades" :key="cidade" :value="cidade">
-                {{ cidade }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <Popover :open="isFilterOpen('cidade')" @update:open="(open) => handleFilterOpenChange('cidade', open)">
+            <PopoverTrigger as-child>
+              <Button
+                variant="outline"
+                role="combobox"
+                class="w-full justify-between font-normal"
+                :disabled="filters.tipoLoja === 'virtual'"
+              >
+                {{ selectedCidadeText }}
+                <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-[200px] p-0" align="start">
+              <div class="max-h-64 overflow-y-auto p-2">
+                <button
+                  v-for="(cidade, index) in cidades"
+                  :key="cidade"
+                  type="button"
+                  :class="[
+                    'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
+                    index === 0 ? 'bg-muted' : '',
+                  ]"
+                  @click="setSingleFilterValue('cidade', cidade)"
+                >
+                  {{ cidade }}
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <!-- Tipo de Loja -->
-          <Select v-model="filters.tipoLoja">
-            <SelectTrigger class="w-full">
-              <SelectValue placeholder="Tipo Loja" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="virtual">Loja Virtual</SelectItem>
-              <SelectItem value="ambos">Virtual / Física</SelectItem>
-            </SelectContent>
-          </Select>
+          <Popover :open="isFilterOpen('tipoLoja')" @update:open="(open) => handleFilterOpenChange('tipoLoja', open)">
+            <PopoverTrigger as-child>
+              <Button
+                variant="outline"
+                role="combobox"
+                class="w-full justify-between font-normal"
+              >
+                {{ selectedTipoLojaText }}
+                <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-[200px] p-0" align="start">
+              <div class="p-2">
+                <button
+                  type="button"
+                  class="flex w-full items-center rounded bg-muted px-3 py-2 text-left text-sm hover:bg-muted"
+                  @click="handleTipoLojaSelect('virtual')"
+                >
+                  Loja Virtual
+                </button>
+                <button
+                  type="button"
+                  class="flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted"
+                  @click="handleTipoLojaSelect('ambos')"
+                >
+                  Virtual / Física
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <!-- Gênero -->
-          <Select v-model="filters.genero">
-            <SelectTrigger class="w-full">
-              <SelectValue placeholder="Gênero" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="gen in generos" :key="gen" :value="gen">
-                {{ gen }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <Popover :open="isFilterOpen('genero')" @update:open="(open) => handleFilterOpenChange('genero', open)">
+            <PopoverTrigger as-child>
+              <Button
+                variant="outline"
+                role="combobox"
+                class="w-full justify-between font-normal"
+              >
+                {{ selectedGeneroText }}
+                <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-[200px] p-0" align="start">
+              <div class="p-2">
+                <button
+                  v-for="(gen, index) in generos"
+                  :key="gen"
+                  type="button"
+                  :class="[
+                    'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
+                    index === 0 ? 'bg-muted' : '',
+                  ]"
+                  @click="setSingleFilterValue('genero', gen)"
+                >
+                  {{ gen }}
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </section>
