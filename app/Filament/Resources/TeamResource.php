@@ -413,6 +413,10 @@ final class TeamResource extends Resource
                             ->label('Destaque')
                             ->helperText('Marcar como loja em destaque')
                             ->default(false),
+                        Forms\Components\Toggle::make('is_verified')
+                            ->label('Loja verificada')
+                            ->helperText('Ative manualmente quando a loja tiver sido validada pela equipe.')
+                            ->default(false),
                         Forms\Components\DateTimePicker::make('featured_until')
                             ->label('Destaque até')
                             ->helperText('Data até quando a loja ficará em destaque'),
@@ -550,6 +554,10 @@ final class TeamResource extends Resource
                     ->label('Destaque')
                     ->boolean()
                     ->sortable(),
+                Tables\Columns\IconColumn::make('is_verified')
+                    ->label('Verificada')
+                    ->boolean()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
@@ -618,6 +626,11 @@ final class TeamResource extends Resource
                     ->placeholder('Todos')
                     ->trueLabel('Apenas em destaque')
                     ->falseLabel('Não destacadas'),
+                Tables\Filters\TernaryFilter::make('is_verified')
+                    ->label('Verificadas')
+                    ->placeholder('Todas')
+                    ->trueLabel('Apenas verificadas')
+                    ->falseLabel('Não verificadas'),
                 Tables\Filters\SelectFilter::make('state')
                     ->label('Estado')
                     ->options(fn () => Team::query()

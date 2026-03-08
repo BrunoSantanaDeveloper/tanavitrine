@@ -244,14 +244,22 @@ async function shareStore() {
           @touchend.passive="onImageTouchEnd"
         />
 
-        <!-- Featured Badge -->
-        <Badge
-          v-if="store.featured"
-          class="absolute top-3 left-3 bg-primary text-primary-foreground shadow-lg z-10"
-        >
-          <Icon icon="lucide:star" class="size-3 mr-1" />
-          Destaque
-        </Badge>
+        <div class="absolute top-3 left-3 flex flex-wrap gap-2 z-10">
+          <Badge
+            v-if="store.featured"
+            class="bg-primary text-primary-foreground shadow-lg"
+          >
+            <Icon icon="lucide:star" class="size-3 mr-1" />
+            Destaque
+          </Badge>
+          <Badge
+            v-if="store.is_verified"
+            class="bg-teal-600 text-white shadow-lg"
+          >
+            <Icon icon="lucide:badge-check" class="size-3 mr-1" />
+            Verificada
+          </Badge>
+        </div>
 
         <!-- Navigation Arrows (only show if multiple images) -->
         <template v-if="hasMultipleImages">

@@ -142,6 +142,10 @@ function openWhatsApp(whatsappNumber) {
                       <h3 class="text-xl font-bold text-foreground mb-2">
                         {{ store.name }}
                       </h3>
+                      <div v-if="store.is_verified" class="mb-2 flex items-center gap-1.5 text-sm font-medium text-teal-700">
+                        <Icon icon="lucide:badge-check" class="size-4" />
+                        <span>Loja verificada</span>
+                      </div>
                     </div>
                     <!-- Remove Favorite Button -->
                     <button

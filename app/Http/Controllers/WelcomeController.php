@@ -330,6 +330,7 @@ final class WelcomeController extends Controller
             'logo' => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
             'image' => $photos[0] ?? null,
             'images' => $photos,
+            'is_verified' => $store->isVerified(),
             'featured' => $store->isFeatured(),
             'show_on_map' => (bool) ($store->currentPlan()?->show_on_map ?? false),
             'can_favorite' => auth()->check(),

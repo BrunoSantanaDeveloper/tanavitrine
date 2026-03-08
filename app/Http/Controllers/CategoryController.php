@@ -99,6 +99,7 @@ class CategoryController extends Controller
                 'location' => $store->city && $store->state ? "{$store->city} - {$store->state}" : null,
                 'min_order' => $store->min_order,
                 'whatsapp' => $store->whatsapp,
+                'is_verified' => $store->isVerified(),
                 'featured' => $store->isFeatured(),
                 'image' => $store->photos->first()?->url ?? 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
             ];

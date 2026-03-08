@@ -112,6 +112,7 @@ class StoreController extends Controller
             'instagram' => $store->instagram,
             'facebook' => $store->facebook,
             'tiktok' => $store->tiktok,
+            'is_verified' => $store->isVerified(),
             'featured' => $store->isFeatured(),
             'logo' => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
             'video_url' => $store->video_url,

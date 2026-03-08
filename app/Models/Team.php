@@ -86,6 +86,7 @@ final class Team extends JetstreamTeam
         'zip_code',
         'latitude',
         'longitude',
+        'is_verified',
         'featured',
         'featured_until',
         'status',
@@ -121,6 +122,7 @@ final class Team extends JetstreamTeam
     {
         return [
             'personal_team' => 'boolean',
+            'is_verified' => 'boolean',
             'featured' => 'boolean',
             'featured_until' => 'datetime',
             'latitude' => 'decimal:8',
@@ -392,6 +394,14 @@ final class Team extends JetstreamTeam
         }
 
         return $this->featured_until->isFuture();
+    }
+
+    /**
+     * Check if store is verified without assuming the attribute is always hydrated.
+     */
+    public function isVerified(): bool
+    {
+        return (bool) ($this->getAttributes()['is_verified'] ?? false);
     }
 
     /**

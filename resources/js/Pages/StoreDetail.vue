@@ -840,9 +840,18 @@ function scrollToSection(sectionId) {
                           {{ storeTypeTagLabel }}
                         </Badge>
                       </div>
-                      <h1 class="text-4xl font-bold text-foreground mb-2">
-                        {{ store.name }}
-                      </h1>
+                      <div class="mb-2 flex flex-wrap items-center gap-3">
+                        <h1 class="text-4xl font-bold text-foreground">
+                          {{ store.name }}
+                        </h1>
+                        <Badge
+                          v-if="store.is_verified"
+                          class="bg-teal-600 text-white shadow-sm"
+                        >
+                          <Icon icon="lucide:badge-check" class="size-3 mr-1" />
+                          Fornecedor verificado
+                        </Badge>
+                      </div>
                       <p class="text-muted-foreground">Cod: {{ store.code }}</p>
                     </div>
                   </div>
