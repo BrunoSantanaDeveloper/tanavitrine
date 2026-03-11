@@ -33,7 +33,10 @@ jobs:
       - name: 🚀 Deploy to VPS
         run: |
           ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
-            set -e
+            set -euo pipefail
+
+            APP_SERVICE="tanavitrine_app_app_tanavitrine"
+            QUEUE_SERVICE="tanavitrine_app_queue_tanavitrine"
 
             echo "📂 Navegando para o diretório do projeto..."
             cd /root/tanavitrine
@@ -49,17 +52,37 @@ jobs:
             docker stack deploy -c docker-compose.app.yml tanavitrine_app --with-registry-auth
 
             echo "⚡ Forçando atualização dos serviços para usar a nova imagem..."
-            docker service update --force tanavitrine_app_app_tanavitrine
-            docker service update --force tanavitrine_app_queue_tanavitrine
+            docker service update --force "${APP_SERVICE}"
+            docker service update --force "${QUEUE_SERVICE}"
 
-            echo "⏳ Aguardando serviço estabilizar..."
-            sleep 30
+            echo "⏳ Aguardando container da aplicação ficar disponível..."
+            APP_CONTAINER_ID=""
+            for i in {1..36}; do
+              APP_CONTAINER_ID="$(docker ps -q --filter "name=${APP_SERVICE}" --filter "status=running" | head -1)"
+              if [ -n "${APP_CONTAINER_ID}" ]; then
+                echo "✅ Container em execução: ${APP_CONTAINER_ID}"
+                break
+              fi
+              echo "⏳ Tentativa ${i}/36: aguardando serviço subir..."
+              sleep 5
+            done
+
+            if [ -z "${APP_CONTAINER_ID}" ]; then
+              echo "❌ Nenhum container ativo encontrado para ${APP_SERVICE}."
+              echo "📋 Estado dos serviços:"
+              docker service ls | grep tanavitrine || true
+              echo "📋 Últimas tasks do serviço:"
+              docker service ps "${APP_SERVICE}" --no-trunc || true
+              echo "📋 Últimos logs do serviço:"
+              docker service logs --tail 100 "${APP_SERVICE}" || true
+              exit 1
+            fi
 
             echo "📊 Executando migrações..."
-            docker exec $(docker ps -q --filter "name=tanavitrine_app_app_tanavitrine" --filter "status=running" | head -1) php artisan migrate --force
+            docker exec "${APP_CONTAINER_ID}" php artisan migrate --force
 
             echo "✅ Validando se o sitemap está disponível..."
-            docker exec $(docker ps -q --filter "name=tanavitrine_app_app_tanavitrine" --filter "status=running" | head -1) ls -l public/sitemap.xml
+            docker exec "${APP_CONTAINER_ID}" ls -l public/sitemap.xml
 
             echo "🔍 Verificando status dos serviços..."
             docker service ls | grep tanavitrine
@@ -74,14 +97,14 @@ jobs:
       - name: 📊 Health Check
         run: |
           echo "Aguardando aplicação iniciar..."
-          sleep 15
-          for i in 1 2 3; do
+          sleep 20
+          for i in 1 2 3 4 5 6 7 8 9 10; do
             if curl -sf https://tanavitrine.com.br/up; then
               echo "✅ Health check OK!"
               exit 0
             fi
-            echo "⏳ Tentativa $i falhou, aguardando 10s..."
-            sleep 10
+            echo "⏳ Tentativa $i falhou, aguardando 15s..."
+            sleep 15
           done
-          echo "⚠️ Health check falhou após 3 tentativas"
+          echo "⚠️ Health check falhou após 10 tentativas"
           exit 1
