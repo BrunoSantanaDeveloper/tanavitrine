@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Team;
+use App\Models\Plan;
 use App\Models\PlanInterval;
 use App\Models\Category;
 use App\Models\Media;
@@ -31,7 +32,7 @@ final class OnboardingController extends Controller
         }
 
         $planIntervalId = $request->input('plan');
-        $planInterval = PlanInterval::with(['plan', 'interval'])->find($planIntervalId);
+        $planInterval = PlanInterval::with(['plan.limits', 'interval'])->find($planIntervalId);
 
         // Validar se o plano existe
         if (!$planInterval) {
@@ -39,7 +40,7 @@ final class OnboardingController extends Controller
         }
 
         // Buscar todos os planos disponíveis para permitir troca
-        $allPlans = PlanInterval::with(['plan', 'interval'])
+        $allPlans = PlanInterval::with(['plan.limits', 'interval'])
             ->whereHas('plan', function ($query) {
                 $query->where('is_active', true);
             })
@@ -52,6 +53,7 @@ final class OnboardingController extends Controller
                     'price' => $pi->price,
                     'interval_name' => $pi->interval->name,
                     'features' => $pi->plan->features,
+                    'max_featured_photos' => $this->resolveFeaturedPhotosLimit($pi->plan),
                 ];
             });
 
@@ -85,10 +87,23 @@ final class OnboardingController extends Controller
                 'price' => $planInterval->price,
                 'interval_name' => $planInterval->interval->name,
                 'features' => $planInterval->plan->features,
+                'max_featured_photos' => $this->resolveFeaturedPhotosLimit($planInterval->plan),
             ],
             'availablePlans' => $allPlans,
             'categories' => $categories,
         ]);
+    }
+
+    private function resolveFeaturedPhotosLimit(?Plan $plan): int
+    {
+        if (!$plan) {
+            return 10;
+        }
+
+        $configuredLimit = $plan->limits
+            ->first(fn ($limit) => $limit->module === 'store' && $limit->resource === 'photos_per_vitrine');
+
+        return $configuredLimit ? (int) $configuredLimit->limit_value : 10;
     }
 
     public function show()

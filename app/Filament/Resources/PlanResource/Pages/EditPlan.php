@@ -9,6 +9,17 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditPlan extends EditRecord
 {
+    private const ALLOWED_ANALYTICS_METRICS = [
+        'views',
+        'whatsapp_clicks',
+        'website_clicks',
+        'map_clicks',
+        'shares',
+        'instagram_clicks',
+        'facebook_clicks',
+        'tiktok_clicks',
+    ];
+
     protected static string $resource = PlanResource::class;
 
     protected function getHeaderActions(): array
@@ -54,16 +65,34 @@ class EditPlan extends EditRecord
     {
         $plan = $this->record;
         $data['intervals'] = $plan?->intervals_for_form ?? [];
-        $data['limits'] = $plan?->limits_for_form ?? [];
+        $data['store_limit_photos_per_vitrine'] = $this->getStoreLimitForForm($plan, 'photos_per_vitrine', 3);
+        $data['store_limit_collections_per_vitrine'] = $this->getStoreLimitForForm($plan, 'collections_per_vitrine', -1);
+        $data['store_limit_photos_per_collection'] = $this->getStoreLimitForForm($plan, 'photos_per_collection', -1);
+        $data['store_limit_videos_per_collection'] = $this->getStoreLimitForForm($plan, 'videos_per_collection', 0);
 
         // Load analytics metrics from features array
         $features = $plan->features ?? [];
         if (is_array($features) && isset($features['analytics']) && is_array($features['analytics'])) {
-            $data['analytics_metrics'] = $features['analytics'];
+            $data['analytics_metrics'] = array_values(array_intersect(
+                self::ALLOWED_ANALYTICS_METRICS,
+                $features['analytics']
+            ));
         } else {
             $data['analytics_metrics'] = [];
         }
 
         return $data;
+    }
+
+    private function getStoreLimitForForm($plan, string $resource, int $default): int
+    {
+        if (!$plan) {
+            return $default;
+        }
+
+        return $plan->limits()
+            ->where('module', 'store')
+            ->where('resource', $resource)
+            ->value('limit_value') ?? $default;
     }
 }

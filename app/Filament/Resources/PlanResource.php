@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PlanResource\Pages;
 use App\Models\Plan;
 use App\Models\Interval;
-use App\Models\Module;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -35,7 +34,7 @@ class PlanResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Plan Details')
+                Forms\Components\Section::make('Detalhes do Plano')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
@@ -52,11 +51,11 @@ class PlanResource extends Resource
                             ->default('brl'),
                         Forms\Components\TextInput::make('trial_days')
                             ->numeric()
-                            ->label('Trial Period (days)')
-                            ->helperText('Number of days for trial period'),
+                            ->label('Período de teste (dias)')
+                            ->helperText('Quantidade de dias de teste'),
                         Forms\Components\Textarea::make('features')
-                            ->label('Features')
-                            ->helperText('Enter one feature per line (analytics metrics are configured below)')
+                            ->label('Recursos')
+                            ->helperText('Informe um recurso por linha (as métricas de analytics são configuradas abaixo)')
                             ->rows(8)
                             ->columnSpanFull()
                             ->formatStateUsing(function ($state) {
@@ -78,13 +77,13 @@ class PlanResource extends Resource
 
                     ])->columns(2),
 
-                Forms\Components\Section::make('Plan Intervals')
+                Forms\Components\Section::make('Intervalos do Plano')
                     ->schema([
                         Forms\Components\Repeater::make('intervals')
                             ->default(fn ($record) => $record?->intervals_for_form ?? [])
                             ->schema([
                                 Forms\Components\Select::make('interval_id')
-                                    ->label('Interval')
+                                    ->label('Intervalo')
                                     ->options(Interval::where('is_active', true)->pluck('name', 'id'))
                                     ->required()
                                     ->searchable()
@@ -93,92 +92,56 @@ class PlanResource extends Resource
                                     ->required()
                                     ->numeric()
                                     ->prefix('R$')
-                                    ->helperText('Price in BRL (Brazilian Real)'),
+                                    ->helperText('Preço em BRL (Real Brasileiro)'),
                             ])
                             ->columns(2)
                             ->columnSpanFull(),
                     ]),
 
-                Forms\Components\Section::make('Resource Limits')
+                Forms\Components\Section::make('Limites da Loja')
+                    ->description('Configure os limites da vitrine para este plano')
                     ->schema([
-                        Forms\Components\Repeater::make('limits')
-                            ->default(fn ($record) => $record?->limits_for_form ?? [])
-                            ->relationship('limits')
-                            ->schema([
-                                Forms\Components\Select::make('module')
-                                    ->required()
-                                    ->options(Module::where('is_active', true)->pluck('name', 'code'))
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, callable $set) {
-                                        if ($state) {
-                                            $module = Module::where('code', $state)->first();
-                                            $set('limit_type', null);
-                                            $set('limit_types', $module->getAvailableLimitTypes());
-                                        }
-                                    }),
-                                Forms\Components\TextInput::make('resource')
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->helperText('Resource identifier (e.g., playlist_media, displays, own_media_uploads)'),
-                                Forms\Components\Select::make('limit_type')
-                                    ->required()
-                                    ->options(function (callable $get) {
-                                        $module = Module::where('code', $get('module'))->first();
-                                        return $module ? $module->getAvailableLimitTypes() : ['count' => 'Count'];
-                                    })
-                                    ->default('count'),
-                                Forms\Components\TextInput::make('limit_value')
-                                    ->required()
-                                    ->numeric()
-                                    ->default(0)
-                                    ->helperText('Use -1 for unlimited'),
-                                Forms\Components\Select::make('period')
-                                    ->required()
-                                    ->options([
-                                        'day' => 'Daily',
-                                        'week' => 'Weekly',
-                                        'month' => 'Monthly',
-                                        'year' => 'Yearly',
-                                    ])
-                                    ->default('month'),
-                                Forms\Components\TextInput::make('grace_period_days')
-                                    ->numeric()
-                                    ->label('Grace Period (days)')
-                                    ->helperText('Number of days allowed for exceeding the limit'),
-                                Forms\Components\TextInput::make('notification_threshold')
-                                    ->numeric()
-                                    ->label('Notification Threshold (%)')
-                                    ->helperText('Percentage of limit to trigger notification')
-                                    ->default(80)
-                                    ->minValue(1)
-                                    ->maxValue(100),
-                                Forms\Components\Toggle::make('is_hard_limit')
-                                    ->label('Hard Limit')
-                                    ->helperText('If enabled, the limit cannot be exceeded')
-                                    ->default(true),
+                        Forms\Components\TextInput::make('store_limit_photos_per_vitrine')
+                            ->label('Fotos de destaque por vitrine')
+                            ->numeric()
+                            ->required()
+                            ->default(3)
+                            ->minValue(-1)
+                            ->helperText('Use -1 para ilimitado'),
+                        Forms\Components\TextInput::make('store_limit_collections_per_vitrine')
+                            ->label('Coleções por vitrine')
+                            ->numeric()
+                            ->required()
+                            ->default(-1)
+                            ->minValue(-1)
+                            ->helperText('Use -1 para ilimitado'),
+                        Forms\Components\TextInput::make('store_limit_photos_per_collection')
+                            ->label('Fotos por coleção')
+                            ->numeric()
+                            ->required()
+                            ->default(-1)
+                            ->minValue(-1)
+                            ->helperText('Use -1 para ilimitado'),
+                        Forms\Components\TextInput::make('store_limit_videos_per_collection')
+                            ->label('Vídeos por coleção')
+                            ->numeric()
+                            ->required()
+                            ->default(0)
+                            ->minValue(-1)
+                            ->helperText('Use -1 para ilimitado'),
+                    ])
+                    ->columns(3),
 
-                                Forms\Components\Toggle::make('notify_on_limit')
-                                    ->label('Notify on Limit')
-                                    ->helperText('Send notification when limit is reached')
-                                    ->default(true),
-
-                                Forms\Components\KeyValue::make('metadata')
-                                    ->columnSpanFull(),
-                            ])
-                            ->columns(4)
-                            ->columnSpanFull(),
-                    ]),
-
-                Forms\Components\Section::make('New User Discount')
-                    ->description('Configure automatic discounts for new users subscribing to this plan')
+                Forms\Components\Section::make('Desconto para Novo Usuário')
+                    ->description('Configure descontos automáticos para novos usuários ao assinar este plano')
                     ->schema([
                         Forms\Components\Select::make('new_user_discount_type')
-                            ->label('Discount Type')
+                            ->label('Tipo de desconto')
                             ->options([
-                                'none' => 'No Discount',
-                                'percentage' => 'Percentage Discount',
-                                'fixed' => 'Fixed Amount Discount',
-                                'trial' => 'Free Trial',
+                                'none' => 'Sem desconto',
+                                'percentage' => 'Desconto percentual',
+                                'fixed' => 'Desconto em valor fixo',
+                                'trial' => 'Período grátis',
                             ])
                             ->default('none')
                             ->required()
@@ -194,24 +157,24 @@ class PlanResource extends Resource
                                 }
                             }),
                         Forms\Components\TextInput::make('new_user_discount_value')
-                            ->label('Discount Value')
+                            ->label('Valor do desconto')
                             ->numeric()
                             ->suffix(fn (callable $get) => $get('new_user_discount_type') === 'percentage' ? '%' : 'R$')
-                            ->helperText('For percentage: enter number (e.g., 50 for 50%). For fixed: enter amount in BRL.')
+                            ->helperText('Percentual: informe um número (ex.: 50 para 50%). Fixo: informe o valor em BRL.')
                             ->visible(fn (callable $get) => in_array($get('new_user_discount_type'), ['percentage', 'fixed']))
                             ->required(fn (callable $get) => in_array($get('new_user_discount_type'), ['percentage', 'fixed'])),
                         Forms\Components\TextInput::make('new_user_discount_duration_value')
-                            ->label('Duration Value')
+                            ->label('Duração')
                             ->numeric()
-                            ->helperText('Number of days/months/years for the discount')
+                            ->helperText('Quantidade de dias/meses/anos para o desconto')
                             ->visible(fn (callable $get) => $get('new_user_discount_type') !== 'none')
                             ->required(fn (callable $get) => $get('new_user_discount_type') !== 'none'),
                         Forms\Components\Select::make('new_user_discount_duration_unit')
-                            ->label('Duration Unit')
+                            ->label('Unidade da duração')
                             ->options([
-                                'days' => 'Days',
-                                'months' => 'Months',
-                                'years' => 'Years',
+                                'days' => 'Dias',
+                                'months' => 'Meses',
+                                'years' => 'Anos',
                             ])
                             ->default('months')
                             ->visible(fn (callable $get) => $get('new_user_discount_type') !== 'none')
@@ -220,44 +183,41 @@ class PlanResource extends Resource
                     ->collapsible()
                     ->collapsed(fn ($record) => !$record?->hasNewUserDiscount()),
 
-                Forms\Components\Section::make('Analytics Settings')
-                    ->description('Configure which analytics metrics are available for this plan')
+                Forms\Components\Section::make('Configurações de Analytics')
+                    ->description('Configure quais métricas de analytics estarão disponíveis para este plano')
                     ->schema([
                         Forms\Components\CheckboxList::make('analytics_metrics')
-                            ->label('Available Analytics Metrics')
+                            ->label('Métricas de analytics disponíveis')
                             ->options([
-                                'views' => 'Page Views (Visualizações)',
-                                'whatsapp_clicks' => 'WhatsApp Clicks',
-                                'website_clicks' => 'Website Clicks',
-                                'phone_clicks' => 'Phone Clicks',
-                                'map_clicks' => 'Map/Location Clicks',
-                                'shares' => 'Shares (Compartilhamentos)',
-                                'leads' => 'Lead Captures (Leads Capturados)',
-                                'instagram_clicks' => 'Instagram Clicks',
-                                'facebook_clicks' => 'Facebook Clicks',
-                                'tiktok_clicks' => 'TikTok Clicks',
+                                'views' => 'Visualizações da página',
+                                'whatsapp_clicks' => 'Cliques no WhatsApp',
+                                'website_clicks' => 'Cliques no site',
+                                'map_clicks' => 'Cliques no mapa/localização',
+                                'shares' => 'Compartilhamentos',
+                                'instagram_clicks' => 'Cliques no Instagram',
+                                'facebook_clicks' => 'Cliques no Facebook',
+                                'tiktok_clicks' => 'Cliques no TikTok',
                             ])
                             ->columns(2)
-                            ->helperText('Select which analytics metrics this plan can track. These will be saved separately from text features.')
-                            ->dehydrated(false),
+                            ->helperText('Selecione quais métricas este plano pode acompanhar. Elas são salvas separadamente dos recursos em texto.'),
                     ])
                     ->columns(1)
                     ->collapsible(),
 
-                Forms\Components\Section::make('Plan Settings')
+                Forms\Components\Section::make('Configurações do Plano')
                     ->schema([
                         Forms\Components\Toggle::make('is_featured')
-                            ->label('Featured Plan')
+                            ->label('Plano em destaque')
                             ->default(false),
                         Forms\Components\Toggle::make('show_on_map')
-                            ->label('Show on Map')
-                            ->helperText('If enabled, stores with this plan will appear on the map')
+                            ->label('Exibir no mapa')
+                            ->helperText('Se ativado, lojas com este plano aparecerão no mapa')
                             ->default(false),
                         Forms\Components\Toggle::make('is_active')
-                            ->label('Active')
+                            ->label('Ativo')
                             ->default(true),
                         Forms\Components\Toggle::make('is_default')
-                            ->label('Default Plan')
+                            ->label('Plano padrão')
                             ->default(false),
                         Forms\Components\TextInput::make('sort_order')
                             ->numeric()

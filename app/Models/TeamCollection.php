@@ -41,4 +41,14 @@ final class TeamCollection extends Model
     {
         return $this->hasMany(Media::class)->where('type', 'image');
     }
+
+    public function videos(): HasMany
+    {
+        return $this->hasMany(Media::class)->where('type', 'video');
+    }
+
+    public function allMedia(): HasMany
+    {
+        return $this->hasMany(Media::class);
+    }
 }

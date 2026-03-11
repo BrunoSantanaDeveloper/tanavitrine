@@ -217,7 +217,7 @@ final class TeamResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('zip_code')
                             ->label('CEP')
-                            ->required()
+                            ->required(fn (Forms\Get $get): bool => $get('store_type') !== 'virtual')
                             ->maxLength(9)
                             ->placeholder('00000-000')
                             ->mask('99999-999')
@@ -278,7 +278,7 @@ final class TeamResource extends Resource
                             ->helperText('Digite o CEP completo para buscar automaticamente'),
                         Forms\Components\TextInput::make('address')
                             ->label('Rua')
-                            ->required()
+                            ->required(fn (Forms\Get $get): bool => $get('store_type') !== 'virtual')
                             ->maxLength(255)
                             ->placeholder('Ex: Rua Augusta'),
                         Forms\Components\TextInput::make('address_number')
@@ -297,11 +297,11 @@ final class TeamResource extends Resource
                             ->placeholder('https://maps.app.goo.gl/... ou https://www.google.com/maps/...'),
                         Forms\Components\TextInput::make('city')
                             ->label('Cidade')
-                            ->required()
+                            ->required(fn (Forms\Get $get): bool => $get('store_type') !== 'virtual')
                             ->maxLength(100),
                         Forms\Components\TextInput::make('state')
                             ->label('Estado (UF)')
-                            ->required()
+                            ->required(fn (Forms\Get $get): bool => $get('store_type') !== 'virtual')
                             ->maxLength(2)
                             ->placeholder('SP')
                             ->length(2),

@@ -1155,7 +1155,7 @@ function scrollToSection(sectionId) {
 
                 <!-- Location Button -->
                 <Button
-                  v-if="!isVirtualOnlyStore"
+                  v-if="storesForMap.length > 0"
                   @click="openMapWidget"
                   size="lg"
                   variant="outline"

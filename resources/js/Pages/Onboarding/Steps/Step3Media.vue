@@ -13,11 +13,29 @@ import {
 
 const form = defineModel()
 const emit = defineEmits(['next', 'prev'])
+const props = defineProps({
+  plan: {
+    type: Object,
+    default: () => ({}),
+  },
+})
 
 const photoPreviews = ref([])
 const logoPreview = ref(null)
 const videoMode = ref('url') // 'url' or 'upload'
 const videoPreview = ref(null)
+
+const maxPhotosAllowed = computed(() => {
+  const configuredLimit = Number(props.plan?.max_featured_photos)
+
+  if (!Number.isFinite(configuredLimit))
+    return 10
+
+  if (configuredLimit < 0)
+    return null
+
+  return configuredLimit
+})
 
 // Restaurar previews quando o componente for montado
 onMounted(() => {
@@ -89,9 +107,24 @@ function handlePhotosUpload(e) {
     return true
   })
 
-  // Limitar a 10 fotos no total
-  const remainingSlots = 10 - form.value.photos.length
-  const filesToAdd = validFiles.slice(0, remainingSlots)
+  if (maxPhotosAllowed.value === 0) {
+    alert('Seu plano atual não permite adicionar fotos de destaque.')
+    return
+  }
+
+  let filesToAdd = validFiles
+  let remainingSlots = null
+
+  if (maxPhotosAllowed.value !== null) {
+    remainingSlots = maxPhotosAllowed.value - form.value.photos.length
+
+    if (remainingSlots <= 0) {
+      alert(`Você já atingiu o limite de ${maxPhotosAllowed.value} fotos para o seu plano.`)
+      return
+    }
+
+    filesToAdd = validFiles.slice(0, remainingSlots)
+  }
 
   filesToAdd.forEach((file) => {
     form.value.photos.push(file)
@@ -106,8 +139,8 @@ function handlePhotosUpload(e) {
     reader.readAsDataURL(file)
   })
 
-  if (validFiles.length > remainingSlots) {
-    alert(`Você pode adicionar no máximo 10 fotos. ${validFiles.length - remainingSlots} foto(s) foram ignoradas.`)
+  if (remainingSlots !== null && validFiles.length > remainingSlots) {
+    alert(`Você pode adicionar no máximo ${maxPhotosAllowed.value} fotos. ${validFiles.length - remainingSlots} foto(s) foram ignoradas.`)
   }
 }
 
@@ -182,7 +215,13 @@ const videoEmbedUrl = computed(() => {
 })
 
 const isValid = () => {
-  return form.value.logo && form.value.photos.length >= 3
+  if (!form.value.logo || form.value.photos.length < 3)
+    return false
+
+  if (maxPhotosAllowed.value !== null && form.value.photos.length > maxPhotosAllowed.value)
+    return false
+
+  return true
 }
 </script>
 
@@ -245,7 +284,11 @@ const isValid = () => {
 
       <!-- Upload de Fotos -->
       <div class="border-t pt-6">
-        <Label class="text-base mb-2 block">Fotos de Destaque da Loja * (mínimo 3, máximo 10)</Label>
+        <Label class="text-base mb-2 block">
+          Fotos de Destaque da Loja *
+          <span v-if="maxPhotosAllowed !== null">(mínimo 3, máximo {{ maxPhotosAllowed }})</span>
+          <span v-else>(mínimo 3, ilimitado)</span>
+        </Label>
         <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-teal-500 transition-colors">
           <input
             id="photos-upload"
@@ -283,8 +326,14 @@ const isValid = () => {
             </button>
           </div>
         </div>
-        <p class="text-xs text-muted-foreground mt-2">
-          {{ form.photos.length }} / 10 fotos adicionadas
+        <p v-if="maxPhotosAllowed !== null" class="text-xs text-muted-foreground mt-2">
+          {{ form.photos.length }} / {{ maxPhotosAllowed }} fotos adicionadas
+        </p>
+        <p v-else class="text-xs text-muted-foreground mt-2">
+          {{ form.photos.length }} fotos adicionadas
+        </p>
+        <p v-if="maxPhotosAllowed !== null && form.photos.length > maxPhotosAllowed" class="text-xs text-red-600 mt-1">
+          Você excedeu o limite de fotos do plano selecionado. Remova {{ form.photos.length - maxPhotosAllowed }} foto(s) para continuar.
         </p>
       </div>
 

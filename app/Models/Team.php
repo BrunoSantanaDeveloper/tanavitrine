@@ -410,7 +410,11 @@ final class Team extends JetstreamTeam
     public function canUploadPhotos(int $count = 1): bool
     {
         $currentCount = $this->photos()->count();
-        $limit = $this->getPlanLimit('photos_per_vitrine', 3);
+        $limit = $this->plan?->getModuleLimit('store', 'photos_per_vitrine') ?? 3;
+
+        if ($limit < 0) {
+            return true;
+        }
 
         return ($currentCount + $count) <= $limit;
     }

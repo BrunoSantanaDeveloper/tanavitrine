@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { Dialog, DialogContent } from '@/Components/shadcn/ui/dialog'
 import { Button } from '@/Components/shadcn/ui/button'
+import Badge from '@/Components/shadcn/ui/badge/Badge.vue'
 import StoreMap from '@/Components/StoreMap.vue'
 import { Icon } from '@iconify/vue'
 import { useMediaQuery } from '@vueuse/core'
@@ -145,6 +146,10 @@ const widgetClasses = computed(() => {
   return 'w-[400px] h-[500px] bottom-24 right-6'
 })
 
+const hasFeaturedStores = computed(() => {
+  return props.stores.some(store => store.featured)
+})
+
 // Handle events from map
 function handleMarkerClick(store) {
   emit('marker-click', store)
@@ -203,6 +208,13 @@ defineExpose({
             <div class="flex items-center gap-2">
               <Icon icon="lucide:map-pin" class="size-4 text-primary" />
               <h3 class="font-semibold text-sm">{{ title }}</h3>
+              <Badge
+                v-if="hasFeaturedStores"
+                class="bg-primary text-primary-foreground shadow-lg"
+              >
+                <Icon icon="lucide:star" class="size-3 mr-1" />
+                Destaque
+              </Badge>
             </div>
             <div class="flex items-center gap-1">
               <!-- Fullscreen Toggle -->
@@ -293,6 +305,13 @@ defineExpose({
               <h2 class="text-lg font-semibold">
                 {{ title }}
               </h2>
+              <Badge
+                v-if="hasFeaturedStores"
+                class="mt-2 bg-primary text-primary-foreground shadow-lg w-fit"
+              >
+                <Icon icon="lucide:star" class="size-3 mr-1" />
+                Destaque
+              </Badge>
               <p class="text-sm text-muted-foreground mt-1">
                 {{ stores.length }} {{ stores.length === 1 ? 'loja encontrada' : 'lojas encontradas' }}
               </p>

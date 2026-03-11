@@ -7,6 +7,12 @@ use App\Models\Interval;
 
 class PlanService
 {
+    private const STORE_LIMIT_FIELD_MAP = [
+        'store_limit_photos_per_vitrine' => 'photos_per_vitrine',
+        'store_limit_collections_per_vitrine' => 'collections_per_vitrine',
+        'store_limit_photos_per_collection' => 'photos_per_collection',
+        'store_limit_videos_per_collection' => 'videos_per_collection',
+    ];
 
     public function createPlan(array $data): Plan
     {
@@ -54,27 +60,7 @@ class PlanService
                 }
             }
 
-            // Create limits
-            if (isset($data['limits']) && is_array($data['limits'])) {
-                foreach ($data['limits'] as $limitData) {
-                    if (!isset($limitData['module']) || !isset($limitData['resource'])) {
-                        continue;
-                    }
-
-                    $plan->limits()->create([
-                        'module' => $limitData['module'],
-                        'resource' => $limitData['resource'],
-                        'limit_type' => $limitData['limit_type'],
-                        'limit_value' => $limitData['limit_value'],
-                        'period' => $limitData['period'] ?? 'month',
-                        'grace_period_days' => $limitData['grace_period_days'] ?? null,
-                        'notification_threshold' => $limitData['notification_threshold'] ?? 80,
-                        'is_hard_limit' => $limitData['is_hard_limit'] ?? true,
-                        'notify_on_limit' => $limitData['notify_on_limit'] ?? true,
-                        'metadata' => $limitData['metadata'] ?? [],
-                    ]);
-                }
-            }
+            $this->syncPlanLimits($plan, $data);
 
             return $plan;
 
@@ -126,6 +112,8 @@ class PlanService
                 }
             }
 
+            $this->syncPlanLimits($plan, $data);
+
             return $plan;
 
         } catch (\Exception $e) {
@@ -163,6 +151,115 @@ class PlanService
         }
 
         return $featuresArray;
+    }
+
+    /**
+     * Persist plan limits from dedicated store limit fields and legacy payloads.
+     */
+    private function syncPlanLimits(Plan $plan, array $data): void
+    {
+        if (!isset($data['limits']) && !$this->hasStoreLimitFields($data)) {
+            return;
+        }
+
+        $limits = $this->normalizeLimits($plan, $data);
+
+        $plan->limits()->delete();
+
+        foreach ($limits as $limitData) {
+            $plan->limits()->create($limitData);
+        }
+    }
+
+    private function hasStoreLimitFields(array $data): bool
+    {
+        foreach (array_keys(self::STORE_LIMIT_FIELD_MAP) as $field) {
+            if (array_key_exists($field, $data)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function normalizeLimits(Plan $plan, array $data): array
+    {
+        $hasLegacyLimitsPayload = isset($data['limits']) && is_array($data['limits']);
+        $limits = $hasLegacyLimitsPayload
+            ? []
+            : $plan->limits
+                ->map(function ($limit): array {
+                    return [
+                        'module' => (string) $limit->module,
+                        'resource' => (string) $limit->resource,
+                        'limit_type' => (string) $limit->limit_type,
+                        'limit_value' => (int) $limit->limit_value,
+                        'period' => (string) $limit->period,
+                        'grace_period_days' => $limit->grace_period_days,
+                        'notification_threshold' => (int) $limit->notification_threshold,
+                        'is_hard_limit' => (bool) $limit->is_hard_limit,
+                        'notify_on_limit' => (bool) $limit->notify_on_limit,
+                        'metadata' => is_array($limit->metadata) ? $limit->metadata : [],
+                    ];
+                })
+                ->toArray();
+
+        if ($hasLegacyLimitsPayload) {
+            foreach ($data['limits'] as $limitData) {
+                if (!isset($limitData['module'], $limitData['resource'])) {
+                    continue;
+                }
+
+                $limits[] = [
+                    'module' => (string) $limitData['module'],
+                    'resource' => (string) $limitData['resource'],
+                    'limit_type' => (string) ($limitData['limit_type'] ?? 'count'),
+                    'limit_value' => (int) ($limitData['limit_value'] ?? 0),
+                    'period' => (string) ($limitData['period'] ?? 'month'),
+                    'grace_period_days' => isset($limitData['grace_period_days']) && $limitData['grace_period_days'] !== ''
+                        ? (int) $limitData['grace_period_days']
+                        : null,
+                    'notification_threshold' => (int) ($limitData['notification_threshold'] ?? 80),
+                    'is_hard_limit' => (bool) ($limitData['is_hard_limit'] ?? true),
+                    'notify_on_limit' => (bool) ($limitData['notify_on_limit'] ?? true),
+                    'metadata' => is_array($limitData['metadata'] ?? null) ? $limitData['metadata'] : [],
+                ];
+            }
+        }
+
+        foreach (self::STORE_LIMIT_FIELD_MAP as $field => $resource) {
+            if (!array_key_exists($field, $data) || $data[$field] === '' || $data[$field] === null) {
+                continue;
+            }
+
+            $limits = array_values(array_filter(
+                $limits,
+                fn (array $limit): bool => !($limit['module'] === 'store' && $limit['resource'] === $resource)
+            ));
+
+            $limits[] = [
+                'module' => 'store',
+                'resource' => $resource,
+                'limit_type' => 'count',
+                'limit_value' => (int) $data[$field],
+                'period' => 'month',
+                'grace_period_days' => null,
+                'notification_threshold' => 80,
+                'is_hard_limit' => true,
+                'notify_on_limit' => true,
+                'metadata' => [],
+            ];
+        }
+
+        // Keep only one row per resource/period because the current DB unique index is
+        // plan_id + resource + period (module is not part of the constraint).
+        $deduplicated = [];
+        foreach ($limits as $limit) {
+            $key = "{$limit['resource']}|{$limit['period']}";
+            $deduplicated[$key] = $limit;
+        }
+
+        return array_values($deduplicated);
     }
 
 }

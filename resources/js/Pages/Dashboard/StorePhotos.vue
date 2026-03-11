@@ -22,7 +22,9 @@ const props = defineProps({
 
 const featuredFileInput = ref(null)
 const collectionPhotoInput = ref(null)
-const uploadingCollectionId = ref(null)
+const collectionVideoInput = ref(null)
+const uploadingCollectionPhotoId = ref(null)
+const uploadingCollectionVideoId = ref(null)
 
 const uploadFeaturedForm = useForm({
   photos: [],
@@ -49,11 +51,52 @@ const videoForm = useForm({
 })
 
 const hasCollections = computed(() => (props.store.collections?.length || 0) > 0)
+const featuredPhotoLimitReached = computed(() =>
+  typeof props.store.max_featured_photos === 'number'
+  && props.store.max_featured_photos >= 0
+  && props.store.photos_count >= props.store.max_featured_photos,
+)
+const collectionLimitReached = computed(() =>
+  typeof props.store.max_collections === 'number'
+  && props.store.max_collections >= 0
+  && props.store.collections_count >= props.store.max_collections,
+)
+const hasFeaturedPhotoLimit = computed(() =>
+  typeof props.store.max_featured_photos === 'number' && props.store.max_featured_photos >= 0,
+)
+const hasCollectionsLimit = computed(() =>
+  typeof props.store.max_collections === 'number' && props.store.max_collections >= 0,
+)
+const hasCollectionPhotoLimit = computed(() =>
+  typeof props.store.max_photos_per_collection === 'number' && props.store.max_photos_per_collection >= 0,
+)
+const hasCollectionVideoLimit = computed(() =>
+  typeof props.store.max_videos_per_collection === 'number' && props.store.max_videos_per_collection >= 0,
+)
+const hasCollectionVideoAccess = computed(() =>
+  typeof props.store.max_videos_per_collection === 'number'
+    ? props.store.max_videos_per_collection !== 0
+    : false,
+)
 
 function handleFeaturedFileSelect(event) {
+  if (featuredPhotoLimitReached.value) {
+    toast.error('Você atingiu o limite de fotos de destaque do seu plano.')
+    if (featuredFileInput.value)
+      featuredFileInput.value.value = ''
+    return
+  }
+
   const files = Array.from(event.target.files || [])
   if (!files.length)
     return
+
+  if (typeof props.store.remaining_featured_photos === 'number' && files.length > props.store.remaining_featured_photos) {
+    toast.error(`Você pode adicionar no máximo ${props.store.remaining_featured_photos} foto(s) de destaque.`)
+    if (featuredFileInput.value)
+      featuredFileInput.value.value = ''
+    return
+  }
 
   uploadFeaturedForm.photos = files
   uploadFeaturedPhotos()
@@ -95,6 +138,11 @@ function setPrimaryFeaturedPhoto(photoId) {
 }
 
 function createCollection() {
+  if (collectionLimitReached.value) {
+    toast.error('Você atingiu o limite de coleções do seu plano.')
+    return
+  }
+
   createCollectionForm.post(route('dashboard.stores.collections.create', props.store.slug), {
     preserveScroll: true,
     onSuccess: () => {
@@ -163,16 +211,31 @@ function setFeaturedCollection(collectionId) {
 }
 
 function triggerCollectionPhotoUpload(collectionId) {
-  uploadingCollectionId.value = collectionId
+  const collection = props.store.collections?.find(item => item.id === collectionId)
+  if (collection && !collection.can_add_more_photos) {
+    toast.error('Você atingiu o limite de fotos desta coleção no seu plano.')
+    return
+  }
+
+  uploadingCollectionPhotoId.value = collectionId
   collectionPhotoInput.value?.click()
 }
 
 function handleCollectionFileSelect(event) {
   const files = Array.from(event.target.files || [])
-  const collectionId = uploadingCollectionId.value
+  const collectionId = uploadingCollectionPhotoId.value
 
   if (!files.length || !collectionId)
     return
+
+  const collection = props.store.collections?.find(item => item.id === collectionId)
+  if (collection && typeof collection.remaining_photos === 'number' && files.length > collection.remaining_photos) {
+      toast.error(`Você pode adicionar no máximo ${collection.remaining_photos} foto(s) nesta coleção.`)
+      if (collectionPhotoInput.value)
+        collectionPhotoInput.value.value = ''
+      uploadingCollectionPhotoId.value = null
+      return
+  }
 
   router.post(route('dashboard.stores.collections.photos.upload', {
     slug: props.store.slug,
@@ -183,19 +246,71 @@ function handleCollectionFileSelect(event) {
     preserveScroll: true,
     forceFormData: true,
     onSuccess: () => {
-      toast.success(files.length > 1 ? 'Fotos adicionadas na coleção!' : 'Foto adicionada na coleção!')
-      if (collectionPhotoInput.value)
-        collectionPhotoInput.value.value = ''
-      uploadingCollectionId.value = null
+        toast.success(files.length > 1 ? 'Fotos adicionadas na coleção!' : 'Foto adicionada na coleção!')
+        if (collectionPhotoInput.value)
+          collectionPhotoInput.value.value = ''
+        uploadingCollectionPhotoId.value = null
+      },
+      onError: () => {
+        toast.error('Erro ao adicionar foto na coleção!')
+      },
+  })
+}
+
+function triggerCollectionVideoUpload(collectionId) {
+  if (!hasCollectionVideoAccess.value) {
+    toast.error('Seu plano atual não inclui vídeos por coleção. Faça upgrade para liberar esse recurso.')
+    return
+  }
+
+  const collection = props.store.collections?.find(item => item.id === collectionId)
+  if (collection && !collection.can_add_more_videos) {
+    toast.error('Você atingiu o limite de vídeos desta coleção no seu plano.')
+    return
+  }
+
+  uploadingCollectionVideoId.value = collectionId
+  collectionVideoInput.value?.click()
+}
+
+function handleCollectionVideoSelect(event) {
+  const files = Array.from(event.target.files || [])
+  const collectionId = uploadingCollectionVideoId.value
+
+  if (!files.length || !collectionId)
+    return
+
+  const collection = props.store.collections?.find(item => item.id === collectionId)
+  if (collection && typeof collection.remaining_videos === 'number' && files.length > collection.remaining_videos) {
+    toast.error(`Você pode adicionar no máximo ${collection.remaining_videos} vídeo(s) nesta coleção.`)
+    if (collectionVideoInput.value)
+      collectionVideoInput.value.value = ''
+    uploadingCollectionVideoId.value = null
+    return
+  }
+
+  router.post(route('dashboard.stores.collections.photos.upload', {
+    slug: props.store.slug,
+    collection: collectionId,
+  }), {
+    videos: files,
+  }, {
+    preserveScroll: true,
+    forceFormData: true,
+    onSuccess: () => {
+      toast.success(files.length > 1 ? 'Vídeos adicionados na coleção!' : 'Vídeo adicionado na coleção!')
+      if (collectionVideoInput.value)
+        collectionVideoInput.value.value = ''
+      uploadingCollectionVideoId.value = null
     },
     onError: () => {
-      toast.error('Erro ao adicionar foto na coleção!')
+      toast.error('Erro ao adicionar vídeo na coleção!')
     },
   })
 }
 
 function deleteCollectionPhoto(collectionId, photoId) {
-  if (!confirm('Tem certeza que deseja excluir esta foto da coleção?'))
+  if (!confirm('Tem certeza que deseja excluir esta mídia da coleção?'))
     return
 
   router.delete(route('dashboard.stores.collections.photos.delete', {
@@ -204,8 +319,8 @@ function deleteCollectionPhoto(collectionId, photoId) {
     photo: photoId,
   }), {
     preserveScroll: true,
-    onSuccess: () => toast.success('Foto removida da coleção!'),
-    onError: () => toast.error('Erro ao remover foto da coleção!'),
+    onSuccess: () => toast.success('Mídia removida da coleção!'),
+    onError: () => toast.error('Erro ao remover mídia da coleção!'),
   })
 }
 
@@ -335,12 +450,15 @@ function submitVideo() {
           </div>
         </div>
 
-        <!-- Fotos em Destaque -->
+        <!-- Mídia em Destaque -->
         <Card class="mb-6">
           <CardHeader>
-            <CardTitle>Fotos em Destaque</CardTitle>
+            <CardTitle>Mídia em Destaque</CardTitle>
             <CardDescription>
-              Gerencie as fotos de destaque da sua vitrine.
+              Gerencie as fotos de destaque e o vídeo institucional da sua vitrine.
+              <span v-if="hasFeaturedPhotoLimit" class="block mt-1">
+                Fotos de destaque: {{ store.photos_count }}/{{ store.max_featured_photos }} foto(s).
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -359,15 +477,32 @@ function submitVideo() {
                   variant="outline"
                   @click="featuredFileInput?.click()"
                   class="mb-4"
-                  :disabled="uploadFeaturedForm.processing"
+                  :disabled="uploadFeaturedForm.processing || featuredPhotoLimitReached"
                 >
                   <Icon v-if="!uploadFeaturedForm.processing" icon="lucide:upload" class="mr-2 h-5 w-5" />
                   <Icon v-else icon="lucide:loader-2" class="mr-2 h-5 w-5 animate-spin" />
-                  {{ uploadFeaturedForm.processing ? 'Enviando...' : 'Adicionar Fotos em Destaque' }}
+                  {{ uploadFeaturedForm.processing ? 'Enviando...' : featuredPhotoLimitReached ? 'Limite atingido' : 'Adicionar Fotos em Destaque' }}
                 </Button>
                 <p class="text-sm text-muted-foreground">
                   PNG, JPG, JPEG ou WEBP até 5MB por arquivo. Você pode selecionar várias fotos.
                 </p>
+                <p v-if="featuredPhotoLimitReached" class="text-sm text-red-600 mt-2">
+                  Você já atingiu o limite de fotos de destaque do seu plano.
+                </p>
+                <div v-if="featuredPhotoLimitReached" class="mt-3 flex flex-col items-center gap-2">
+                  <p class="text-sm text-amber-700">
+                    Faça upgrade para adicionar mais fotos de destaque.
+                  </p>
+                  <Button
+                    :as="Link"
+                    :href="route('subscriptions.create')"
+                    size="sm"
+                    class="bg-teal-600 hover:bg-teal-700"
+                  >
+                    <Icon icon="lucide:crown" class="mr-2 h-4 w-4" />
+                    Fazer Upgrade
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -417,6 +552,163 @@ function submitVideo() {
             <div v-else class="text-center py-8 text-muted-foreground">
               Nenhuma foto de destaque adicionada ainda.
             </div>
+
+            <div class="border-t border-gray-200 my-8" />
+
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">Vídeo do Fornecedor</h3>
+                <p class="text-sm text-muted-foreground mt-1">
+                  Adicione um vídeo para mostrar seus produtos (opcional).
+                </p>
+              </div>
+
+              <Tabs v-model="videoMode" class="w-full">
+                <TabsList class="grid w-full grid-cols-2">
+                  <TabsTrigger value="url">Link do Vídeo</TabsTrigger>
+                  <TabsTrigger value="upload">Upload de Arquivo</TabsTrigger>
+                </TabsList>
+
+                <!-- URL Mode -->
+                <TabsContent value="url" class="space-y-4">
+                  <div>
+                    <Label for="video_url">URL do Vídeo (YouTube ou Vimeo)</Label>
+                    <Input
+                      id="video_url"
+                      v-model="videoForm.video_url"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      @input="videoForm.video = null"
+                    />
+                    <p class="text-xs text-muted-foreground mt-2">
+                      Cole o link do vídeo do YouTube ou Vimeo
+                    </p>
+                  </div>
+
+                  <div v-if="videoEmbedUrl" class="mt-4">
+                    <Label class="mb-2 block">Pré-visualização</Label>
+                    <div class="aspect-video rounded-lg overflow-hidden bg-black">
+                      <iframe
+                        :src="videoEmbedUrl"
+                        class="w-full h-full"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                      />
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        @click="removeVideo"
+                      >
+                        <Icon icon="lucide:trash-2" class="mr-2 h-4 w-4" />
+                        Remover Vídeo
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        class="bg-teal-600 hover:bg-teal-700"
+                        @click="submitVideo"
+                        :disabled="videoForm.processing"
+                      >
+                        <Icon v-if="videoForm.processing" icon="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
+                        Salvar Vídeo
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button
+                    v-else-if="videoForm.video_url"
+                    type="button"
+                    size="sm"
+                    class="bg-teal-600 hover:bg-teal-700"
+                    @click="submitVideo"
+                    :disabled="videoForm.processing"
+                  >
+                    <Icon v-if="videoForm.processing" icon="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
+                    Salvar Vídeo
+                  </Button>
+                </TabsContent>
+
+                <!-- Upload Mode -->
+                <TabsContent value="upload" class="space-y-4">
+                  <div>
+                    <Label for="video_upload">Upload de Vídeo</Label>
+                    <div class="mt-2">
+                      <input
+                        ref="videoInput"
+                        type="file"
+                        id="video_upload"
+                        accept="video/mp4,video/mov,video/webm,video/avi"
+                        class="hidden"
+                        @change="handleVideoUpload"
+                      >
+                      <Button
+                        type="button"
+                        variant="outline"
+                        class="w-full"
+                        @click="videoInput?.click()"
+                      >
+                        <Icon icon="lucide:upload" class="mr-2 h-4 w-4" />
+                        Escolher Arquivo de Vídeo
+                      </Button>
+                    </div>
+                    <p class="text-xs text-muted-foreground mt-2">
+                      Formatos aceitos: MP4, MOV, WEBM, AVI (máx. 100MB)
+                    </p>
+                  </div>
+
+                  <div v-if="videoForm.video || videoPreview" class="mt-4">
+                    <Label class="mb-2 block">Pré-visualização</Label>
+                    <div class="aspect-video rounded-lg overflow-hidden bg-black">
+                      <video
+                        v-if="videoPreview"
+                        :src="videoPreview"
+                        class="w-full h-full"
+                        controls
+                        preload="metadata"
+                      >
+                        Seu navegador não suporta a reprodução de vídeos.
+                      </video>
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        @click="removeVideo"
+                      >
+                        <Icon icon="lucide:trash-2" class="mr-2 h-4 w-4" />
+                        Remover Vídeo
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        class="bg-teal-600 hover:bg-teal-700"
+                        @click="submitVideo"
+                        :disabled="videoForm.processing"
+                      >
+                        <Icon v-if="videoForm.processing" icon="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
+                        Salvar Vídeo
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <div v-if="store.video_url" class="pt-2">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  @click="deleteSavedVideo"
+                >
+                  <Icon icon="lucide:trash-2" class="mr-2 h-4 w-4" />
+                  Excluir vídeo salvo
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -426,6 +718,18 @@ function submitVideo() {
             <CardTitle>Coleções</CardTitle>
             <CardDescription>
               Crie coleções para organizar sua galeria e marque uma coleção em destaque.
+              <span v-if="hasCollectionsLimit" class="block mt-1">
+                Limite do plano: {{ store.collections_count }}/{{ store.max_collections }} coleção(ões).
+              </span>
+              <span v-if="hasCollectionPhotoLimit" class="block">
+                Limite de fotos por coleção: {{ store.max_photos_per_collection }}.
+              </span>
+              <span v-if="hasCollectionVideoLimit" class="block">
+                Limite de vídeos por coleção: {{ store.max_videos_per_collection }}.
+              </span>
+              <span v-if="!hasCollectionVideoAccess" class="block mt-1 text-amber-700">
+                Vídeos por coleção disponíveis no plano Destaque.
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -454,13 +758,16 @@ function submitVideo() {
                 <Button
                   type="button"
                   class="bg-teal-600 hover:bg-teal-700"
-                  :disabled="createCollectionForm.processing || !createCollectionForm.name"
+                  :disabled="createCollectionForm.processing || !createCollectionForm.name || collectionLimitReached"
                   @click="createCollection"
                 >
                   <Icon icon="lucide:plus" class="mr-2 h-4 w-4" />
-                  Criar Coleção
+                  {{ collectionLimitReached ? 'Limite atingido' : 'Criar Coleção' }}
                 </Button>
               </div>
+              <p v-if="collectionLimitReached" class="text-sm text-red-600 mt-3 text-right">
+                Você já atingiu o limite de coleções do seu plano.
+              </p>
             </div>
 
             <div v-if="hasCollections" class="space-y-6">
@@ -481,7 +788,8 @@ function submitVideo() {
                       {{ collection.description || 'Sem descrição' }}
                     </p>
                     <p class="text-xs text-muted-foreground mt-1">
-                      {{ collection.photos_count }} foto(s)
+                      {{ collection.photos_count }} foto(s) e {{ collection.videos_count }} vídeo(s)
+                      <span v-if="hasCollectionPhotoLimit"> de {{ collection.max_photos }}</span>
                     </p>
                   </div>
 
@@ -548,16 +856,41 @@ function submitVideo() {
 
                 <div class="flex items-center justify-between mb-3">
                   <p class="text-sm font-medium text-gray-700">Fotos da coleção</p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    @click="triggerCollectionPhotoUpload(collection.id)"
-                  >
-                    <Icon icon="lucide:image-plus" class="mr-2 h-4 w-4" />
-                    Adicionar Foto
-                  </Button>
+                  <div class="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      @click="triggerCollectionPhotoUpload(collection.id)"
+                      :disabled="!collection.can_add_more_photos"
+                    >
+                      <Icon icon="lucide:image-plus" class="mr-2 h-4 w-4" />
+                      {{ collection.can_add_more_photos ? 'Adicionar Foto' : 'Limite de fotos' }}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      @click="triggerCollectionVideoUpload(collection.id)"
+                      :disabled="!hasCollectionVideoAccess || !collection.can_add_more_videos"
+                    >
+                      <Icon icon="lucide:video" class="mr-2 h-4 w-4" />
+                      {{
+                        !hasCollectionVideoAccess
+                          ? 'Plano Destaque'
+                          : collection.can_add_more_videos
+                            ? 'Adicionar Vídeo'
+                            : 'Limite de vídeos'
+                      }}
+                    </Button>
+                  </div>
                 </div>
+                <p v-if="!collection.can_add_more_photos" class="text-sm text-red-600 mb-3">
+                  Limite de fotos atingido para esta coleção.
+                </p>
+                <p v-if="hasCollectionVideoAccess && !collection.can_add_more_videos" class="text-sm text-red-600 mb-3">
+                  Limite de vídeos atingido para esta coleção.
+                </p>
 
                 <div v-if="collection.photos.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div
@@ -579,6 +912,52 @@ function submitVideo() {
                   </div>
                 </div>
                 <p v-else class="text-sm text-muted-foreground">Esta coleção ainda não tem fotos.</p>
+
+                <div class="mt-4">
+                  <p class="text-sm font-medium text-gray-700 mb-3">Vídeos da coleção</p>
+                  <template v-if="!hasCollectionVideoAccess">
+                    <div class="relative overflow-hidden rounded-lg border bg-gray-50 p-5">
+                      <div class="absolute inset-0 bg-gradient-to-r from-gray-100/60 to-amber-100/30" />
+                      <div class="relative flex flex-col items-start gap-3">
+                        <div class="flex items-center gap-2 text-amber-800">
+                          <Icon icon="lucide:lock" class="h-4 w-4" />
+                          <span class="text-sm font-semibold">Recurso bloqueado no seu plano atual</span>
+                        </div>
+                        <p class="text-sm text-gray-700">
+                          Faça upgrade para o plano Destaque e libere envio de vídeos por coleção.
+                        </p>
+                        <Button :as="Link" :href="route('subscriptions.create')" size="sm" class="bg-teal-600 hover:bg-teal-700">
+                          <Icon icon="lucide:crown" class="mr-2 h-4 w-4" />
+                          Fazer Upgrade
+                        </Button>
+                      </div>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <div v-if="collection.videos.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div
+                        v-for="video in collection.videos"
+                        :key="video.id"
+                        class="relative group rounded-lg overflow-hidden bg-gray-100 border"
+                      >
+                        <video :src="video.url" class="w-full h-48 object-cover bg-black" controls preload="metadata">
+                          Seu navegador não suporta vídeos.
+                        </video>
+                        <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            @click="deleteCollectionPhoto(collection.id, video.id)"
+                          >
+                            <Icon icon="lucide:trash-2" class="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <p v-else class="text-sm text-muted-foreground">Esta coleção ainda não tem vídeos.</p>
+                  </template>
+                </div>
               </div>
             </div>
 
@@ -594,163 +973,17 @@ function submitVideo() {
               class="hidden"
               @change="handleCollectionFileSelect"
             >
+            <input
+              ref="collectionVideoInput"
+              type="file"
+              accept="video/mp4,video/mov,video/webm,video/avi"
+              multiple
+              class="hidden"
+              @change="handleCollectionVideoSelect"
+            >
           </CardContent>
         </Card>
 
-        <!-- Vídeo -->
-        <Card class="mt-6">
-          <CardHeader>
-            <CardTitle>Vídeo do Fornecedor</CardTitle>
-            <CardDescription>Adicione um vídeo para mostrar seus produtos (opcional)</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-4">
-            <Tabs v-model="videoMode" class="w-full">
-              <TabsList class="grid w-full grid-cols-2">
-                <TabsTrigger value="url">Link do Vídeo</TabsTrigger>
-                <TabsTrigger value="upload">Upload de Arquivo</TabsTrigger>
-              </TabsList>
-
-              <!-- URL Mode -->
-              <TabsContent value="url" class="space-y-4">
-                <div>
-                  <Label for="video_url">URL do Vídeo (YouTube ou Vimeo)</Label>
-                  <Input
-                    id="video_url"
-                    v-model="videoForm.video_url"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    @input="videoForm.video = null"
-                  />
-                  <p class="text-xs text-muted-foreground mt-2">
-                    Cole o link do vídeo do YouTube ou Vimeo
-                  </p>
-                </div>
-
-                <div v-if="videoEmbedUrl" class="mt-4">
-                  <Label class="mb-2 block">Pré-visualização</Label>
-                  <div class="aspect-video rounded-lg overflow-hidden bg-black">
-                    <iframe
-                      :src="videoEmbedUrl"
-                      class="w-full h-full"
-                      frameborder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowfullscreen
-                    />
-                  </div>
-                  <div class="flex gap-2 mt-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      @click="removeVideo"
-                    >
-                      <Icon icon="lucide:trash-2" class="mr-2 h-4 w-4" />
-                      Remover Vídeo
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      class="bg-teal-600 hover:bg-teal-700"
-                      @click="submitVideo"
-                      :disabled="videoForm.processing"
-                    >
-                      <Icon v-if="videoForm.processing" icon="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
-                      Salvar Vídeo
-                    </Button>
-                  </div>
-                </div>
-
-                <Button
-                  v-else-if="videoForm.video_url"
-                  type="button"
-                  size="sm"
-                  class="bg-teal-600 hover:bg-teal-700"
-                  @click="submitVideo"
-                  :disabled="videoForm.processing"
-                >
-                  <Icon v-if="videoForm.processing" icon="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
-                  Salvar Vídeo
-                </Button>
-              </TabsContent>
-
-              <!-- Upload Mode -->
-              <TabsContent value="upload" class="space-y-4">
-                <div>
-                  <Label for="video_upload">Upload de Vídeo</Label>
-                  <div class="mt-2">
-                    <input
-                      ref="videoInput"
-                      type="file"
-                      id="video_upload"
-                      accept="video/mp4,video/mov,video/webm,video/avi"
-                      class="hidden"
-                      @change="handleVideoUpload"
-                    >
-                    <Button
-                      type="button"
-                      variant="outline"
-                      class="w-full"
-                      @click="videoInput?.click()"
-                    >
-                      <Icon icon="lucide:upload" class="mr-2 h-4 w-4" />
-                      Escolher Arquivo de Vídeo
-                    </Button>
-                  </div>
-                  <p class="text-xs text-muted-foreground mt-2">
-                    Formatos aceitos: MP4, MOV, WEBM, AVI (máx. 100MB)
-                  </p>
-                </div>
-
-                <div v-if="videoForm.video || videoPreview" class="mt-4">
-                  <Label class="mb-2 block">Pré-visualização</Label>
-                  <div class="aspect-video rounded-lg overflow-hidden bg-black">
-                    <video
-                      v-if="videoPreview"
-                      :src="videoPreview"
-                      class="w-full h-full"
-                      controls
-                      preload="metadata"
-                    >
-                      Seu navegador não suporta a reprodução de vídeos.
-                    </video>
-                  </div>
-                  <div class="flex gap-2 mt-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      @click="removeVideo"
-                    >
-                      <Icon icon="lucide:trash-2" class="mr-2 h-4 w-4" />
-                      Remover Vídeo
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      class="bg-teal-600 hover:bg-teal-700"
-                      @click="submitVideo"
-                      :disabled="videoForm.processing"
-                    >
-                      <Icon v-if="videoForm.processing" icon="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
-                      Salvar Vídeo
-                    </Button>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-
-            <div v-if="store.video_url" class="pt-2">
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                @click="deleteSavedVideo"
-              >
-                <Icon icon="lucide:trash-2" class="mr-2 h-4 w-4" />
-                Excluir vídeo salvo
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   </AppLayout>

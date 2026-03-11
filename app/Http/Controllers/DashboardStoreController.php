@@ -119,7 +119,10 @@ class DashboardStoreController extends Controller
                     'whatsapp_clicks' => $store->whatsapp_clicks,
                     'website_clicks' => $store->website_clicks,
                     'photos_count' => $store->photos->count(),
-                    'max_photos' => $store->plan->metadata['max_photos'] ?? 3,
+                    'max_photos' => $store->plan?->limits()
+                        ->where('module', 'store')
+                        ->where('resource', 'photos_per_vitrine')
+                        ->value('limit_value') ?? 3,
                 ];
             });
 
@@ -249,8 +252,13 @@ class DashboardStoreController extends Controller
     {
         $store = Team::where('slug', $slug)
             ->where('user_id', auth()->id())
-            ->with(['photos', 'collections.media', 'plan'])
+            ->with(['photos', 'collections.media', 'collections.videos', 'plan'])
             ->firstOrFail();
+
+        $maxFeaturedPhotos = $this->getStoreLimit($store, 'photos_per_vitrine', 3);
+        $maxCollections = $this->getStoreLimit($store, 'collections_per_vitrine', -1);
+        $maxPhotosPerCollection = $this->getStoreLimit($store, 'photos_per_collection', -1);
+        $maxVideosPerCollection = $this->getStoreLimit($store, 'videos_per_collection', 0);
 
         $currentPhotos = $store->photos()
             ->where('type', 'image')
@@ -260,6 +268,8 @@ class DashboardStoreController extends Controller
                 $query->whereNull('category')->orWhere('category', '!=', 'logo');
             })
             ->count();
+
+        $currentCollections = $store->collections->count();
 
         $featuredPhotos = $store->photos
             ->where('type', 'image')
@@ -284,27 +294,57 @@ class DashboardStoreController extends Controller
                         'is_active' => (bool) $photo->is_active,
                     ];
                 }),
-                'collections' => $store->collections->map(function ($collection) {
+                'collections' => $store->collections->map(function ($collection) use ($maxPhotosPerCollection, $maxVideosPerCollection) {
+                    $collectionPhotosCount = $collection->media->count();
+                    $collectionVideosCount = $collection->videos->count();
+                    $canAddMorePhotos = $this->canAddWithinLimit($collectionPhotosCount, 1, $maxPhotosPerCollection);
+                    $canAddMoreVideos = $this->canAddWithinLimit($collectionVideosCount, 1, $maxVideosPerCollection);
+
                     return [
                         'id' => $collection->id,
                         'name' => $collection->name,
                         'description' => $collection->description,
                         'is_featured' => $collection->is_featured,
-                        'photos_count' => $collection->media->count(),
-                        'cover_url' => $collection->media->first()?->url ?? null,
+                        'photos_count' => $collectionPhotosCount,
+                        'videos_count' => $collectionVideosCount,
+                        'media_count' => $collectionPhotosCount + $collectionVideosCount,
+                        'max_photos' => $maxPhotosPerCollection,
+                        'remaining_photos' => $this->getRemainingLimit($collectionPhotosCount, $maxPhotosPerCollection),
+                        'can_add_more_photos' => $canAddMorePhotos,
+                        'max_videos' => $maxVideosPerCollection,
+                        'remaining_videos' => $this->getRemainingLimit($collectionVideosCount, $maxVideosPerCollection),
+                        'can_add_more_videos' => $canAddMoreVideos,
+                        'cover_url' => $collection->media->first()?->url ?? $collection->videos->first()?->url ?? null,
                         'photos' => $collection->media->map(function ($photo) {
                             return [
                                 'id' => $photo->id,
                                 'url' => $photo->url ?? asset('storage/' . $photo->path),
                                 'name' => $photo->name,
                                 'size' => $photo->size,
+                                'type' => 'image',
+                            ];
+                        })->values(),
+                        'videos' => $collection->videos->map(function ($video) {
+                            return [
+                                'id' => $video->id,
+                                'url' => $video->url ?? asset('storage/' . $video->path),
+                                'name' => $video->name,
+                                'size' => $video->size,
+                                'type' => 'video',
                             ];
                         })->values(),
                     ];
                 })->values(),
                 'photos_count' => $currentPhotos,
-                'max_photos' => null,
-                'can_upload_more' => true,
+                'max_featured_photos' => $maxFeaturedPhotos,
+                'remaining_featured_photos' => $this->getRemainingLimit($currentPhotos, $maxFeaturedPhotos),
+                'max_collections' => $maxCollections,
+                'collections_count' => $currentCollections,
+                'remaining_collections' => $this->getRemainingLimit($currentCollections, $maxCollections),
+                'max_photos_per_collection' => $maxPhotosPerCollection,
+                'max_videos_per_collection' => $maxVideosPerCollection,
+                'can_upload_more' => $this->canAddWithinLimit($currentPhotos, 1, $maxFeaturedPhotos),
+                'can_create_collections' => $this->canAddWithinLimit($currentCollections, 1, $maxCollections),
                 'video_url' => $store->video_url,
             ],
         ]);
@@ -387,6 +427,18 @@ class DashboardStoreController extends Controller
 
         if (count($photos) === 0) {
             return redirect()->back()->with('error', 'Selecione ao menos uma foto.');
+        }
+
+        $maxFeaturedPhotos = $this->getStoreLimit($store, 'photos_per_vitrine', 3);
+        $currentFeaturedPhotos = $store->photos()
+            ->whereNull('media.team_collection_id')
+            ->count();
+
+        if (!$this->canAddWithinLimit($currentFeaturedPhotos, count($photos), $maxFeaturedPhotos)) {
+            return redirect()->back()->with(
+                'error',
+                "Seu plano permite até {$maxFeaturedPhotos} foto(s) de destaque por vitrine."
+            );
         }
 
         DB::transaction(function () use ($store, $photos): void {
@@ -485,6 +537,16 @@ class DashboardStoreController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
+        $maxCollections = $this->getStoreLimit($store, 'collections_per_vitrine', -1);
+        $currentCollections = $store->collections()->count();
+
+        if (!$this->canAddWithinLimit($currentCollections, 1, $maxCollections)) {
+            return redirect()->back()->with(
+                'error',
+                "Seu plano permite até {$maxCollections} coleção(ões) por vitrine."
+            );
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string', 'max:500'],
@@ -528,9 +590,12 @@ class DashboardStoreController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
-        $teamCollection = $store->collections()->with('media')->findOrFail($collection);
+        $teamCollection = $store->collections()->findOrFail($collection);
+        $collectionMedia = $store->media()
+            ->where('team_collection_id', $teamCollection->id)
+            ->get();
 
-        foreach ($teamCollection->media as $media) {
+        foreach ($collectionMedia as $media) {
             if (\Storage::disk('public')->exists($media->path)) {
                 \Storage::disk('public')->delete($media->path);
             }
@@ -569,17 +634,54 @@ class DashboardStoreController extends Controller
             'photo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120', // backward compatibility
             'photos' => 'nullable|array',
             'photos.*' => 'image|mimes:jpeg,jpg,png,webp|max:5120',
+            'video' => 'nullable|file|mimes:mp4,mov,webm,avi|max:102400', // backward compatibility
+            'videos' => 'nullable|array',
+            'videos.*' => 'file|mimes:mp4,mov,webm,avi|max:102400',
         ]);
 
         $photos = [];
+        $videos = [];
+
         if ($request->hasFile('photos')) {
             $photos = $request->file('photos');
         } elseif ($request->hasFile('photo')) {
             $photos = [$request->file('photo')];
         }
 
-        if (count($photos) === 0) {
-            return redirect()->back()->with('error', 'Selecione ao menos uma foto.');
+        if ($request->hasFile('videos')) {
+            $videos = $request->file('videos');
+        } elseif ($request->hasFile('video')) {
+            $videos = [$request->file('video')];
+        }
+
+        if (count($photos) === 0 && count($videos) === 0) {
+            return redirect()->back()->with('error', 'Selecione ao menos uma mídia.');
+        }
+
+        $maxPhotosPerCollection = $this->getStoreLimit($store, 'photos_per_collection', -1);
+        $maxVideosPerCollection = $this->getStoreLimit($store, 'videos_per_collection', 0);
+        $currentCollectionPhotos = $teamCollection->media()->count();
+        $currentCollectionVideos = $teamCollection->videos()->count();
+
+        if (count($photos) > 0 && !$this->canAddWithinLimit($currentCollectionPhotos, count($photos), $maxPhotosPerCollection)) {
+            return redirect()->back()->with(
+                'error',
+                "Seu plano permite até {$maxPhotosPerCollection} foto(s) por coleção."
+            );
+        }
+
+        if (count($videos) > 0 && !$this->canAddWithinLimit($currentCollectionVideos, count($videos), $maxVideosPerCollection)) {
+            if ($maxVideosPerCollection === 0) {
+                return redirect()->back()->with(
+                    'error',
+                    'Seu plano atual não inclui vídeos por coleção. Faça upgrade para liberar esse recurso.'
+                );
+            }
+
+            return redirect()->back()->with(
+                'error',
+                "Seu plano permite até {$maxVideosPerCollection} vídeo(s) por coleção."
+            );
         }
 
         foreach ($photos as $photo) {
@@ -592,13 +694,40 @@ class DashboardStoreController extends Controller
                 'type' => 'image',
                 'size' => $photo->getSize() / 1024, // Convert to KB
                 'is_generic' => false,
+                'is_active' => true,
                 'category' => 'collection',
             ]);
         }
 
-        return redirect()->back()->with('success', count($photos) > 1
-            ? 'Fotos adicionadas na coleção com sucesso!'
-            : 'Foto adicionada na coleção com sucesso!');
+        foreach ($videos as $video) {
+            $path = $video->store("stores/store_{$store->id}/collections/{$teamCollection->id}", 'public');
+
+            $store->media()->create([
+                'team_collection_id' => $teamCollection->id,
+                'name' => $video->getClientOriginalName(),
+                'path' => $path,
+                'type' => 'video',
+                'size' => $video->getSize() / 1024, // Convert to KB
+                'is_generic' => false,
+                'is_active' => true,
+                'category' => 'collection',
+            ]);
+        }
+
+        $uploadedPhotos = count($photos);
+        $uploadedVideos = count($videos);
+        $uploadedTotal = $uploadedPhotos + $uploadedVideos;
+
+        $successMessage = 'Mídia adicionada na coleção com sucesso!';
+        if ($uploadedTotal > 1) {
+            $successMessage = 'Mídias adicionadas na coleção com sucesso!';
+        } elseif ($uploadedVideos === 1 && $uploadedPhotos === 0) {
+            $successMessage = 'Vídeo adicionado na coleção com sucesso!';
+        } elseif ($uploadedPhotos === 1 && $uploadedVideos === 0) {
+            $successMessage = 'Foto adicionada na coleção com sucesso!';
+        }
+
+        return redirect()->back()->with('success', $successMessage);
     }
 
     public function deleteCollectionPhoto(string $slug, int $collection, int $photo): RedirectResponse
@@ -619,7 +748,7 @@ class DashboardStoreController extends Controller
 
         $media->delete();
 
-        return redirect()->back()->with('success', 'Foto da coleção removida com sucesso!');
+        return redirect()->back()->with('success', 'Mídia da coleção removida com sucesso!');
     }
 
     /**
@@ -676,5 +805,37 @@ class DashboardStoreController extends Controller
         $store->update(['video_url' => null]);
 
         return redirect()->back()->with('success', 'Vídeo removido com sucesso!');
+    }
+
+    private function getStoreLimit(Team $store, string $resource, int $default): int
+    {
+        if (!$store->plan) {
+            return $default;
+        }
+
+        $configuredLimit = $store->plan->limits()
+            ->where('module', 'store')
+            ->where('resource', $resource)
+            ->value('limit_value');
+
+        return $configuredLimit !== null ? (int) $configuredLimit : $default;
+    }
+
+    private function canAddWithinLimit(int $current, int $incoming, int $limit): bool
+    {
+        if ($limit < 0) {
+            return true;
+        }
+
+        return ($current + $incoming) <= $limit;
+    }
+
+    private function getRemainingLimit(int $current, int $limit): ?int
+    {
+        if ($limit < 0) {
+            return null;
+        }
+
+        return max(0, $limit - $current);
     }
 }

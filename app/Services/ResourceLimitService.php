@@ -31,6 +31,7 @@ class ResourceLimitService
     {
         return match($module) {
             'digital-signage' => $this->getDigitalSignageUsage($team, $resource),
+            'store' => $this->getStoreUsage($team, $resource),
             'team' => $this->getTeamUsage($team, $resource),
             'storage' => $this->getStorageUsage($team, $resource),
             default => 0,
@@ -95,6 +96,36 @@ class ResourceLimitService
     {
         return match($resource) {
             'files' => $team->media()->sum('size') ?? 0,
+            default => 0,
+        };
+    }
+
+    /**
+     * Get store showcase usage.
+     */
+    protected function getStoreUsage(Team $team, string $resource): int
+    {
+        return match($resource) {
+            'photos_per_vitrine' => $team->media()
+                ->where('type', 'image')
+                ->where('is_active', true)
+                ->whereNull('team_collection_id')
+                ->where(function ($query) {
+                    $query->whereNull('category')
+                        ->orWhere('category', '!=', 'logo');
+                })
+                ->count(),
+            'collections_per_vitrine' => $team->collections()->count(),
+            // For per-collection limits, usage here represents the highest collection load.
+            'photos_per_collection' => (int) $team->collections()
+                ->withCount('media')
+                ->get()
+                ->max('media_count'),
+            // For per-collection video limits, usage represents the highest collection load.
+            'videos_per_collection' => (int) $team->collections()
+                ->withCount('videos')
+                ->get()
+                ->max('videos_count'),
             default => 0,
         };
     }

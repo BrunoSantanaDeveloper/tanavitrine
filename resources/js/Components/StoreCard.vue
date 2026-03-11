@@ -257,7 +257,7 @@ async function shareStore() {
             class="bg-teal-600 text-white shadow-lg"
           >
             <Icon icon="lucide:badge-check" class="size-3 mr-1" />
-            Verificada
+            Verificado
           </Badge>
         </div>
 

@@ -7,6 +7,7 @@ namespace App\Actions\Fortify;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Plan;
+use App\Models\PlanInterval;
 use App\Models\Media;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -28,6 +29,14 @@ final class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        $isStoreRegistration = !empty($input['store_name']);
+        $maxFeaturedPhotos = $this->resolveSelectedPlanFeaturedPhotosLimit(Arr::get($input, 'plan'));
+
+        $photoRules = [$isStoreRegistration ? 'required' : 'nullable', 'array', 'min:3'];
+        if ($maxFeaturedPhotos >= 0) {
+            $photoRules[] = "max:{$maxFeaturedPhotos}";
+        }
+
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
@@ -48,6 +57,9 @@ final class CreateNewUser implements CreatesNewUsers
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'video_url' => ['nullable', 'string', 'max:500'],
             'google_maps_url' => ['nullable', 'url', 'max:500'],
+            'logo' => [$isStoreRegistration ? 'required' : 'nullable', 'image', 'max:2048'],
+            'photos' => $photoRules,
+            'photos.*' => ['image', 'max:5120'],
             'video' => ['nullable', 'file', 'mimes:mp4,mov,webm,avi', 'max:102400'], // 100MB
         ])->validate();
 
@@ -66,6 +78,23 @@ final class CreateNewUser implements CreatesNewUsers
                 $this->updateTeamWithStoreData($user, $team, $input);
             }
         }));
+    }
+
+    private function resolveSelectedPlanFeaturedPhotosLimit(?string $planIntervalId): int
+    {
+        if (!$planIntervalId) {
+            return 10;
+        }
+
+        $planInterval = PlanInterval::with(['plan.limits'])->find($planIntervalId);
+        if (!$planInterval || !$planInterval->plan) {
+            return 10;
+        }
+
+        $configuredLimit = $planInterval->plan->limits
+            ->first(fn ($limit) => $limit->module === 'store' && $limit->resource === 'photos_per_vitrine');
+
+        return $configuredLimit ? (int) $configuredLimit->limit_value : 10;
     }
 
     /**
