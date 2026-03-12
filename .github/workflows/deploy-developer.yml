@@ -91,6 +91,9 @@ jobs:
             echo "📊 Executando migrações..."
             docker exec "${APP_CONTAINER_ID}" php artisan migrate --force
 
+            echo "🗺️ Gerando sitemap..."
+            docker exec "${APP_CONTAINER_ID}" php artisan sitemap:generate
+
             echo "✅ Validando se o sitemap está disponível..."
             docker exec "${APP_CONTAINER_ID}" ls -l public/sitemap.xml
 
