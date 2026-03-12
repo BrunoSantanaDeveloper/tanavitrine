@@ -196,6 +196,7 @@ const selectedGeneroText = computed(() => {
 function clearLocationWhenVirtual() {
   if (searchFilters.value.tipoLoja === 'virtual') {
     searchFilters.value.estado = ''
+    searchFilters.value.cidade = ''
     if (activeAtacadoFilter.value === 'location') activeAtacadoFilter.value = null
     if (activeVarejoFilter.value === 'location') activeVarejoFilter.value = null
   }
@@ -232,7 +233,7 @@ function handleSearch() {
     // State-based search only applies to stores with physical presence.
     if (!selectedType) params.append('tipoLoja', 'ambos')
   }
-  if (searchFilters.value.cidade) params.append('cidade', searchFilters.value.cidade)
+  if (searchFilters.value.cidade && !isVirtualOnly) params.append('cidade', searchFilters.value.cidade)
   if (searchFilters.value.genero) params.append('genero', searchFilters.value.genero)
 
   const queryString = params.toString()

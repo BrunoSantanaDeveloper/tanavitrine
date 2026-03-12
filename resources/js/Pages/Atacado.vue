@@ -246,6 +246,10 @@ const alternatedListings = computed(() => {
   // Filter by city
   if (filters.value.cidade) {
     filtered = filtered.filter(store => {
+      const storeType = normalizeStoreType(store.storeType)
+      return storeType === 'ambos' || storeType === 'fisica'
+    })
+    filtered = filtered.filter(store => {
       const storeCity = store.location?.split(' - ')[0]
       return storeCity === filters.value.cidade
     })

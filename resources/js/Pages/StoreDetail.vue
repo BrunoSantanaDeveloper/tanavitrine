@@ -845,6 +845,13 @@ function scrollToSection(sectionId) {
                           {{ store.name }}
                         </h1>
                         <Badge
+                          v-if="store.featured"
+                          class="bg-primary text-primary-foreground shadow-sm"
+                        >
+                          <Icon icon="lucide:star" class="size-3 mr-1" />
+                          Destaque
+                        </Badge>
+                        <Badge
                           v-if="store.is_verified"
                           class="bg-teal-600 text-white shadow-sm"
                         >
