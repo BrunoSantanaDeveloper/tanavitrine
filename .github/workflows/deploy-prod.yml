@@ -27,8 +27,18 @@ jobs:
 
       - name: 🔧 Add VPS to known hosts
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          for i in 1 2 3 4 5; do
+            if ssh-keyscan -T 10 -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null; then
+              echo "✅ VPS adicionada ao known_hosts"
+              exit 0
+            fi
+            echo "⏳ Falha ao resolver/acessar VPS (tentativa $i/5). Aguardando 5s..."
+            sleep 5
+          done
+          echo "❌ Não foi possível adicionar a VPS ao known_hosts após 5 tentativas."
+          exit 1
 
       - name: 🚀 Deploy to VPS
         run: |
