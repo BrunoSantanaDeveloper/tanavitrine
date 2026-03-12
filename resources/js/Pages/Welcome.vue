@@ -246,28 +246,31 @@ const showStickySelector = ref(false)
 
 // Infinite scroll state
 const currentPage = ref({ destaques: 1, recentes: 1 })
-const hasMore = ref({ destaques: true, recentes: true })
+const hasMore = ref({ destaques: false, recentes: props.recentStores.length === 6 })
 const isLoading = ref(false)
 const allStores = ref({ destaques: [...props.featuredStores], recentes: [...props.recentStores] })
 
 // Load more stores
 async function loadMoreStores() {
-  if (isLoading.value || !hasMore.value[selectedListingType.value]) return
+  const listingType = selectedListingType.value
+  if (listingType === 'destaques') return
+  if (isLoading.value || !hasMore.value[listingType]) return
 
   isLoading.value = true
 
   try {
+    const nextPage = currentPage.value[listingType] + 1
     const response = await fetch(
-      `/api/stores/load-more?type=${selectedListingType.value}&page=${currentPage.value[selectedListingType.value] + 1}`
+      `/api/stores/load-more?type=${listingType}&page=${nextPage}`
     )
     const data = await response.json()
 
     if (data.stores && data.stores.length > 0) {
-      allStores.value[selectedListingType.value].push(...data.stores)
-      currentPage.value[selectedListingType.value] = data.nextPage
-      hasMore.value[selectedListingType.value] = data.hasMore
+      allStores.value[listingType].push(...data.stores)
+      currentPage.value[listingType] = nextPage
+      hasMore.value[listingType] = Boolean(data.hasMore)
     } else {
-      hasMore.value[selectedListingType.value] = false
+      hasMore.value[listingType] = false
     }
   } catch (error) {
     console.error('Error loading more stores:', error)

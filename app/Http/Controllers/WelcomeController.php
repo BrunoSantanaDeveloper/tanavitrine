@@ -9,14 +9,16 @@ use App\Models\Team;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 final class WelcomeController extends Controller
 {
     public function home(): Response
     {
-        // Get featured stores
-        $featuredStores = Team::active()
+        // Get all featured stores and rotate the top store daily.
+        $featuredStores = $this->rotateFeaturedStores(
+            Team::active()
             ->where('personal_team', false)
             ->featured()
             ->with(['category', 'plan', 'photos' => function ($query): void {
@@ -29,8 +31,10 @@ final class WelcomeController extends Controller
                     ->orderByDesc('team_media.is_primary')
                     ->orderBy('team_media.order');
             }])
-            ->limit(6)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get()
+        )
             ->map(function ($store) {
                 return $this->transformStore($store);
             });
@@ -49,6 +53,7 @@ final class WelcomeController extends Controller
                     ->orderBy('team_media.order');
             }])
             ->orderBy('created_at', 'desc')
+            ->orderByDesc('id')
             ->limit(6)
             ->get()
             ->map(function ($store) {
@@ -320,10 +325,14 @@ final class WelcomeController extends Controller
             }]);
 
         if ($type === 'destaques') {
-            $query->featured();
+            $query->featured()
+                ->orderByDesc('featured_until')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id');
         } else {
             // For recentes, show all stores ordered by creation date
-            $query->orderBy('created_at', 'desc');
+            $query->orderBy('created_at', 'desc')
+                ->orderByDesc('id');
         }
 
         $stores = $query->skip(($page - 1) * $perPage)
@@ -385,6 +394,103 @@ final class WelcomeController extends Controller
                 ? auth()->user()->favoriteStores()->where('team_id', $store->id)->exists()
                 : false,
         ];
+    }
+
+    /**
+     * Rotate featured stores so one store reaches the top once per cycle/day.
+     */
+    private function rotateFeaturedStores(Collection $stores): Collection
+    {
+        if ($stores->isEmpty()) {
+            return $stores;
+        }
+
+        $storeIds = $stores->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+
+        $topStoreId = $this->consumeNextFeaturedTopStore($storeIds);
+
+        if ($topStoreId === null) {
+            return $stores->shuffle()->values();
+        }
+
+        $remainingIds = array_values(array_filter(
+            $storeIds,
+            fn (int $id): bool => $id !== $topStoreId
+        ));
+        shuffle($remainingIds);
+
+        $orderedIds = array_merge([$topStoreId], $remainingIds);
+        $orderMap = array_flip($orderedIds);
+
+        return $stores->sortBy(
+            fn ($store): int => $orderMap[(int) $store->id] ?? PHP_INT_MAX
+        )->values();
+    }
+
+    /**
+     * Returns and consumes the next featured store id for the current day cycle.
+     */
+    private function consumeNextFeaturedTopStore(array $availableIds): ?int
+    {
+        $availableIds = array_values(array_unique(array_map('intval', $availableIds)));
+
+        if ($availableIds === []) {
+            return null;
+        }
+
+        sort($availableIds);
+
+        $today = now()->toDateString();
+        $queueKey = "home:featured-top-rotation:{$today}";
+        $expiresAt = now()->endOfDay();
+        $lockKey = "{$queueKey}:lock";
+
+        $resolver = function () use ($availableIds, $queueKey, $expiresAt): ?int {
+            $queue = Cache::get($queueKey, []);
+            if (! is_array($queue)) {
+                $queue = [];
+            }
+
+            $availableSet = array_flip($availableIds);
+            $queue = array_values(array_filter(
+                array_map('intval', $queue),
+                fn (int $id): bool => isset($availableSet[$id])
+            ));
+
+            if ($queue === []) {
+                $queue = $availableIds;
+                shuffle($queue);
+            }
+
+            $topStoreId = array_shift($queue);
+            if ($topStoreId === null) {
+                return null;
+            }
+
+            // Restart cycle as soon as all stores have reached the top.
+            if ($queue === []) {
+                $queue = $availableIds;
+                shuffle($queue);
+
+                if (count($queue) > 1 && (int) $queue[0] === (int) $topStoreId) {
+                    $first = array_shift($queue);
+                    $queue[] = $first;
+                }
+            }
+
+            Cache::put($queueKey, $queue, $expiresAt);
+
+            return (int) $topStoreId;
+        };
+
+        if (method_exists(Cache::getStore(), 'lock')) {
+            return Cache::lock($lockKey, 3)->block(2, $resolver);
+        }
+
+        return $resolver();
     }
 
     /**
