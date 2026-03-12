@@ -19,7 +19,16 @@ final class WelcomeController extends Controller
         $featuredStores = Team::active()
             ->where('personal_team', false)
             ->featured()
-            ->with(['category', 'media', 'plan'])
+            ->with(['category', 'plan', 'photos' => function ($query): void {
+                $query->where('type', 'image')
+                    ->where('media.is_active', true)
+                    ->whereNull('media.team_collection_id')
+                    ->where(function ($nestedQuery): void {
+                        $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo');
+                    })
+                    ->orderByDesc('team_media.is_primary')
+                    ->orderBy('team_media.order');
+            }])
             ->limit(6)
             ->get()
             ->map(function ($store) {
@@ -29,7 +38,16 @@ final class WelcomeController extends Controller
         // Get recent stores (including featured ones)
         $recentStores = Team::active()
             ->where('personal_team', false)
-            ->with(['category', 'media', 'plan'])
+            ->with(['category', 'plan', 'photos' => function ($query): void {
+                $query->where('type', 'image')
+                    ->where('media.is_active', true)
+                    ->whereNull('media.team_collection_id')
+                    ->where(function ($nestedQuery): void {
+                        $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo');
+                    })
+                    ->orderByDesc('team_media.is_primary')
+                    ->orderBy('team_media.order');
+            }])
             ->orderBy('created_at', 'desc')
             ->limit(6)
             ->get()
@@ -110,7 +128,16 @@ final class WelcomeController extends Controller
         $allStores = Team::active()
             ->where('personal_team', false)
             ->atacado()
-            ->with(['category', 'media', 'plan'])
+            ->with(['category', 'plan', 'photos' => function ($query): void {
+                $query->where('type', 'image')
+                    ->where('media.is_active', true)
+                    ->whereNull('media.team_collection_id')
+                    ->where(function ($nestedQuery): void {
+                        $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo');
+                    })
+                    ->orderByDesc('team_media.is_primary')
+                    ->orderBy('team_media.order');
+            }])
             ->orderByDesc('featured')
             ->orderBy('created_at', 'desc')
             ->get()
@@ -161,7 +188,16 @@ final class WelcomeController extends Controller
         $allStores = Team::active()
             ->where('personal_team', false)
             ->varejo()
-            ->with(['category', 'media', 'plan'])
+            ->with(['category', 'plan', 'photos' => function ($query): void {
+                $query->where('type', 'image')
+                    ->where('media.is_active', true)
+                    ->whereNull('media.team_collection_id')
+                    ->where(function ($nestedQuery): void {
+                        $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo');
+                    })
+                    ->orderByDesc('team_media.is_primary')
+                    ->orderBy('team_media.order');
+            }])
             ->orderByDesc('featured')
             ->orderBy('created_at', 'desc')
             ->get()
@@ -267,7 +303,16 @@ final class WelcomeController extends Controller
 
         $query = Team::active()
             ->where('personal_team', false)
-            ->with(['category', 'media', 'plan']);
+            ->with(['category', 'plan', 'photos' => function ($query): void {
+                $query->where('type', 'image')
+                    ->where('media.is_active', true)
+                    ->whereNull('media.team_collection_id')
+                    ->where(function ($nestedQuery): void {
+                        $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo');
+                    })
+                    ->orderByDesc('team_media.is_primary')
+                    ->orderBy('team_media.order');
+            }]);
 
         if ($type === 'destaques') {
             $query->featured();
@@ -300,10 +345,7 @@ final class WelcomeController extends Controller
      */
     private function transformStore($store): array
     {
-        $photos = $store->media
-            ->where('type', 'image')
-            ->where('is_active', true)
-            ->where('category', '!=', 'logo')
+        $photos = $store->photos
             ->values()
             ->map(fn ($photo) => $photo->url)
             ->toArray();
