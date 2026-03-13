@@ -92,6 +92,36 @@ const hasMultipleImages = computed(() => images.value.length > 1)
 const touchStartX = ref(0)
 const touchStartY = ref(0)
 const isNavigatingToDetails = ref(false)
+const imageAspectRatios = ref({})
+
+const currentImageAspectRatio = computed(() => {
+  const imageUrl = currentImage.value
+  if (!imageUrl)
+    return null
+
+  return imageAspectRatios.value[imageUrl] ?? null
+})
+
+const adaptiveImageScaleClass = computed(() => {
+  const aspectRatio = currentImageAspectRatio.value
+
+  if (aspectRatio === null) {
+    return 'scale-105 sm:scale-[1.12] lg:scale-[1.18]'
+  }
+
+  // Wider portraits/products usually need stronger zoom to avoid "sobrando" base in the frame.
+  if (aspectRatio >= 0.82) {
+    return 'scale-110 sm:scale-[1.2] lg:scale-[1.26]'
+  }
+
+  // Near-card ratio: medium zoom.
+  if (aspectRatio >= 0.77) {
+    return 'scale-105 sm:scale-[1.12] lg:scale-[1.18]'
+  }
+
+  // Very tall images: lighter zoom to avoid over-cropping subjects.
+  return 'scale-100 sm:scale-[1.06] lg:scale-[1.1]'
+})
 
 function nextImage() {
   if (hasMultipleImages.value) {
@@ -161,6 +191,21 @@ function onImageTouchEnd(event) {
   }
 }
 
+function onImageLoad(event) {
+  const imageUrl = currentImage.value
+  const target = event.target
+
+  if (!imageUrl || !(target instanceof HTMLImageElement)) {
+    return
+  }
+
+  if (!target.naturalWidth || !target.naturalHeight) {
+    return
+  }
+
+  imageAspectRatios.value[imageUrl] = target.naturalWidth / target.naturalHeight
+}
+
 async function toggleFavorite() {
   // Check if user is logged in (you can pass this as prop or check auth state)
   if (!props.store.can_favorite) {
@@ -223,7 +268,7 @@ async function shareStore() {
   >
     <div class="grid grid-cols-1 sm:grid-cols-5 sm:items-stretch gap-0">
       <!-- Image Section with Carousel -->
-      <div class="sm:col-span-2 relative group h-64 sm:h-auto sm:self-stretch sm:min-h-[320px] lg:min-h-[340px] overflow-hidden bg-muted">
+      <div class="sm:col-span-2 relative group h-64 sm:h-full sm:self-stretch sm:min-h-[320px] lg:min-h-[340px] overflow-hidden bg-muted">
         <!-- Placeholder quando não houver imagem -->
         <div
           v-if="!currentImage"
@@ -238,7 +283,11 @@ async function shareStore() {
           v-else
           :src="currentImage"
           :alt="store.name"
-          class="absolute inset-0 block w-full h-full object-cover object-top origin-top scale-110 sm:scale-[1.18] lg:scale-[1.24] transition-opacity duration-300"
+          :class="[
+            'absolute inset-0 block w-full h-full object-cover object-top origin-top transition-opacity duration-300',
+            adaptiveImageScaleClass,
+          ]"
+          @load="onImageLoad"
           @click="handleImageTap"
           @touchstart.passive="onImageTouchStart"
           @touchend.passive="onImageTouchEnd"
