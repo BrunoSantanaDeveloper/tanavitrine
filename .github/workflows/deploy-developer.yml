@@ -1,4 +1,4 @@
-name: Deploy to Production
+name: Deploy Developer (Auto)
 
 on:
   push:
@@ -13,7 +13,7 @@ env:
 
 jobs:
   deploy:
-    name: 🚀 Deploy to VPS
+    name: 🚀 Auto Deploy to VPS (developer)
     runs-on: ubuntu-latest
     timeout-minutes: 30
 

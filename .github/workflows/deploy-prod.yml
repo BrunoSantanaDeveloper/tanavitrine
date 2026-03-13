@@ -1,9 +1,6 @@
-name: Deploy to Production
+name: Deploy Production (Manual)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 env:
@@ -13,13 +10,15 @@ env:
 
 jobs:
   deploy:
-    name: 🚀 Deploy to VPS
+    name: 🚀 Manual Deploy to VPS (main)
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v5
+        with:
+          ref: main
 
       - name: 🔐 Setup SSH
         shell: bash
