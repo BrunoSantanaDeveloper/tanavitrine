@@ -106,21 +106,26 @@ const adaptiveImageScaleClass = computed(() => {
   const aspectRatio = currentImageAspectRatio.value
 
   if (aspectRatio === null) {
-    return 'scale-105 sm:scale-[1.12] lg:scale-[1.18]'
+    return 'scale-100 sm:scale-100 lg:scale-100'
   }
 
-  // Wider portraits/products usually need stronger zoom to avoid "sobrando" base in the frame.
+  // Wider images tend to expose bottom background more often, so apply stronger zoom.
   if (aspectRatio >= 0.82) {
-    return 'scale-110 sm:scale-[1.2] lg:scale-[1.26]'
+    return 'scale-110 sm:scale-[1.18] lg:scale-[1.22]'
   }
 
-  // Near-card ratio: medium zoom.
-  if (aspectRatio >= 0.77) {
-    return 'scale-105 sm:scale-[1.12] lg:scale-[1.18]'
+  // Tall/near-card images already fill the frame; extra zoom causes unnecessary crop.
+  return 'scale-100 sm:scale-100 lg:scale-100'
+})
+
+const adaptiveImagePositionClass = computed(() => {
+  const aspectRatio = currentImageAspectRatio.value
+
+  if (aspectRatio === null) {
+    return 'object-center'
   }
 
-  // Very tall images: lighter zoom to avoid over-cropping subjects.
-  return 'scale-100 sm:scale-[1.06] lg:scale-[1.1]'
+  return aspectRatio >= 0.82 ? 'object-top' : 'object-center'
 })
 
 function nextImage() {
@@ -284,7 +289,8 @@ async function shareStore() {
           :src="currentImage"
           :alt="store.name"
           :class="[
-            'absolute inset-0 block w-full h-full object-cover object-top origin-top transition-opacity duration-300',
+            'absolute inset-0 block w-full h-full object-cover origin-top transition-opacity duration-300',
+            adaptiveImagePositionClass,
             adaptiveImageScaleClass,
           ]"
           @load="onImageLoad"
