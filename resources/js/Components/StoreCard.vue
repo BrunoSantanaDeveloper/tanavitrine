@@ -238,7 +238,7 @@ async function shareStore() {
           v-else
           :src="currentImage"
           :alt="store.name"
-          class="absolute inset-0 block w-full h-full object-cover object-top scale-105 transition-opacity duration-300"
+          class="absolute inset-0 block w-full h-full object-cover object-top origin-top scale-110 sm:scale-[1.18] lg:scale-[1.24] transition-opacity duration-300"
           @click="handleImageTap"
           @touchstart.passive="onImageTouchStart"
           @touchend.passive="onImageTouchEnd"
