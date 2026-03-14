@@ -598,6 +598,7 @@ onBeforeUnmount(() => {
             v-for="store in alternatedListings"
             :key="store.id"
             :id="`store-${store.id}`"
+            class="h-full"
             @mouseenter="handleStoreHover(store.id)"
             @mouseleave="handleStoreLeave"
           >

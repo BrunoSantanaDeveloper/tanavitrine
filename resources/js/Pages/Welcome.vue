@@ -860,11 +860,13 @@ onBeforeUnmount(() => {
     <section class="py-16 bg-background">
       <div class="container mx-auto px-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
-          <StoreCard
+          <div
             v-for="store in filteredListings"
             :key="store.id"
-            :store="store"
-          />
+            class="h-full"
+          >
+            <StoreCard :store="store" />
+          </div>
         </div>
 
         <!-- Loading Indicator -->
