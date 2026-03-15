@@ -271,9 +271,9 @@ async function shareStore() {
     class="h-full overflow-hidden hover:shadow-lg transition-shadow duration-300"
     :class="{ 'ring-2 ring-primary/20': store.featured }"
   >
-    <div class="grid grid-cols-1 sm:grid-cols-5 sm:items-stretch gap-0">
+    <div class="grid h-full grid-cols-1 gap-0 sm:grid-cols-5 sm:items-stretch">
       <!-- Image Section with Carousel -->
-      <div class="sm:col-span-2 relative group h-64 sm:h-full sm:self-stretch sm:min-h-[320px] lg:min-h-[340px] overflow-hidden bg-muted">
+      <div class="sm:col-span-2 relative group h-64 sm:h-auto sm:self-stretch sm:min-h-[320px] lg:min-h-[340px] overflow-hidden bg-muted">
         <!-- Placeholder quando não houver imagem -->
         <div
           v-if="!currentImage"

@@ -859,10 +859,11 @@ onBeforeUnmount(() => {
     <!-- Store Listings Section -->
     <section class="py-16 bg-background">
       <div class="container mx-auto px-4">
-        <div class="grid grid-cols-1 gap-6 max-w-7xl mx-auto md:grid-cols-2 md:items-start">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
           <div
             v-for="store in filteredListings"
             :key="store.id"
+            class="h-full"
           >
             <StoreCard :store="store" />
           </div>
