@@ -17,6 +17,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  seo: {
+    type: Object,
+    default: () => null,
+  },
   canLogin: {
     type: Boolean,
   },
@@ -73,7 +77,7 @@ const storePageUrl = computed(() => {
   return toAbsoluteUrl(`/loja/${props.store?.slug || ''}`)
 })
 
-useSeoMetaTags({
+const storeSeoMeta = props.seo || {
   title: storePageTitle,
   description: storePageDescription,
   robots: 'index, follow',
@@ -86,7 +90,9 @@ useSeoMetaTags({
   twitterDescription: storePageDescription,
   twitterImage: storePageImage,
   twitterCard: 'summary_large_image',
-})
+}
+
+useSeoMetaTags(storeSeoMeta)
 
 const normalizedStoreType = computed(() => String(props.store?.storeType || '').trim().toLowerCase())
 const normalizedSaleType = computed(() =>

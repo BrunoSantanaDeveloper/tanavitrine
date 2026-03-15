@@ -8,6 +8,12 @@ use Spatie\Sitemap\Crawler\Profile;
 return [
 
     /*
+     * Base URL used when generating absolute URLs in sitemap entries.
+     * Prefer setting SITEMAP_BASE_URL in production.
+     */
+    'base_url' => env('SITEMAP_BASE_URL', env('APP_URL', '')),
+
+    /*
      * These options will be passed to GuzzleHttp\Client when it is created.
      * For in-depth information on all options see the Guzzle docs:
      *

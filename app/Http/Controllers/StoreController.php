@@ -131,8 +131,39 @@ class StoreController extends Controller
                 : false,
         ];
 
+        $storePageUrl = url("/loja/{$store->slug}");
+        $fallbackDescription = "Conheça {$store->name} na Tá na Vitrine e entre em contato direto para atacado e varejo.";
+        $normalizedDescription = trim((string) preg_replace('/\s+/', ' ', strip_tags($store->description ?: $fallbackDescription)));
+        $seoDescription = mb_strlen($normalizedDescription) > 160
+            ? mb_substr($normalizedDescription, 0, 157) . '...'
+            : $normalizedDescription;
+        $seoImage = $storeData['logo'] ?: ($storeData['images'][0]['url'] ?? asset('images/og.webp'));
+
         return Inertia::render('StoreDetail', [
             'store' => $storeData,
+            'seo' => [
+                'title' => "{$store->name} | Tá na Vitrine",
+                'description' => $seoDescription,
+                'keywords' => implode(', ', array_filter([
+                    $store->name,
+                    'loja de moda',
+                    $store->category?->name,
+                    $store->city,
+                    $store->state,
+                    'tá na vitrine',
+                ])),
+                'robots' => 'index, follow',
+                'canonical' => $storePageUrl,
+                'ogTitle' => "{$store->name} | Tá na Vitrine",
+                'ogDescription' => $seoDescription,
+                'ogType' => 'website',
+                'ogUrl' => $storePageUrl,
+                'ogImage' => $seoImage,
+                'twitterTitle' => "{$store->name} | Tá na Vitrine",
+                'twitterDescription' => $seoDescription,
+                'twitterCard' => 'summary_large_image',
+                'twitterImage' => $seoImage,
+            ],
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
         ]);

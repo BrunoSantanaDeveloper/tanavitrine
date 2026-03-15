@@ -74,6 +74,7 @@ services:
       - APP_ENV=production
       - APP_DEBUG=false
       - APP_URL=https://tanavitrine.com.br
+      - SITEMAP_BASE_URL=https://tanavitrine.com.br
       # CACHE, SESSIONS E QUEUE NO DATABASE (Redis está read-only)
       - CACHE_STORE=database
       - SESSION_DRIVER=database

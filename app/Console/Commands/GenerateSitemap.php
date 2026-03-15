@@ -33,6 +33,7 @@ final class GenerateSitemap extends Command
     {
         $sitemap = Sitemap::create();
         $now = now();
+        $baseUrl = $this->resolveBaseUrl();
 
         $staticPages = [
             ['path' => '/', 'frequency' => Url::CHANGE_FREQUENCY_DAILY, 'priority' => 1.0],
@@ -46,7 +47,7 @@ final class GenerateSitemap extends Command
 
         foreach ($staticPages as $page) {
             $sitemap->add(
-                Url::create($this->absoluteUrl($page['path']))
+                Url::create($this->absoluteUrl($baseUrl, $page['path']))
                     ->setLastModificationDate($now)
                     ->setChangeFrequency($page['frequency'])
                     ->setPriority($page['priority'])
@@ -66,7 +67,7 @@ final class GenerateSitemap extends Command
 
             foreach ($stores as $store) {
                 $sitemap->add(
-                    Url::create($this->absoluteUrl("/loja/{$store->slug}"))
+                    Url::create($this->absoluteUrl($baseUrl, "/loja/{$store->slug}"))
                         ->setLastModificationDate($store->updated_at ?? $now)
                         ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
                         ->setPriority(0.8)
@@ -77,9 +78,47 @@ final class GenerateSitemap extends Command
         $sitemap->writeToFile(public_path('sitemap.xml'));
     }
 
-    private function absoluteUrl(string $path): string
+    private function resolveBaseUrl(): string
     {
-        $baseUrl = rtrim(config('app.url', 'https://tanavitrine.com.br'), '/');
+        $configuredBaseUrl = trim((string) config('sitemap.base_url', ''));
+
+        if ($configuredBaseUrl === '') {
+            $configuredBaseUrl = trim((string) config('app.url', ''));
+        }
+
+        $normalizedBaseUrl = $this->normalizeBaseUrl($configuredBaseUrl);
+        if ($normalizedBaseUrl !== null) {
+            return $normalizedBaseUrl;
+        }
+
+        $fallbackBaseUrl = 'https://tanavitrine.com.br';
+        $this->warn("Sitemap base URL inválida ({$configuredBaseUrl}). Usando fallback {$fallbackBaseUrl}.");
+
+        return $fallbackBaseUrl;
+    }
+
+    private function normalizeBaseUrl(string $baseUrl): ?string
+    {
+        $trimmed = rtrim(trim($baseUrl), '/');
+        if ($trimmed === '' || !filter_var($trimmed, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        $host = parse_url($trimmed, PHP_URL_HOST);
+        if (!is_string($host) || $host === '') {
+            return null;
+        }
+
+        if (in_array(strtolower($host), ['localhost', '127.0.0.1', '0.0.0.0'], true)) {
+            return null;
+        }
+
+        return $trimmed;
+    }
+
+    private function absoluteUrl(string $baseUrl, string $path): string
+    {
+        $baseUrl = rtrim($baseUrl, '/');
 
         if ($path === '/') {
             return $baseUrl;

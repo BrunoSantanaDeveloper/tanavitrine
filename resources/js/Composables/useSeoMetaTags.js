@@ -1,4 +1,4 @@
-import { useSeoMeta } from '@unhead/vue'
+import { useHead, useSeoMeta } from '@unhead/vue'
 
 const fallbackSiteUrl = 'https://tanavitrine.com.br'
 
@@ -65,8 +65,12 @@ export function useSeoMetaTags(seoMeta, options = { merge: true }) {
   const defaultSeoMeta = getDefaultSeoMeta()
   const currentPageUrl = typeof window !== 'undefined' ? window.location.href : defaultSeoMeta.ogUrl
 
-  if (!seoMeta)
+  if (!seoMeta) {
+    useHead({
+      link: [{ rel: 'canonical', href: currentPageUrl }],
+    })
     return useSeoMeta({ ...defaultSeoMeta, ogUrl: currentPageUrl })
+  }
 
   const mergedSeoMeta = options.merge
     ? { ...defaultSeoMeta, ...seoMeta }
@@ -83,5 +87,11 @@ export function useSeoMetaTags(seoMeta, options = { merge: true }) {
       mergedSeoMeta.twitterImage = mergedSeoMeta.ogImage
   }
 
-  return useSeoMeta(mergedSeoMeta)
+  const canonicalUrl = mergedSeoMeta.canonical || mergedSeoMeta.ogUrl || currentPageUrl
+  useHead({
+    link: [{ rel: 'canonical', href: canonicalUrl }],
+  })
+
+  const { canonical, ...seoMetaWithoutCanonical } = mergedSeoMeta
+  return useSeoMeta(seoMetaWithoutCanonical)
 }

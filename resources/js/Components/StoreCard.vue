@@ -4,7 +4,7 @@ import Button from '@/Components/shadcn/ui/button/Button.vue'
 import Card from '@/Components/shadcn/ui/card/Card.vue'
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/shadcn/ui/avatar'
 import { Icon } from '@iconify/vue'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import { formatWhatsAppNumber } from '@/utils/formatters'
@@ -373,7 +373,9 @@ async function shareStore() {
                   </Badge>
                 </div>
                 <h3 class="text-xl font-bold text-foreground mb-2 line-clamp-2 min-h-[3.5rem]">
-                  {{ store.name }}
+                  <Link :href="storeDetailHref" class="hover:underline" @click.stop>
+                    {{ store.name }}
+                  </Link>
                 </h3>
               </div>
             </div>
@@ -438,7 +440,9 @@ async function shareStore() {
               size="sm"
               variant="outline"
               class="flex-1 cursor-pointer"
-              @click.stop="openStoreDetails"
+              :as="Link"
+              :href="storeDetailHref"
+              @click.stop
             >
               <Icon icon="lucide:eye" class="size-4 mr-1" />
               Detalhes
