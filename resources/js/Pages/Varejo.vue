@@ -593,12 +593,11 @@ onBeforeUnmount(() => {
     <!-- Store Listings Section -->
     <section class="py-8 bg-muted/30">
       <div class="container mx-auto px-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 gap-6 max-w-7xl mx-auto md:grid-cols-2 md:items-start">
           <div
             v-for="store in alternatedListings"
             :key="store.id"
             :id="`store-${store.id}`"
-            class="h-full"
             @mouseenter="handleStoreHover(store.id)"
             @mouseleave="handleStoreLeave"
           >
