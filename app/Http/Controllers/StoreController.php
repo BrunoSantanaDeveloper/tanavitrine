@@ -43,10 +43,8 @@ class StoreController extends Controller
             ->where('personal_team', false)
             ->with(['category', 'photos', 'collections.media', 'plan']);
 
-        // Only filter by 'ativo' status in production
-        if (config('app.env') === 'production') {
-            $query->where('status', 'ativo');
-        }
+        // Sempre respeita regras de acesso público (ativo/trial/expirado).
+        $query->active();
 
         $store = $query->firstOrFail();
         $featuredMedia = $store->photos

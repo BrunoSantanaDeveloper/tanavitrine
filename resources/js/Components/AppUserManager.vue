@@ -20,6 +20,7 @@ const route = inject('route')
 function logout() {
   // Limpar dados do onboarding salvos no localStorage
   localStorage.removeItem('onboarding_progress')
+  localStorage.removeItem('onboarding_progress_tanavitrine')
   localStorage.removeItem('welcome_dismissed')
   localStorage.removeItem('onboarding_completed')
 

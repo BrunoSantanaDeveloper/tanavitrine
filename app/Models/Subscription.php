@@ -126,6 +126,6 @@ class Subscription extends CashierSubscription
             return null;
         }
 
-        return now()->diffInDays($this->discount_ends_at);
+        return (int) now()->diffInDays($this->discount_ends_at);
     }
 }

@@ -110,6 +110,62 @@ function getStatusColor(status) {
     'inativo': 'destructive'
   }[status] || 'secondary'
 }
+
+const isTrialPlanAccess = computed(() => Boolean(props.plan?.subscription?.is_trial))
+const hasCouponPlanAccess = computed(() => Boolean(props.plan?.subscription?.has_active_discount))
+const hasSubscriptionData = computed(() => Boolean(props.plan?.subscription))
+const isFormalizedPlanSubscription = computed(() => Boolean(props.plan?.subscription?.is_formalized))
+
+const hasActivePlanAccess = computed(() => {
+  const explicit = props.plan?.subscription?.has_active_access
+  if (typeof explicit === 'boolean') {
+    return explicit
+  }
+
+  return Boolean(props.plan?.subscription?.is_active)
+})
+
+const isPlanExpired = computed(() => Boolean(props.plan?.subscription) && !hasActivePlanAccess.value)
+
+const isTopPaidPlan = computed(() => {
+  return String(props.plan?.name || '').toLowerCase().includes('destaque')
+})
+
+const hasPaidContext = computed(() => {
+  return String(props.plan?.name || '').toLowerCase() !== 'gratuito'
+})
+
+const needsSubscriptionAction = computed(() => {
+  if (!hasPaidContext.value) {
+    return false
+  }
+
+  if (isPlanExpired.value) {
+    return true
+  }
+
+  if (!hasSubscriptionData.value) {
+    return false
+  }
+
+  return !isFormalizedPlanSubscription.value
+})
+
+const dashboardPlanCtaLabel = computed(() => {
+  if (needsSubscriptionAction.value) {
+    return 'Assinar Agora'
+  }
+
+  if (isTopPaidPlan.value) {
+    return 'Gerenciar Assinatura'
+  }
+
+  return 'Fazer Upgrade'
+})
+
+const showDashboardPlanCta = computed(() => {
+  return needsSubscriptionAction.value || isFormalizedPlanSubscription.value || !isTopPaidPlan.value
+})
 </script>
 
 <template>
@@ -231,26 +287,46 @@ function getStatusColor(status) {
                       Plano {{ plan.name }}
                     </h2>
                     <Badge
-                      v-if="plan.subscription?.is_active"
-                      :variant="plan.subscription?.is_trial ? 'default' : 'secondary'"
+                      v-if="plan.subscription"
+                      :variant="isPlanExpired ? 'destructive' : (isFormalizedPlanSubscription ? 'secondary' : (isTrialPlanAccess ? 'default' : 'secondary'))"
                       class="text-xs"
                     >
-                      {{ plan.subscription?.is_trial ? 'Trial Grátis' : 'Ativo' }}
+                      {{ isPlanExpired ? 'Expirado' : (isFormalizedPlanSubscription ? 'Ativo' : (isTrialPlanAccess ? 'Trial Grátis' : (hasCouponPlanAccess ? 'Cupom Ativo' : 'Ativo'))) }}
                     </Badge>
                   </div>
                 </div>
 
-                <Link :href="route('subscriptions.index')">
+                <Link v-if="showDashboardPlanCta" :href="route('subscriptions.index')">
                   <Button class="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-md hover:shadow-lg transition-all">
                     <Icon icon="lucide:sparkles" class="mr-2 h-4 w-4" />
-                    Fazer Upgrade
+                    {{ dashboardPlanCtaLabel }}
                   </Button>
                 </Link>
+                <p v-else class="text-sm font-medium text-teal-700">
+                  Você já está no melhor plano
+                </p>
+              </div>
+
+              <div
+                v-if="isPlanExpired"
+                class="p-3 bg-red-50 border-l-4 border-red-400 rounded-r-lg"
+              >
+                <div class="flex items-start gap-2">
+                  <Icon icon="lucide:alert-triangle" class="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p class="text-sm font-semibold text-red-900">
+                      Sua vitrine está fora do ar
+                    </p>
+                    <p class="text-xs text-red-800 mt-1">
+                      Você ainda tem acesso ao painel. Clique em <strong>Assinar Agora</strong> para reativar.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <!-- Special Trial Message (100% Coupon) -->
               <div
-                v-if="plan.subscription?.is_trial && plan.subscription?.trial_days_remaining > 0"
+                v-if="!isPlanExpired && !isFormalizedPlanSubscription && plan.subscription?.is_trial && plan.subscription?.trial_days_remaining > 0"
                 class="p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg"
               >
                 <div class="flex items-start gap-2">
@@ -263,6 +339,24 @@ function getStatusColor(status) {
                       Seu período gratuito termina em
                       <strong>{{ plan.subscription.trial_ends_at }}</strong>
                       ({{ Math.ceil(plan.subscription.trial_days_remaining) }} dias restantes)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-if="!isPlanExpired && isFormalizedPlanSubscription && (plan.subscription?.trial_days_remaining > 0 || plan.subscription?.discount_days_remaining > 0)"
+                class="p-3 bg-emerald-50 border-l-4 border-emerald-400 rounded-r-lg"
+              >
+                <div class="flex items-start gap-2">
+                  <Icon icon="lucide:check-circle" class="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p class="text-sm font-semibold text-emerald-900">
+                      Assinatura ativa com benefício promocional
+                    </p>
+                    <p class="text-xs text-emerald-800 mt-1">
+                      Sua assinatura já está formalizada. Benefício vigente até
+                      <strong>{{ plan.subscription?.discount_ends_at || plan.subscription?.trial_ends_at }}</strong>.
                     </p>
                   </div>
                 </div>

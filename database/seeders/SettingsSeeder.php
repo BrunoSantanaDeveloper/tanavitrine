@@ -156,6 +156,44 @@ class SettingsSeeder extends Seeder
                 'description' => 'Gateway de Pagamento Ativo',
             ],
 
+            // Regras de Assinatura (fase sem Stripe)
+            [
+                'group' => 'subscription',
+                'key' => 'subscription_default_trial_days',
+                'value' => 14,
+                'type' => 'number',
+                'is_public' => false,
+                'description' => 'Dias de teste padrão para novos cadastros',
+                'sort_order' => 1,
+            ],
+            [
+                'group' => 'subscription',
+                'key' => 'subscription_hide_store_when_expired',
+                'value' => true,
+                'type' => 'boolean',
+                'is_public' => false,
+                'description' => 'Retirar vitrine do ar quando assinatura expirar',
+                'sort_order' => 2,
+            ],
+            [
+                'group' => 'subscription',
+                'key' => 'subscription_keep_panel_access_when_expired',
+                'value' => true,
+                'type' => 'boolean',
+                'is_public' => false,
+                'description' => 'Permitir acesso ao painel quando assinatura expirar',
+                'sort_order' => 3,
+            ],
+            [
+                'group' => 'subscription',
+                'key' => 'subscription_allow_plan_new_user_discounts',
+                'value' => false,
+                'type' => 'boolean',
+                'is_public' => false,
+                'description' => 'Permitir regras automáticas de desconto por plano (legado)',
+                'sort_order' => 4,
+            ],
+
             // Provedor de IA (único)
             [
                 'group' => 'ai',

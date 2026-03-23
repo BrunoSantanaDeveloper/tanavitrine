@@ -56,6 +56,15 @@ function updatePassword() {
 
     <template #form>
       <div class="col-span-6 sm:col-span-4">
+        <Label for="current_password">{{ __('profile.password.current_password') }}</Label>
+        <Input
+          id="current_password" ref="currentPasswordInput" v-model="form.current_password" type="password"
+          class="mt-1 block w-full" autocomplete="current-password"
+        />
+        <InputError :message="form.errors.current_password" class="mt-2" />
+      </div>
+
+      <div class="col-span-6 sm:col-span-4">
         <Label for="password">{{ __('profile.password.new_password') }}</Label>
         <Input
           id="password" ref="passwordInput" v-model="form.password" type="password"

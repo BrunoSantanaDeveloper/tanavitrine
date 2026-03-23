@@ -53,6 +53,11 @@ queue|queue_*)
     echo "✅ Redis disponível"
     ;;
 
+scheduler|scheduler_*)
+    ROLE="${CONTAINER_ROLE:-scheduler}"
+    echo "📦 Container role: $ROLE - inicialização do agendador"
+    ;;
+
 init|init_*)
     echo "📦 Container role: ${CONTAINER_ROLE:-init} - executando apenas inicialização"
     exec "$@"

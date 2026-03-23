@@ -19,6 +19,7 @@ use App\Models\Plan;
 use App\Models\Category;
 use App\Models\Media;
 use App\Traits\HasPlanLimits;
+use App\Services\SubscriptionAccessRuleService;
 use Illuminate\Support\Str;
 /**
  * @property int $id
@@ -248,7 +249,31 @@ final class Team extends JetstreamTeam
      */
     public function scopeActive($query)
     {
-        return $query->where('status', 'ativo');
+        $query->where('status', 'ativo');
+
+        $hideStoreWhenExpired = app(SubscriptionAccessRuleService::class)->shouldHideStoreWhenExpired();
+        if (!$hideStoreWhenExpired) {
+            return $query;
+        }
+
+        return $query->whereHas('owner.subscriptions', function ($subscriptionQuery) {
+            $subscriptionQuery
+                ->where('name', 'default')
+                // "trialing" também representa assinatura válida para acesso público.
+                ->whereIn('stripe_status', ['active', 'trialing'])
+                ->where(function ($trialQuery) {
+                    $trialQuery->whereNull('trial_ends_at')
+                        ->orWhere('trial_ends_at', '>=', now())
+                        ->orWhere(function ($extensionQuery) {
+                            $extensionQuery->whereNotNull('discount_ends_at')
+                                ->where('discount_ends_at', '>=', now());
+                        });
+                })
+                ->where(function ($endsAtQuery) {
+                    $endsAtQuery->whereNull('ends_at')
+                        ->orWhere('ends_at', '>=', now());
+                });
+        });
     }
 
     /**

@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Services\SubscriptionAccessRuleService;
 
 final class OnboardingController extends Controller
 {
@@ -26,17 +27,38 @@ final class OnboardingController extends Controller
      */
     public function start(Request $request): Response|RedirectResponse
     {
-        // Se não tiver plano na URL, redireciona para home
-        if (!$request->has('plan')) {
-            return redirect()->route('home')->with('error', 'Selecione um plano para continuar');
+        $journey = in_array($request->input('journey'), ['trial', 'subscription'], true)
+            ? $request->input('journey')
+            : 'subscription';
+
+        $planInterval = null;
+
+        // Jornada de assinatura exige plano explícito
+        if ($journey === 'subscription') {
+            if (!$request->has('plan')) {
+                return redirect()->route('home')->with('error', 'Selecione um plano para continuar');
+            }
+
+            $planIntervalId = $request->input('plan');
+            $planInterval = PlanInterval::with(['plan.limits', 'interval'])->find($planIntervalId);
         }
 
-        $planIntervalId = $request->input('plan');
-        $planInterval = PlanInterval::with(['plan.limits', 'interval'])->find($planIntervalId);
+        // Jornada de teste pode entrar sem plano e usa um plano padrão ativo
+        if ($journey === 'trial') {
+            $planIntervalId = $request->input('plan');
 
-        // Validar se o plano existe
-        if (!$planInterval) {
-            return redirect()->route('home')->with('error', 'Plano inválido');
+            if ($planIntervalId) {
+                $planInterval = PlanInterval::with(['plan.limits', 'interval'])->find($planIntervalId);
+            }
+
+            if (!$planInterval) {
+                $planInterval = $this->resolveTrialPlanInterval();
+            }
+        }
+
+        // Validar se o plano final existe
+        if (!$planInterval || !$planInterval->plan || !$planInterval->interval) {
+            return redirect()->route('home')->with('error', 'Não foi possível iniciar esta jornada no momento.');
         }
 
         // Buscar todos os planos disponíveis para permitir troca
@@ -89,9 +111,30 @@ final class OnboardingController extends Controller
                 'features' => $planInterval->plan->features,
                 'max_featured_photos' => $this->resolveFeaturedPhotosLimit($planInterval->plan),
             ],
+            'journey' => $journey,
+            'trialDays' => app(SubscriptionAccessRuleService::class)->getDefaultTrialDays(),
             'availablePlans' => $allPlans,
             'categories' => $categories,
         ]);
+    }
+
+    private function resolveTrialPlanInterval(): ?PlanInterval
+    {
+        $intervals = PlanInterval::with(['plan.limits', 'interval'])
+            ->whereHas('plan', function ($query): void {
+                $query->where('is_active', true)
+                    ->where('is_default', false);
+            })
+            ->get()
+            ->sortBy(function (PlanInterval $planInterval): array {
+                return [
+                    (int) ($planInterval->plan->sort_order ?? PHP_INT_MAX),
+                    (float) $planInterval->price,
+                ];
+            })
+            ->values();
+
+        return $intervals->first();
     }
 
     private function resolveFeaturedPhotosLimit(?Plan $plan): int

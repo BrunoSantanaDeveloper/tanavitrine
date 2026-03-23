@@ -55,7 +55,7 @@ class PlanService
                     // Anexar o intervalo ao plano usando attach
                     $plan->intervals()->attach($interval->id, [
                         'price' => $intervalData['price'],
-                        'stripe_price_id' => null,
+                        'stripe_price_id' => $this->normalizeStripePriceId($intervalData['stripe_price_id'] ?? null),
                     ]);
                 }
             }
@@ -81,6 +81,7 @@ class PlanService
                 'name' => $data['name'],
                 'description' => $data['description'] ?? '',
                 'currency' => $data['currency'],
+                'trial_days' => $data['trial_days'] ?? null,
                 'features' => $features,
                 'is_featured' => $data['is_featured'] ?? false,
                 'is_active' => $data['is_active'] ?? true,
@@ -97,6 +98,13 @@ class PlanService
 
             // Update intervals
             if (isset($data['intervals'])) {
+                $existingStripePriceIds = $plan->intervals()
+                    ->get()
+                    ->mapWithKeys(fn ($interval) => [
+                        (int) $interval->id => $this->normalizeStripePriceId($interval->pivot->stripe_price_id),
+                    ])
+                    ->toArray();
+
                 // Remove old intervals
                 $plan->intervals()->detach();
 
@@ -107,7 +115,11 @@ class PlanService
                     // Anexar o intervalo com o novo preço
                     $plan->intervals()->attach($interval->id, [
                         'price' => $intervalData['price'],
-                        'stripe_price_id' => null,
+                        'stripe_price_id' => $this->resolveStripePriceId(
+                            $intervalData,
+                            $existingStripePriceIds,
+                            (int) $interval->id
+                        ),
                     ]);
                 }
             }
@@ -151,6 +163,26 @@ class PlanService
         }
 
         return $featuresArray;
+    }
+
+    private function resolveStripePriceId(array $intervalData, array $existingStripePriceIds, int $intervalId): ?string
+    {
+        if (array_key_exists('stripe_price_id', $intervalData)) {
+            return $this->normalizeStripePriceId($intervalData['stripe_price_id']);
+        }
+
+        return $existingStripePriceIds[$intervalId] ?? null;
+    }
+
+    private function normalizeStripePriceId(mixed $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $normalized = trim($value);
+
+        return $normalized !== '' ? $normalized : null;
     }
 
     /**

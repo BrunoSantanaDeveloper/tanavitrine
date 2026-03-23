@@ -81,6 +81,12 @@ services:
       - QUEUE_CONNECTION=database
       # ARMAZENAMENTO LOCAL
       - FILESYSTEM_DISK=public
+      # STRIPE (injetado pelo workflow de deploy via GitHub Secrets)
+      - STRIPE_KEY=${STRIPE_KEY}
+      - STRIPE_SECRET=${STRIPE_SECRET}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - CASHIER_CURRENCY=brl
+      - CASHIER_CURRENCY_LOCALE=pt_BR
       # OCTANE
       - OCTANE_SERVER=frankenphp
       - OCTANE_HTTPS=false
@@ -116,10 +122,58 @@ services:
       - CACHE_STORE=database
       - SESSION_DRIVER=database
       - QUEUE_CONNECTION=database
+      # STRIPE (injetado pelo workflow de deploy via GitHub Secrets)
+      - STRIPE_KEY=${STRIPE_KEY}
+      - STRIPE_SECRET=${STRIPE_SECRET}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - CASHIER_CURRENCY=brl
+      - CASHIER_CURRENCY_LOCALE=pt_BR
     entrypoint: [ "/app/docker/scripts/entrypoint.sh" ]
     command: [ "php", "artisan", "queue:work", "--verbose", "--tries=3", "--timeout=90" ]
     healthcheck:
       test: [ "CMD-SHELL", "ps aux | grep -q '[a]rtisan queue:work' || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  scheduler_tanavitrine:
+    image: tanavitrine-app:latest
+    restart: unless-stopped
+    networks:
+      - gravit_network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    volumes:
+      - logs:/app/storage/logs:rw
+      - storage:/app/storage/app:rw
+    environment:
+      - CONTAINER_ROLE=scheduler_tanavitrine
+      - WWWUSER=1000
+      - WWWGROUP=1000
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=https://tanavitrine.com.br
+      - SITEMAP_BASE_URL=https://tanavitrine.com.br
+      - CACHE_STORE=database
+      - SESSION_DRIVER=database
+      - QUEUE_CONNECTION=database
+      - FILESYSTEM_DISK=public
+      # STRIPE (injetado pelo workflow de deploy via GitHub Secrets)
+      - STRIPE_KEY=${STRIPE_KEY}
+      - STRIPE_SECRET=${STRIPE_SECRET}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - CASHIER_CURRENCY=brl
+      - CASHIER_CURRENCY_LOCALE=pt_BR
+    entrypoint: [ "/app/docker/scripts/entrypoint.sh" ]
+    command: [ "php", "artisan", "schedule:work", "--verbose" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "ps aux | grep -q '[a]rtisan schedule:work' || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3

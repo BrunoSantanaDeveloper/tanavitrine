@@ -62,7 +62,10 @@ onMounted(() => {
             </SidebarMenu>
           </SidebarHeader>
 
-          <AppSidebarContent   :store="$page.props.auth?.user?.current_team" />
+          <AppSidebarContent
+            :store="$page.props.auth?.user?.current_team"
+            :subscription-nav="$page.props.subscriptionNav"
+          />
 
           <SidebarFooter>
             <SidebarMenu>

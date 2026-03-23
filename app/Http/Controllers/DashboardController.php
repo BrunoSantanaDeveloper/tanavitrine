@@ -9,6 +9,7 @@ use App\Models\Category;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\DB;
+use App\Services\SubscriptionAccessRuleService;
 
 final class DashboardController extends Controller
 {
@@ -87,6 +88,8 @@ final class DashboardController extends Controller
      */
     private function getPlanData($user): array
     {
+        $accessRules = app(SubscriptionAccessRuleService::class);
+
         $planData = [
             'name' => 'Gratuito',
             'max_photos' => 3,
@@ -94,9 +97,9 @@ final class DashboardController extends Controller
             'subscription' => null,
         ];
 
-        // Buscar subscription ativa do usuário (independente do team)
+        // Buscar assinatura atual do usuário (independente do team)
         $subscription = $user->subscriptions()
-            ->where('stripe_status', 'active')
+            ->where('name', 'default')
             ->latest()
             ->first();
 
@@ -122,22 +125,11 @@ final class DashboardController extends Controller
             }
 
             if ($plan) {
-                $isTrial = $subscription->onTrial();
-                $trialEndsAt = $subscription->trial_ends_at;
-
                 $planData = [
                     'name' => $plan->name,
                     'max_photos' => $plan->getModuleLimit('store', 'photos_per_vitrine'),
                     'features' => $plan->features ?? [],
-                    'subscription' => [
-                        'status' => $subscription->stripe_status,
-                        'is_trial' => $isTrial,
-                        'trial_ends_at' => $trialEndsAt ? $trialEndsAt->format('d/m/Y') : null,
-                        'trial_days_remaining' => $isTrial && $trialEndsAt ? (int) now()->diffInDays($trialEndsAt, false) : null,
-                        'ends_at' => $subscription->ends_at ? $subscription->ends_at->format('d/m/Y') : null,
-                        'is_active' => $subscription->active(),
-                        'on_grace_period' => $subscription->onGracePeriod(),
-                    ],
+                    'subscription' => $accessRules->buildSubscriptionMeta($subscription),
                 ];
             }
         } elseif ($user->currentTeam && $user->currentTeam->plan) {

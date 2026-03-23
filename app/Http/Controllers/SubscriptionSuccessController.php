@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PlanInterval;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -32,15 +33,80 @@ class SubscriptionSuccessController extends Controller
                 ->with('error', 'Assinatura não encontrada');
         }
 
-        return Inertia::render('Onboarding/OnboardingSuccess', [
+        $planInterval = null;
+        if ($subscription->stripe_price) {
+            $planInterval = PlanInterval::query()
+                ->with(['plan', 'interval'])
+                ->where('stripe_price_id', $subscription->stripe_price)
+                ->first();
+        }
+
+        $team = $user->currentTeam ?: $user->ownedTeams()->latest('id')->first();
+
+        return Inertia::render('Subscriptions/Success', [
             'user' => $user,
             'subscription' => [
-                'plan_name' => $subscription->type,
-                'price' => 0,
-                'interval' => 'mês',
+                'id' => $subscription->stripe_id,
+                'plan_name' => $planInterval?->plan?->name ?? $subscription->type,
+                'plan_interval_id' => $planInterval?->id,
+                'price' => (float) ($planInterval?->price ?? $subscription->original_price ?? $subscription->final_price ?? 0),
+                'interval' => $planInterval?->interval?->name ?? 'Mensal',
+                'features' => $this->extractPlanFeatures($planInterval),
             ],
-            'clinic_address' => $user->onboarding_data['address'] ?? null,
+            'store' => $team ? [
+                'id' => $team->id,
+                'name' => $team->name,
+                'slug' => $team->slug,
+                'status' => $team->status,
+                'is_featured' => (bool) $team->featured,
+                'featured_until' => $team->featured_until?->format('d/m/Y'),
+            ] : null,
+            'local_mode' => true,
         ]);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function extractPlanFeatures(?PlanInterval $planInterval): array
+    {
+        $rawFeatures = $planInterval?->plan?->features;
+        if (!is_array($rawFeatures)) {
+            return [];
+        }
+
+        $features = [];
+        foreach ($rawFeatures as $key => $value) {
+            if ($key === 'analytics') {
+                continue;
+            }
+
+            if (is_string($value)) {
+                $text = trim($value);
+                if ($text !== '') {
+                    $features[] = $text;
+                }
+
+                continue;
+            }
+
+            if (!is_array($value)) {
+                continue;
+            }
+
+            foreach ($value as $nestedValue) {
+                if (!is_string($nestedValue)) {
+                    continue;
+                }
+
+                $text = trim($nestedValue);
+                if ($text !== '') {
+                    $features[] = $text;
+                }
+            }
+        }
+
+        return array_values(array_unique($features));
     }
 
     /**

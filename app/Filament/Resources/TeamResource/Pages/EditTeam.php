@@ -7,7 +7,9 @@ namespace App\Filament\Resources\TeamResource\Pages;
 use App\Filament\Resources\TeamResource;
 use App\Models\Coupon;
 use App\Models\Team;
+use App\Services\AdminStoreAccessService;
 use Filament\Actions;
+use Filament\Forms;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Notifications\Notification;
 
@@ -34,14 +36,14 @@ final class EditTeam extends EditRecord
                 ->action(function (Team $record) {
                     $record->update([
                         'featured' => !$record->featured,
-                        'featured_until' => !$record->featured ? now()->addDays(30) : null,
+                        'featured_until' => null,
                     ]);
 
                     Notification::make()
                         ->success()
                         ->title($record->featured ? 'Loja destacada!' : 'Destaque removido')
                         ->body($record->featured
-                            ? 'A loja agora aparecerá em destaque por 30 dias.'
+                            ? 'A loja agora aparecerá em destaque sem prazo definido.'
                             : 'A loja não aparecerá mais em destaque.')
                         ->send();
                 })
@@ -60,6 +62,52 @@ final class EditTeam extends EditRecord
                         ->title('Status atualizado!')
                         ->body("Loja {$record->name} está agora {$newStatus}.")
                         ->send();
+                }),
+            Actions\Action::make('grant_access_days')
+                ->label('Conceder Dias')
+                ->icon('heroicon-o-calendar-days')
+                ->color('success')
+                ->form([
+                    Forms\Components\TextInput::make('days')
+                        ->label('Dias de acesso')
+                        ->numeric()
+                        ->required()
+                        ->default(30)
+                        ->minValue(1)
+                        ->maxValue(3650)
+                        ->helperText('Ex.: 30 para 1 mês ou 90 para 3 meses.'),
+                ])
+                ->modalHeading('Conceder dias de acesso')
+                ->modalDescription('Esta ação estende o acesso da loja e reativa a vitrine automaticamente quando estiver inativa.')
+                ->modalSubmitActionLabel('Conceder dias')
+                ->action(function (Team $record, array $data): void {
+                    try {
+                        $result = app(AdminStoreAccessService::class)->grantDays(
+                            $record,
+                            (int) ($data['days'] ?? 0)
+                        );
+
+                        $endsAt = $result['trial_ends_at'] ?? $result['discount_ends_at'];
+                        $details = $endsAt
+                            ? "Acesso válido até {$endsAt}."
+                            : 'Acesso atualizado com sucesso.';
+
+                        if ($result['store_reactivated']) {
+                            $details .= ' Vitrine reativada automaticamente.';
+                        }
+
+                        Notification::make()
+                            ->success()
+                            ->title('Dias concedidos com sucesso!')
+                            ->body($details)
+                            ->send();
+                    } catch (\Throwable $exception) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Não foi possível conceder dias')
+                            ->body($exception->getMessage())
+                            ->send();
+                    }
                 }),
             Actions\DeleteAction::make()
                 ->label('Excluir')

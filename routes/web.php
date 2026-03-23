@@ -498,6 +498,16 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
     Route::post('/subscriptions/checkout/{plan_interval_id}', [SubscriptionController::class, 'checkout'])
         ->name('subscriptions.checkout');
 
+    // Active subscription plan migration (upgrade / downgrade) without new checkout.
+    Route::post('/subscriptions/change-plan/{plan_interval_id}', [SubscriptionController::class, 'changePlan'])
+        ->name('subscriptions.change-plan');
+
+    // Formalized subscription management (cancel/reactivate without leaving panel).
+    Route::post('/subscriptions/cancel-plan', [SubscriptionController::class, 'cancelPlan'])
+        ->name('subscriptions.cancel-plan');
+    Route::post('/subscriptions/resume-plan', [SubscriptionController::class, 'resumePlan'])
+        ->name('subscriptions.resume-plan');
+
     // Debug route to check all registered routes
     Route::get('/debug-routes', function () {
         return response()->json([

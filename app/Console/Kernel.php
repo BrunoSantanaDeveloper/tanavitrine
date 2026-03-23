@@ -9,11 +9,14 @@ class Kernel extends ConsoleKernel
 {
     protected $commands = [
         Commands\CheckDigitalSignagePermissions::class,
+        Commands\ExpireStorefrontAccessCommand::class,
     ];
 
     protected function schedule(Schedule $schedule): void
     {
-        // ... existing schedule ...
+        $schedule->command('subscriptions:expire-stores')
+            ->hourly()
+            ->withoutOverlapping();
     }
 
     protected function commands(): void

@@ -29,8 +29,12 @@ class TeamObserver
      */
     public function updated(Team $team): void
     {
+        if ($team->personal_team || $team->status === 'pendente') {
+            return;
+        }
+
         // Quando admin mudar o plan_id, sincronizar subscription
-        if ($team->isDirty('plan_id') && $team->plan_id) {
+        if ($team->wasChanged('plan_id') && $team->plan_id) {
             $this->syncSubscriptionWithPlan($team);
         }
     }
@@ -41,6 +45,10 @@ class TeamObserver
      */
     public function created(Team $team): void
     {
+        if ($team->personal_team || $team->status === 'pendente') {
+            return;
+        }
+
         // Se admin criou loja com plano atribuído, criar subscription
         if ($team->plan_id && $team->owner) {
             $this->syncSubscriptionWithPlan($team);
@@ -74,7 +82,9 @@ class TeamObserver
             // Marca featured=true se o plano for "Destaque" e is_featured=true
             if ($plan->is_featured && !$team->featured) {
                 $team->featured = true;
-                $team->featured_until = now()->addDays(30); // Destaque por 30 dias
+                // Destaque sem prazo por padrão.
+                // Prazo opcional é configurado manualmente no painel admin.
+                $team->featured_until = null;
                 $team->saveQuietly(); // Usa saveQuietly para não disparar o observer novamente
             }
 

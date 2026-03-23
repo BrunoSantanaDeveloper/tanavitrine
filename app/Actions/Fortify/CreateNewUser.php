@@ -42,6 +42,7 @@ final class CreateNewUser implements CreatesNewUsers
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => Arr::get($input, 'password') ? $this->passwordRules() : 'sometimes',
             'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
+            'journey' => ['nullable', 'in:trial,subscription'],
             'plan' => ['nullable', 'string'],
 
             // Validação dos dados da loja (TanaVitrine)
@@ -102,6 +103,8 @@ final class CreateNewUser implements CreatesNewUsers
      */
     private function createTeam(User $user, array $input): Team
     {
+        $journey = Arr::get($input, 'journey', 'subscription');
+
         // Get default plan (free plan)
         $defaultPlan = Plan::where('is_default', true)->first();
         $planId = $defaultPlan ? $defaultPlan->id : null;
@@ -122,13 +125,15 @@ final class CreateNewUser implements CreatesNewUsers
         ])->save();
 
         // Store selected plan in session for checkout after registration
-        if (!empty($input['plan'])) {
+        if (!empty($input['plan']) && $journey !== 'trial') {
             session(['selected_plan' => $input['plan']]);
         }
 
         // Store coupon code in session if provided
         if (!empty($input['coupon_code'])) {
             session(['applied_coupon' => $input['coupon_code']]);
+        } else {
+            session()->forget('applied_coupon');
         }
 
         return $team;
@@ -203,6 +208,9 @@ final class CreateNewUser implements CreatesNewUsers
      */
     private function updateTeamWithStoreData(User $user, Team $team, array $input): void
     {
+        $journey = $input['journey'] ?? 'subscription';
+        $initialStatus = $journey === 'trial' ? 'ativo' : 'pendente';
+
         // Gerar slug único para a loja
         $slug = Str::slug($input['store_name']);
         $count = 1;
@@ -261,7 +269,7 @@ final class CreateNewUser implements CreatesNewUsers
             'whatsapp' => $input['whatsapp'] ?? null,
             'phone' => $input['phone'] ?? null,
             'email' => $user->email,
-            'status' => 'ativo',
+            'status' => $initialStatus,
         ]);
 
         $teamPath = "stores/store_{$team->id}";

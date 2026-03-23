@@ -42,9 +42,23 @@ class Setting extends Model
         });
     }
 
-    public static function setValueByKey(string $key, mixed $value): void
+    public static function setValueByKey(
+        string $key,
+        mixed $value,
+        string $group = 'general',
+        string $type = 'string'
+    ): void
     {
-        $setting = self::firstOrCreate(['key' => $key]);
+        $setting = self::firstOrCreate(
+            ['key' => $key],
+            [
+                'group' => $group,
+                'type' => $type,
+                'is_public' => false,
+                'is_enabled' => true,
+            ]
+        );
+
         $setting->value = $value;
         $setting->save();
         Cache::forget("settings.{$key}");

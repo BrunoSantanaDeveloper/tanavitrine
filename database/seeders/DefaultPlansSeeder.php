@@ -9,6 +9,9 @@ use Illuminate\Database\Seeder;
 
 class DefaultPlansSeeder extends Seeder
 {
+    private const STRIPE_PRICE_VITRINE_MONTH = 'price_1T8aJkA0FTb4ruyV9i4VnKsx';
+    private const STRIPE_PRICE_DESTAQUE_MONTH = 'price_1T8aKcA0FTb4ruyVFzWw08Tb';
+
     public function run(): void
     {
         // Criar planos
@@ -75,6 +78,7 @@ class DefaultPlansSeeder extends Seeder
             'name' => 'Vitrine',
             'description' => 'Plano completo para divulgar sua loja',
             'stripe_product_id' => null,
+            'stripe_price_id' => self::STRIPE_PRICE_VITRINE_MONTH,
             'currency' => 'brl',
             'features' => [
                 'analytics' => [
@@ -112,7 +116,7 @@ class DefaultPlansSeeder extends Seeder
 
             $plan->intervals()->attach($interval->id, [
                 'price' => $intervalData['price'],
-                'stripe_price_id' => null,
+                'stripe_price_id' => self::STRIPE_PRICE_VITRINE_MONTH,
             ]);
         }
 
@@ -143,6 +147,7 @@ class DefaultPlansSeeder extends Seeder
             'name' => 'Destaque',
             'description' => 'Apareça nos destaques e tenha mais visibilidade',
             'stripe_product_id' => null,
+            'stripe_price_id' => self::STRIPE_PRICE_DESTAQUE_MONTH,
             'currency' => 'brl',
             'features' => [
                 'analytics' => [
@@ -189,7 +194,7 @@ class DefaultPlansSeeder extends Seeder
 
             $plan->intervals()->attach($interval->id, [
                 'price' => $intervalData['price'],
-                'stripe_price_id' => null,
+                'stripe_price_id' => self::STRIPE_PRICE_DESTAQUE_MONTH,
             ]);
         }
 

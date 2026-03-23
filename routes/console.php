@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::daily()
-    ->onOneServer()
-    ->group(fn () => [
-        Schedule::command('sitemap:generate'),
-    ]);
+Schedule::command('subscriptions:expire-stores')
+    ->hourly()
+    ->withoutOverlapping();
+
+Schedule::command('sitemap:generate')
+    ->daily()
+    ->onOneServer();

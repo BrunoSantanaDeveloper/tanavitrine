@@ -273,6 +273,13 @@ function openWhatsAppChat() {
   window.open(url, '_blank')
 }
 
+function getTrialHref(plan) {
+  const intervalId = plan?.intervals?.[0]?.id
+  return intervalId
+    ? `/onboarding/start?journey=trial&plan=${intervalId}`
+    : '/onboarding/start?journey=trial'
+}
+
 const features = [
   {
     icon: '/images/saving-money.png',
@@ -499,18 +506,28 @@ const faqItems = [
               </div>
 
               <!-- CTA Button -->
-              <div class="mb-5">
+              <div class="mb-5 space-y-2">
                 <Button
                   v-for="interval in plan.intervals"
                   :key="`btn-${interval.id}`"
                   as="a"
-                  :href="`/onboarding/start?plan=${interval.id}`"
+                  :href="`/onboarding/start?journey=subscription&plan=${interval.id}`"
                   class="w-full"
                   size="lg"
                   :variant="plan.is_featured ? 'default' : 'secondary'"
                 >
                   <Icon icon="lucide:zap" class="size-4 mr-2" aria-hidden="true" />
-                  Escolher Este Plano
+                  Assinar Este Plano
+                </Button>
+                <Button
+                  as="a"
+                  :href="getTrialHref(plan)"
+                  class="w-full"
+                  size="lg"
+                  variant="outline"
+                >
+                  <Icon icon="lucide:flask-conical" class="size-4 mr-2" aria-hidden="true" />
+                  Testar 14 Dias Grátis
                 </Button>
               </div>
 

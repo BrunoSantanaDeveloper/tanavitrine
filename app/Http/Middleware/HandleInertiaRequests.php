@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Models\Subscription;
+use App\Services\SubscriptionAccessRuleService;
 use Inertia\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
@@ -69,11 +71,13 @@ final class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
         $currentStore = null;
+        $subscriptionNav = null;
 
         if ($user) {
             // Get user's store (only 1 allowed per user)
             $store = \App\Models\Team::where('user_id', $user->id)
                 ->where('personal_team', false)
+                ->with('plan:id,name')
                 ->first();
 
             if ($store) {
@@ -83,12 +87,34 @@ final class HandleInertiaRequests extends Middleware
                     'name' => $store->name,
                 ];
             }
+
+            /** @var Subscription|null $subscription */
+            $subscription = $user->subscriptions()
+                ->where('name', 'default')
+                ->latest()
+                ->first();
+
+            if ($subscription) {
+                $meta = app(SubscriptionAccessRuleService::class)->buildSubscriptionMeta($subscription);
+
+                $subscriptionNav = [
+                    'has_subscription' => true,
+                    'plan_name' => $store?->plan?->name ?? $subscription->type,
+                    'has_active_access' => (bool) ($meta['has_active_access'] ?? false),
+                    'is_trial' => (bool) ($meta['is_trial'] ?? false),
+                    'trial_days_remaining' => $meta['trial_days_remaining'],
+                    'is_formalized' => (bool) ($meta['is_formalized'] ?? false),
+                    'has_active_discount' => (bool) ($meta['has_active_discount'] ?? false),
+                    'discount_days_remaining' => $meta['discount_days_remaining'],
+                ];
+            }
         }
 
         /** @var array<string, mixed> */
         return array_merge(parent::share($request), [
             'name' => Config::get('app.name', 'Tá na Vitrine'),
             'currentStore' => $currentStore,
+            'subscriptionNav' => $subscriptionNav,
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),
                 'success' => fn () => $request->session()->get('success'),

@@ -49,6 +49,7 @@ final class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->pages([
                 \App\Filament\Pages\Dashboard::class,
+                \App\Filament\Pages\SubscriptionRules::class,
             ])
             ->widgets([
                 \App\Filament\Widgets\StatsOverviewWidget::class,

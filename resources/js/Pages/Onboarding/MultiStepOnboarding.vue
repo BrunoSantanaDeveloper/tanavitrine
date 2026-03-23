@@ -30,6 +30,14 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  journey: {
+    type: String,
+    default: 'subscription',
+  },
+  trialDays: {
+    type: Number,
+    default: 14,
+  },
   availablePlans: {
     type: Array,
     default: () => [],
@@ -46,6 +54,8 @@ const props = defineProps({
 const currentStep = ref(1)
 const totalSteps = 6 // Step 1: Nome | Step 2: Categoria | Step 3: Mídia | Step 4: Contato | Step 5: Plano | Step 6: Dados do Usuário
 const currentPlan = ref(props.plan)
+const journey = computed(() => props.journey)
+const trialDays = computed(() => props.trialDays)
 
 const form = useForm({
   // Step 1 - Nome da Loja
@@ -98,6 +108,7 @@ const form = useForm({
   terms: false,
 
   // Metadata
+  journey: props.journey,
   plan_interval_id: props.plan?.id,
   coupon_code: null, // Coupon code if applied
 })
@@ -275,7 +286,9 @@ function submitForm() {
   formData.append('password', form.password)
   formData.append('password_confirmation', form.password_confirmation)
   formData.append('terms', form.terms ? '1' : '0')
-  formData.append('plan', form.plan_interval_id)
+  formData.append('journey', form.journey)
+  if (form.plan_interval_id)
+    formData.append('plan', form.plan_interval_id)
 
   // Coupon code if applied
   if (form.coupon_code) {
@@ -373,6 +386,8 @@ function submitForm() {
             :is="currentStepComponent"
             v-model="form"
             :plan="currentPlan"
+            :journey="journey"
+            :trial-days="trialDays"
             :available-plans="availablePlans"
             :categories="categories"
             :errors="errors"

@@ -93,8 +93,13 @@ class PlanResource extends Resource
                                     ->numeric()
                                     ->prefix('R$')
                                     ->helperText('Preço em BRL (Real Brasileiro)'),
+                                Forms\Components\TextInput::make('stripe_price_id')
+                                    ->label('Stripe Price ID (opcional)')
+                                    ->placeholder('price_...')
+                                    ->maxLength(255)
+                                    ->helperText('Use para integração Stripe. Se vazio, o sistema mantém o valor já cadastrado ao editar.'),
                             ])
-                            ->columns(2)
+                            ->columns(3)
                             ->columnSpanFull(),
                     ]),
 

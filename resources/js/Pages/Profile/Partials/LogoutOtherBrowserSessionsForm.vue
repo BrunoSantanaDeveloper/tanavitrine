@@ -6,6 +6,7 @@ import { Icon } from '@iconify/vue'
 import { useForm } from '@inertiajs/vue3'
 import { inject } from 'vue'
 import { toast } from 'vue-sonner'
+import { __ } from '@/Composables/useTranslations.js'
 
 defineProps({
   sessions: Array,
@@ -24,7 +25,7 @@ function logoutOtherBrowserSessions(password) {
     preserveScroll: true,
     onSuccess: () => {
       form.reset()
-      toast.success('Logged out of other browser sessions')
+      toast.success(__('profile.sessions.logged_out'))
     },
     onFinish: () => form.reset(),
   })
@@ -34,18 +35,16 @@ function logoutOtherBrowserSessions(password) {
 <template>
   <ActionSection>
     <template #title>
-      Browser Sessions
+      {{ __('profile.sessions.title') }}
     </template>
 
     <template #description>
-      Manage and log out your active sessions on other browsers and devices.
+      {{ __('profile.sessions.description') }}
     </template>
 
     <template #content>
       <div class="max-w-xl text-sm ">
-        If necessary, you may log out of all of your other browser sessions across all of your devices. Some of
-        your recent sessions are listed below; however, this list may not be exhaustive. If you feel your
-        account has been compromised, you should also update your password.
+        {{ __('profile.sessions.content') }}
       </div>
 
       <!-- Other Browser Sessions -->
@@ -58,17 +57,21 @@ function logoutOtherBrowserSessions(password) {
 
           <div class="ms-3">
             <div class="text-sm">
-              {{ session.agent.platform ? session.agent.platform : 'Unknown' }} - {{ session.agent.browser
-                ? session.agent.browser : 'Unknown' }}
+              {{ session.agent.platform ? session.agent.platform : __('profile.sessions.unknown') }} - {{
+                session.agent.browser ? session.agent.browser : __('profile.sessions.unknown')
+              }}
             </div>
 
             <div>
               <div class="text-xs">
                 {{ session.ip_address }},
 
-                <span v-if="session.is_current_device" class="font-semibold text-green-400">This
-                  device</span>
-                <span v-else>Last active {{ session.last_active }}</span>
+                <span v-if="session.is_current_device" class="font-semibold text-green-400">
+                  {{ __('profile.sessions.this_device') }}
+                </span>
+                <span v-else>
+                  {{ __('profile.sessions.last_active', { date: session.last_active }) }}
+                </span>
               </div>
             </div>
           </div>
@@ -77,12 +80,13 @@ function logoutOtherBrowserSessions(password) {
 
       <div class="mt-5 flex items-center">
         <ConfirmsPassword
-          title="Log Out Other Browser Sessions"
-          content="Please enter your password to confirm you would like to log out of your other browser sessions across all of your devices."
-          button="Log Out Other Browser Sessions" @confirmed="logoutOtherBrowserSessions"
+          :title="__('profile.sessions.confirmation.title')"
+          :content="__('profile.sessions.confirmation.content')"
+          :button="__('profile.sessions.confirmation.button')"
+          @confirmed="logoutOtherBrowserSessions"
         >
           <Button>
-            Log Out Other Browser Sessions
+            {{ __('profile.sessions.confirmation.button') }}
           </Button>
         </ConfirmsPassword>
       </div>

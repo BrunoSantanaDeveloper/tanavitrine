@@ -405,6 +405,7 @@ class Plan extends Model
             return [
                 'interval_id' => $interval->id,
                 'price' => $interval->pivot->price,
+                'stripe_price_id' => $interval->pivot->stripe_price_id,
             ];
         })->toArray();
     }

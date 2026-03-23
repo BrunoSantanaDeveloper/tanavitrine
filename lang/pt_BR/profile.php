@@ -19,6 +19,7 @@ return [
     'password' => [
         'title' => 'Atualizar Senha',
         'description' => 'Certifique-se de que sua conta está usando uma senha longa e aleatória para manter a segurança.',
+        'current_password' => 'Senha atual',
         'new_password' => 'Nova Senha',
         'confirm_password' => 'Confirmar Senha',
         'save' => 'Salvar',
@@ -45,6 +46,20 @@ return [
             'confirm' => 'Confirmar',
             'cancel' => 'Cancelar',
             'disable' => 'Desabilitar',
+        ],
+    ],
+    'sessions' => [
+        'title' => 'Sessões do navegador',
+        'description' => 'Gerencie e encerre suas sessões ativas em outros navegadores e dispositivos.',
+        'content' => 'Se necessário, você pode encerrar todas as outras sessões ativas nos seus dispositivos. Algumas sessões recentes aparecem abaixo, mas essa lista pode não ser completa. Se suspeitar de acesso indevido, altere sua senha.',
+        'unknown' => 'Desconhecido',
+        'this_device' => 'Este dispositivo',
+        'last_active' => 'Última atividade :date',
+        'logged_out' => 'As outras sessões do navegador foram encerradas.',
+        'confirmation' => [
+            'title' => 'Encerrar outras sessões',
+            'content' => 'Digite sua senha para confirmar o encerramento das outras sessões em todos os seus dispositivos.',
+            'button' => 'Encerrar outras sessões',
         ],
     ],
     'delete_account' => [

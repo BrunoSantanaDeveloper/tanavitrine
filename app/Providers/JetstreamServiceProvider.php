@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use Illuminate\Http\Request;
 use Laravel\Jetstream\Jetstream;
+use App\Services\SubscriptionAccessRuleService;
 use App\Actions\Jetstream\CreateTeam;
 use App\Actions\Jetstream\DeleteTeam;
 use App\Actions\Jetstream\DeleteUser;
@@ -46,6 +47,8 @@ final class JetstreamServiceProvider extends ServiceProvider
             fn (Request $request, array $data): array => array_merge($data, [
                 'availableOauthProviders' => (new ActiveOauthProviderAction)->handle(),
                 'activeOauthProviders' => $request->user()?->oauthConnections->pluck('provider'),
+                'accountDeletionGuard' => app(SubscriptionAccessRuleService::class)
+                    ->getAccountDeletionGuard($request->user()),
             ])
         );
     }

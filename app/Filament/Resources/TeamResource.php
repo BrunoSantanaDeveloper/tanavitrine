@@ -11,6 +11,7 @@ use App\Models\Category;
 use App\Models\Plan;
 use App\Models\Coupon;
 use App\Models\User;
+use App\Services\AdminStoreAccessService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -731,6 +732,52 @@ final class TeamResource extends Resource
                                 ->send();
                         })
                         ->successNotificationTitle('Plano atualizado!'),
+                    Tables\Actions\Action::make('grant_access_days')
+                        ->label('Conceder Dias')
+                        ->icon('heroicon-o-calendar-days')
+                        ->color('success')
+                        ->form([
+                            Forms\Components\TextInput::make('days')
+                                ->label('Dias de acesso')
+                                ->numeric()
+                                ->required()
+                                ->default(30)
+                                ->minValue(1)
+                                ->maxValue(3650)
+                                ->helperText('Ex.: 30 para 1 mês ou 90 para 3 meses.'),
+                        ])
+                        ->modalHeading('Conceder dias de acesso')
+                        ->modalDescription('Esta ação estende o acesso da loja e reativa a vitrine automaticamente quando estiver inativa.')
+                        ->modalSubmitActionLabel('Conceder dias')
+                        ->action(function (Team $record, array $data): void {
+                            try {
+                                $result = app(AdminStoreAccessService::class)->grantDays(
+                                    $record,
+                                    (int) ($data['days'] ?? 0)
+                                );
+
+                                $endsAt = $result['trial_ends_at'] ?? $result['discount_ends_at'];
+                                $details = $endsAt
+                                    ? "Acesso válido até {$endsAt}."
+                                    : 'Acesso atualizado com sucesso.';
+
+                                if ($result['store_reactivated']) {
+                                    $details .= ' Vitrine reativada automaticamente.';
+                                }
+
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Dias concedidos com sucesso!')
+                                    ->body($details)
+                                    ->success()
+                                    ->send();
+                            } catch (\Throwable $exception) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Não foi possível conceder dias')
+                                    ->body($exception->getMessage())
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
                     Tables\Actions\Action::make('toggle_status')
                         ->label(fn (Team $record): string => $record->status === 'ativo' ? 'Desativar' : 'Ativar')
                         ->icon(fn (Team $record): string => $record->status === 'ativo' ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
@@ -758,11 +805,11 @@ final class TeamResource extends Resource
                         ->modalDescription(fn (Team $record): string =>
                             $record->featured
                                 ? 'A loja não aparecerá mais em destaque.'
-                                : 'A loja aparecerá em destaque por 30 dias.'
+                                : 'A loja aparecerá em destaque sem prazo definido.'
                         )
                         ->action(fn (Team $record) => $record->update([
                             'featured' => !$record->featured,
-                            'featured_until' => !$record->featured ? now()->addDays(30) : null,
+                            'featured_until' => null,
                         ]))
                         ->successNotificationTitle(fn (Team $record): string =>
                             $record->featured ? 'Loja destacada!' : 'Destaque removido!'

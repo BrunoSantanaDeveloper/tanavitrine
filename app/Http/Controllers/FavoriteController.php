@@ -20,7 +20,7 @@ class FavoriteController extends Controller
         $user = auth()->user();
 
         $favorites = $user->load(['favoriteStores' => function ($query) {
-            $query->where('status', 'ativo')
+            $query->active()
                 ->where('personal_team', false)
                 ->with(['category', 'photos']);
         }]);
@@ -59,7 +59,7 @@ class FavoriteController extends Controller
         ]);
 
         $store = Team::where('slug', $validated['store_slug'])
-            ->where('status', 'ativo')
+            ->active()
             ->where('personal_team', false)
             ->firstOrFail();
 

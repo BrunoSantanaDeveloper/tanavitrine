@@ -56,6 +56,16 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
+            echo "🔐 Carregando variáveis Stripe (GitHub Secrets)..."
+            export STRIPE_KEY='${{ secrets.STRIPE_KEY }}'
+            export STRIPE_SECRET='${{ secrets.STRIPE_SECRET }}'
+            export STRIPE_WEBHOOK_SECRET='${{ secrets.STRIPE_WEBHOOK_SECRET }}'
+
+            if [ -z "$STRIPE_KEY" ] || [ -z "$STRIPE_SECRET" ] || [ -z "$STRIPE_WEBHOOK_SECRET" ]; then
+              echo "❌ Secrets Stripe ausentes no GitHub (STRIPE_KEY / STRIPE_SECRET / STRIPE_WEBHOOK_SECRET)."
+              exit 1
+            fi
+
             echo "🐳 Construindo nova imagem Docker..."
             docker build -t tanavitrine-app:latest .
 

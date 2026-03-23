@@ -21,7 +21,8 @@ final class UpdateUserPassword implements UpdatesUserPasswords
     public function update(User $user, array $input): void
     {
         Validator::make($input, [
-            'password' => $this->passwordRules(),
+            'current_password' => ['required', 'string', 'current_password'],
+            'password' => array_merge($this->passwordRules(), ['different:current_password']),
         ])->validateWithBag('updatePassword');
 
         $user->forceFill([
