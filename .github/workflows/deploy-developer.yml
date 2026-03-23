@@ -57,8 +57,15 @@ jobs:
             cd /root/tanavitrine
 
             echo "📥 Fazendo pull das alterações..."
-            git fetch origin developer
-            git reset --hard origin/developer
+            export REPO_READ_TOKEN='${{ secrets.REPO_READ_TOKEN }}'
+            if [ -z "$REPO_READ_TOKEN" ]; then
+              echo "❌ Secret REPO_READ_TOKEN ausente no GitHub."
+              exit 1
+            fi
+
+            REPO_URL="https://x-access-token:${REPO_READ_TOKEN}@github.com/BrunoSantanaDeveloper/tanavitrine.git"
+            git fetch "$REPO_URL" developer
+            git reset --hard FETCH_HEAD
 
             echo "🔐 Carregando variáveis Stripe (GitHub Secrets)..."
             export STRIPE_KEY='${{ secrets.STRIPE_KEY }}'
