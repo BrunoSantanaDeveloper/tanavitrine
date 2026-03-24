@@ -14,6 +14,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OnboardingProgressController;
 use App\Http\Controllers\SubscriptionSuccessController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\TrafficController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\DashboardStoreController;
@@ -54,6 +55,7 @@ Route::get('/atacado', [WelcomeController::class, 'atacado'])->name('atacado');
 Route::get('/varejo', [WelcomeController::class, 'varejo'])->name('varejo');
 Route::get('/prices', [WelcomeController::class, 'prices'])->name('prices');
 Route::get('/about', [WelcomeController::class, 'about'])->name('about');
+Route::post('/track/traffic', [TrafficController::class, 'track'])->name('traffic.track');
 
 if (app()->environment('local')) {
     $previewStores = [

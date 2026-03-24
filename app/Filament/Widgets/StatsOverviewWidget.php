@@ -48,9 +48,6 @@ final class StatsOverviewWidget extends BaseWidget
 
         // Total de visualizações
         $totalViews = (int) Team::sum('views_count');
-        $viewsThisMonth = (int) Team::whereMonth('updated_at', now()->month)
-            ->whereYear('updated_at', now()->year)
-            ->sum('views_count');
 
         // Lojas em destaque
         $featuredStores = (int) Team::where('featured', true)
@@ -79,7 +76,7 @@ final class StatsOverviewWidget extends BaseWidget
                 ->color($usersGrowth >= 0 ? 'success' : 'danger'),
 
             Stat::make('Total de Visualizações', Number::format($totalViews))
-                ->description("Este mês: " . Number::format($viewsThisMonth))
+                ->description('Acumulado histórico da plataforma')
                 ->descriptionIcon('heroicon-m-eye')
                 ->color('info'),
 

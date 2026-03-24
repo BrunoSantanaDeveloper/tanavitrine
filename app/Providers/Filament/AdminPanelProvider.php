@@ -53,8 +53,13 @@ final class AdminPanelProvider extends PanelProvider
             ])
             ->widgets([
                 \App\Filament\Widgets\StatsOverviewWidget::class,
+                \App\Filament\Widgets\ViewsPeriodWidget::class,
                 \App\Filament\Widgets\GrowthChartWidget::class,
                 \App\Filament\Widgets\StoreTypeDistributionWidget::class,
+                \App\Filament\Widgets\TrafficRealtimeWidget::class,
+                \App\Filament\Widgets\TrafficTrendWidget::class,
+                \App\Filament\Widgets\TrafficDeviceDistributionWidget::class,
+                \App\Filament\Widgets\TopTrafficPagesWidget::class,
             ])
             ->middleware([
                 'web',

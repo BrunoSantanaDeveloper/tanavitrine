@@ -15,9 +15,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\QueryException;
 use App\Models\Plan;
 use App\Models\Category;
 use App\Models\Media;
+use App\Models\TeamView;
 use App\Traits\HasPlanLimits;
 use App\Services\SubscriptionAccessRuleService;
 use Illuminate\Support\Str;
@@ -167,6 +169,14 @@ final class Team extends JetstreamTeam
     public function leads(): HasMany
     {
         return $this->hasMany(StoreLead::class);
+    }
+
+    /**
+     * Get the view events for the store.
+     */
+    public function viewEvents(): HasMany
+    {
+        return $this->hasMany(TeamView::class);
     }
 
     /**
@@ -339,6 +349,14 @@ final class Team extends JetstreamTeam
     public function incrementViews(): void
     {
         $this->increment('views_count');
+
+        try {
+            $this->viewEvents()->create([
+                'viewed_at' => now(),
+            ]);
+        } catch (QueryException $exception) {
+            report($exception);
+        }
     }
 
     /**

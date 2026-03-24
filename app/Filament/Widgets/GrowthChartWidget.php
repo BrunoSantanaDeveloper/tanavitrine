@@ -13,7 +13,7 @@ final class GrowthChartWidget extends ChartWidget
 {
     protected static ?string $heading = 'Crescimento nos Últimos 6 Meses';
 
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 7;
 
     protected static ?string $maxHeight = '300px';
 

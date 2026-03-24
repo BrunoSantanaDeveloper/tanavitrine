@@ -11,3 +11,7 @@ Schedule::command('subscriptions:expire-stores')
 Schedule::command('sitemap:generate')
     ->daily()
     ->onOneServer();
+
+Schedule::command('traffic:cleanup')
+    ->dailyAt('03:20')
+    ->withoutOverlapping();
