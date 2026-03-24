@@ -504,22 +504,132 @@ final class TeamResource extends Resource
                     ->label('Status Assinatura')
                     ->state(function ($record) {
                         $subscription = $record->owner?->subscription('default');
-                        return $subscription?->stripe_status ?? 'none';
+                        if (!$subscription) {
+                            return 'none';
+                        }
+
+                        $stripeReference = (string) $subscription->stripe_id;
+                        $isStripeSubscription = str_starts_with($stripeReference, 'cs_')
+                            || (
+                                str_starts_with($stripeReference, 'sub_')
+                                && !str_starts_with($stripeReference, 'sub_admin_')
+                            );
+
+                        $isActiveStatus = in_array((string) $subscription->stripe_status, ['active', 'trialing'], true);
+
+                        if ($isStripeSubscription && $isActiveStatus) {
+                            return 'stripe_active';
+                        }
+
+                        if ($isActiveStatus) {
+                            return 'trial';
+                        }
+
+                        return 'none';
                     })
                     ->badge()
                     ->color(fn ($state) => match($state) {
-                        'active' => 'success',
-                        'past_due' => 'warning',
-                        'canceled' => 'danger',
+                        'stripe_active' => 'success',
+                        'trial' => 'info',
                         'none' => 'gray',
-                        default => 'info',
+                        default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => match($state) {
-                        'active' => 'Ativa',
-                        'past_due' => 'Vencida',
-                        'canceled' => 'Cancelada',
+                        'stripe_active' => 'Stripe ativa',
+                        'trial' => 'Trial',
                         'none' => 'Sem assinatura',
-                        default => ucfirst($state),
+                        default => 'Sem assinatura',
+                    })
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('subscription_expires_in')
+                    ->label('Expira em')
+                    ->state(function ($record) {
+                        $subscription = $record->owner?->subscription('default');
+
+                        if (!$subscription) {
+                            return null;
+                        }
+
+                        $stripeReference = (string) $subscription->stripe_id;
+                        $isStripeSubscription = str_starts_with($stripeReference, 'cs_')
+                            || (
+                                str_starts_with($stripeReference, 'sub_')
+                                && !str_starts_with($stripeReference, 'sub_admin_')
+                            );
+
+                        $isActiveStatus = in_array((string) $subscription->stripe_status, ['active', 'trialing'], true);
+                        $isTrial = $isActiveStatus && !$isStripeSubscription;
+
+                        // Mostrar prazo somente para lojas em modo Trial.
+                        if (!$isTrial) {
+                            return null;
+                        }
+
+                        $futureDates = collect([
+                            $subscription->trial_ends_at,
+                            $subscription->discount_ends_at,
+                        ])->filter(fn ($date) => $date && $date->isFuture());
+
+                        if ($futureDates->isNotEmpty()) {
+                            $expiresAt = $futureDates->sortByDesc(fn ($date) => $date->getTimestamp())->first();
+                            $daysRemaining = now()->startOfDay()->diffInDays($expiresAt->copy()->startOfDay(), false);
+
+                            return $daysRemaining <= 0 ? 'Hoje' : ((int) $daysRemaining) . 'd';
+                        }
+
+                        if ($subscription->trial_ends_at || $subscription->discount_ends_at) {
+                            return 'Expirado';
+                        }
+
+                        return null;
+                    })
+                    ->badge(fn ($state): bool => filled($state))
+                    ->tooltip(function ($record): ?string {
+                        $subscription = $record->owner?->subscription('default');
+
+                        if (!$subscription) {
+                            return null;
+                        }
+
+                        $stripeReference = (string) $subscription->stripe_id;
+                        $isStripeSubscription = str_starts_with($stripeReference, 'cs_')
+                            || (
+                                str_starts_with($stripeReference, 'sub_')
+                                && !str_starts_with($stripeReference, 'sub_admin_')
+                            );
+
+                        $isActiveStatus = in_array((string) $subscription->stripe_status, ['active', 'trialing'], true);
+                        $isTrial = $isActiveStatus && !$isStripeSubscription;
+
+                        if (!$isTrial) {
+                            return null;
+                        }
+
+                        $futureDates = collect([
+                            $subscription->trial_ends_at,
+                            $subscription->discount_ends_at,
+                        ])->filter(fn ($date) => $date && $date->isFuture());
+
+                        if ($futureDates->isEmpty()) {
+                            return null;
+                        }
+
+                        $expiresAt = $futureDates->sortByDesc(fn ($date) => $date->getTimestamp())->first();
+
+                        return 'Data final: ' . $expiresAt->format('d/m/Y');
+                    })
+                    ->color(function ($state): string {
+                        if ($state === 'Expirado') {
+                            return 'danger';
+                        }
+
+                        if ($state === 'Hoje') {
+                            return 'warning';
+                        }
+
+                        $days = (int) str_replace('d', '', (string) $state);
+
+                        return $days <= 7 ? 'warning' : 'success';
                     })
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('category.name')

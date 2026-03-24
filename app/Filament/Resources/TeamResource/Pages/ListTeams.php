@@ -15,6 +15,8 @@ final class ListTeams extends ListRecords
 {
     protected static string $resource = TeamResource::class;
 
+    protected ?string $maxContentWidth = 'full';
+
     protected function getHeaderActions(): array
     {
         return [
