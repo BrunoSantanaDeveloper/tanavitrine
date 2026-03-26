@@ -109,7 +109,7 @@ const previewCollections = [
     description: 'Basicas e fashion para compor looks versateis no dia a dia.',
     cover: '/images/brand-image.png',
     count: 24,
-    images: ['/images/brand-image.png', '/images/dashboard-light.webp', '/images/dashboard-dark.webp', '/images/og.webp'],
+    images: ['/images/brand-image.png', '/images/dashboard-light.webp', '/images/dashboard-dark.webp', '/images/og.png'],
   },
   {
     id: 'calcas',
@@ -123,9 +123,9 @@ const previewCollections = [
     id: 'conjuntos',
     title: 'Conjuntos',
     description: 'Pecas coordenadas para vitrines e campanhas sazonais.',
-    cover: '/images/og.webp',
+    cover: '/images/og.png',
     count: 9,
-    images: ['/images/og.webp', '/images/video-placeholder.png', '/images/brand-image.png'],
+    images: ['/images/og.png', '/images/video-placeholder.png', '/images/brand-image.png'],
   },
   {
     id: 'saias',
@@ -157,7 +157,7 @@ const previewCollections = [
     description: 'Bolsas, cintos e complementos para aumentar ticket medio da vitrine.',
     cover: '/images/video-placeholder.png',
     count: 21,
-    images: ['/images/video-placeholder.png', '/images/og.webp', '/images/notification.png', '/images/brand-image.png'],
+    images: ['/images/video-placeholder.png', '/images/og.png', '/images/notification.png', '/images/brand-image.png'],
   },
 ]
 

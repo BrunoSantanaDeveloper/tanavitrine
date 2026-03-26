@@ -135,7 +135,7 @@ class StoreController extends Controller
         $seoDescription = mb_strlen($normalizedDescription) > 160
             ? mb_substr($normalizedDescription, 0, 157) . '...'
             : $normalizedDescription;
-        $seoImage = $storeData['logo'] ?: ($storeData['images'][0]['url'] ?? asset('images/og.webp'));
+        $seoImage = $storeData['logo'] ?: ($storeData['images'][0]['url'] ?? asset('images/og.png'));
 
         return Inertia::render('StoreDetail', [
             'store' => $storeData,

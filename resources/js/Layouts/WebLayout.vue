@@ -321,7 +321,7 @@ function sendWhatsApp() {
     </footer>
 
     <!-- WhatsApp Floating Button -->
-    <div v-if="props.showFloatingWhatsApp" class="fixed bottom-6 right-6 z-50">
+    <div v-if="props.showFloatingWhatsApp" class="fixed bottom-6 right-6 z-[100]">
       <!-- Chat Box -->
       <Transition
         enter-active-class="transition ease-out duration-200"
@@ -400,9 +400,9 @@ function sendWhatsApp() {
         <span class="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-75" />
 
         <!-- Tooltip -->
-        <div class="absolute bottom-full right-0 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+        <div class="absolute right-[calc(100%+1rem)] bottom-1 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-[110]">
           Fale conosco no WhatsApp
-          <div class="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900" />
+          <div class="absolute left-full bottom-3 w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-900" />
         </div>
       </button>
     </div>

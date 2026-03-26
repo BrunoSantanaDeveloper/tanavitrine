@@ -11,7 +11,7 @@ function getSiteUrl() {
 
 function toAbsoluteUrl(path) {
   if (!path)
-    return `${getSiteUrl()}/images/og.webp`
+    return `${getSiteUrl()}/images/og.png`
 
   if (path.startsWith('http://') || path.startsWith('https://'))
     return path
@@ -23,7 +23,7 @@ function toAbsoluteUrl(path) {
 
 function getDefaultSeoMeta() {
   const siteUrl = getSiteUrl()
-  const defaultOgImage = toAbsoluteUrl('/images/og.webp')
+  const defaultOgImage = toAbsoluteUrl('/images/og.png')
 
   return {
     title: 'Home',

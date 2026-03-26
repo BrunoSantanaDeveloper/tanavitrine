@@ -175,9 +175,9 @@ if (app()->environment('local')) {
             'longitude' => null,
             'whatsapp' => '(62) 96666-0026',
             'logo' => null,
-            'image' => '/images/og.webp',
+            'image' => '/images/og.png',
             'images' => [
-                '/images/og.webp',
+                '/images/og.png',
                 '/images/video-placeholder.png',
             ],
             'featured' => false,
@@ -312,7 +312,7 @@ if (app()->environment('local')) {
             'logo' => null,
             'video_url' => null,
             'images' => [
-                ['id' => 1, 'url' => '/images/og.webp'],
+                ['id' => 1, 'url' => '/images/og.png'],
                 ['id' => 2, 'url' => '/images/video-placeholder.png'],
             ],
             'views_count' => 74,

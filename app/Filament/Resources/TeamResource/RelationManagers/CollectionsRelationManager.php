@@ -88,7 +88,7 @@ HTML;
                         $cover = $record->media()->latest('id')->first();
                         return $cover?->path;
                     })
-                    ->defaultImageUrl(url('/images/og.webp')),
+                    ->defaultImageUrl(url('/images/og.png')),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Coleção')
                     ->searchable()

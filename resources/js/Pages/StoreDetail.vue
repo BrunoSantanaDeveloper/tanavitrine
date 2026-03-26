@@ -45,7 +45,7 @@ function toAbsoluteUrl(path) {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : fallbackBaseUrl
 
   if (!path)
-    return `${baseUrl}/images/og.webp`
+    return `${baseUrl}/images/og.png`
 
   if (String(path).startsWith('http://') || String(path).startsWith('https://'))
     return path
@@ -67,7 +67,7 @@ const storePageDescription = computed(() => {
 const storePageImage = computed(() => {
   const logo = props.store?.logo
   const firstImage = props.store?.images?.[0]?.url
-  return toAbsoluteUrl(logo || firstImage || '/images/og.webp')
+  return toAbsoluteUrl(logo || firstImage || '/images/og.png')
 })
 
 const storePageUrl = computed(() => {
