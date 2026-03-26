@@ -1378,7 +1378,7 @@ function scrollPrev() {
     </Dialog>
 
     <Dialog v-model:open="isGalleryLightboxOpen">
-      <DialogContent class="max-w-[98vw] sm:max-w-6xl p-0 overflow-hidden border-0 bg-transparent shadow-none">
+      <DialogContent class="max-h-[calc(100dvh-2rem)] max-w-[98vw] sm:max-w-6xl p-0 overflow-hidden border-0 bg-transparent shadow-none">
         <div class="relative rounded-2xl border border-[#d9c38a]/20 bg-[linear-gradient(160deg,rgba(7,56,58,0.96),rgba(8,25,33,0.97)_55%,rgba(18,14,22,0.97))] backdrop-blur-xl overflow-hidden shadow-[0_24px_80px_rgba(3,16,19,0.55)]">
           <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(255,214,102,0.16),transparent_42%),radial-gradient(circle_at_88%_12%,rgba(99,235,220,0.12),transparent_38%),radial-gradient(circle_at_50%_100%,rgba(255,255,255,0.06),transparent_40%)]" />
 
@@ -1424,7 +1424,7 @@ function scrollPrev() {
           </button>
 
           <div
-            class="relative z-10 flex items-center justify-center min-h-[52vh] sm:min-h-[72vh] px-3 py-4 sm:px-6"
+            class="relative z-10 flex items-center justify-center min-h-[52vh] sm:min-h-[64vh] px-3 py-4 sm:px-6"
             @touchstart="onLightboxTouchStart"
             @touchmove="onLightboxTouchMove"
             @touchend="onLightboxTouchEnd"
@@ -1432,7 +1432,7 @@ function scrollPrev() {
             <button
               v-if="activeLightboxMainImage"
               type="button"
-              class="group relative max-h-[82vh] max-w-full cursor-zoom-in overflow-hidden rounded-xl border border-white/15 bg-white/[0.03] shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+              class="group relative max-h-[calc(100dvh-13rem)] max-w-full cursor-zoom-in overflow-hidden rounded-xl border border-white/15 bg-white/[0.03] shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
               :class="{ 'cursor-zoom-out': isLightboxZoomed }"
               @click="toggleLightboxZoom"
                 :aria-label="isLightboxZoomed ? 'Reduzir zoom' : 'Ampliar imagem'"
@@ -1441,7 +1441,7 @@ function scrollPrev() {
               <img
                 :src="activeLightboxMainImage"
                 :alt="activeLightboxTitle || 'Imagem da coleção'"
-                class="max-h-[82vh] w-auto max-w-full object-contain transition-transform duration-200"
+                class="max-h-[calc(100dvh-13rem)] w-auto max-w-full object-contain transition-transform duration-200"
                 :class="isLightboxZoomed ? 'scale-125' : 'scale-100'"
               >
               <div class="pointer-events-none absolute bottom-3 left-3 rounded-full border border-[#d9c38a]/20 bg-white/10 px-2.5 py-1 text-[11px] text-white/90 backdrop-blur-sm">
