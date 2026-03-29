@@ -79,6 +79,19 @@ STRIPE_SECRET=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
+### Configuração do Google Analytics (GA4)
+
+1. Crie uma propriedade GA4 no Google Analytics
+2. Copie o Measurement ID (`G-XXXXXXXXXX`)
+3. Configure no `.env`:
+
+```env
+VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
+4. Reinicie o frontend (`npm run dev` ou novo build em produção)
+5. Valide no `Realtime`/`DebugView` do GA4
+
 ## 🛠️ Stack Tecnológica
 
 - **Backend**: Laravel 11

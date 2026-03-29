@@ -67,14 +67,17 @@ jobs:
             export STRIPE_KEY='${{ secrets.STRIPE_KEY }}'
             export STRIPE_SECRET='${{ secrets.STRIPE_SECRET }}'
             export STRIPE_WEBHOOK_SECRET='${{ secrets.STRIPE_WEBHOOK_SECRET }}'
+            export VITE_GA_MEASUREMENT_ID='${{ secrets.VITE_GA_MEASUREMENT_ID }}'
 
-            if [ -z "$STRIPE_KEY" ] || [ -z "$STRIPE_SECRET" ] || [ -z "$STRIPE_WEBHOOK_SECRET" ]; then
-              echo "❌ Secrets Stripe ausentes no GitHub (STRIPE_KEY / STRIPE_SECRET / STRIPE_WEBHOOK_SECRET)."
+            if [ -z "$STRIPE_KEY" ] || [ -z "$STRIPE_SECRET" ] || [ -z "$STRIPE_WEBHOOK_SECRET" ] || [ -z "$VITE_GA_MEASUREMENT_ID" ]; then
+              echo "❌ Secrets ausentes no GitHub (STRIPE_KEY / STRIPE_SECRET / STRIPE_WEBHOOK_SECRET / VITE_GA_MEASUREMENT_ID)."
               exit 1
             fi
 
             echo "🐳 Construindo nova imagem Docker..."
-            docker build -t tanavitrine-app:latest .
+            docker build \
+              --build-arg VITE_GA_MEASUREMENT_ID="$VITE_GA_MEASUREMENT_ID" \
+              -t tanavitrine-app:latest .
 
             echo "🔄 Atualizando stack no Swarm..."
             docker stack deploy -c docker-compose.app.yml tanavitrine_app --with-registry-auth

@@ -4,6 +4,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
 import { CapoPlugin } from 'unhead'
 import { createApp, h } from 'vue'
 import { ZiggyVue } from 'ziggy-js'
+import { startGoogleAnalytics } from './services/googleAnalytics'
 import { startTrafficTracker } from './services/trafficTracker'
 import './bootstrap'
 import '../css/app.css'
@@ -28,6 +29,7 @@ createInertiaApp({
       .use(head)
       .mount(el)
 
+    startGoogleAnalytics(router)
     startTrafficTracker(router)
 
     return app

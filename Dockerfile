@@ -3,6 +3,8 @@ FROM oven/bun:1-slim AS node-builder
 WORKDIR /app
 COPY . .
 RUN bun install --no-frozen-lockfile || (rm -f bun.lockb && bun install)
+ARG VITE_GA_MEASUREMENT_ID=""
+ENV VITE_GA_MEASUREMENT_ID=${VITE_GA_MEASUREMENT_ID}
 RUN bun run build
 
 # Stage 2: Final image

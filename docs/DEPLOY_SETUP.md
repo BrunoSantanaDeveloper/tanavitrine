@@ -28,6 +28,7 @@ Acesse: **Settings → Secrets and variables → Actions → New repository secr
 | `VPS_HOST` | `217.196.62.124` |
 | `VPS_USER` | `root` |
 | `SSH_PRIVATE_KEY` | Conteúdo de `~/.ssh/github_deploy_key` (chave PRIVADA) |
+| `VITE_GA_MEASUREMENT_ID` | `G-W2BHEGSWG3` (ou o seu ID de métricas GA4) |
 
 ## Passo 4: Garantir Repositório na VPS
 
