@@ -2,6 +2,7 @@ const GA_MEASUREMENT_ID = (import.meta.env.VITE_GA_MEASUREMENT_ID || '').trim()
 
 let started = false
 let lastTrackedPage = null
+let gaConfigured = false
 
 function isEnabled() {
   return typeof window !== 'undefined' && GA_MEASUREMENT_ID !== ''
@@ -11,8 +12,11 @@ function ensureGtagGlobals() {
   window.dataLayer = window.dataLayer || []
 
   if (typeof window.gtag !== 'function') {
-    window.gtag = function gtag(...args) {
-      window.dataLayer.push(args)
+    // Keep the same shape used in the official GA4 snippet.
+    // eslint-disable-next-line prefer-rest-params
+    window.gtag = function gtag() {
+      // eslint-disable-next-line prefer-rest-params
+      window.dataLayer.push(arguments)
     }
   }
 }
@@ -20,7 +24,7 @@ function ensureGtagGlobals() {
 function ensureGaScriptTag() {
   const existingScript = document.querySelector(`script[data-ga4-id="${GA_MEASUREMENT_ID}"]`)
   if (existingScript) {
-    return
+    return existingScript
   }
 
   const script = document.createElement('script')
@@ -28,6 +32,8 @@ function ensureGaScriptTag() {
   script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA_MEASUREMENT_ID)}`
   script.dataset.ga4Id = GA_MEASUREMENT_ID
   document.head.appendChild(script)
+
+  return script
 }
 
 function normalizePageFromUrl(url) {
@@ -68,15 +74,12 @@ function trackPageView(url) {
   })
 }
 
-export function startGoogleAnalytics(router) {
-  if (started || !isEnabled()) {
+function configureGoogleAnalytics() {
+  if (gaConfigured || typeof window.gtag !== 'function') {
     return
   }
 
-  started = true
-
-  ensureGtagGlobals()
-  ensureGaScriptTag()
+  gaConfigured = true
 
   window.gtag('js', new Date())
 
@@ -86,6 +89,24 @@ export function startGoogleAnalytics(router) {
   })
 
   trackPageView(window.location.href)
+}
+
+export function startGoogleAnalytics(router) {
+  if (started || !isEnabled()) {
+    return
+  }
+
+  started = true
+
+  ensureGtagGlobals()
+  const script = ensureGaScriptTag()
+  configureGoogleAnalytics()
+
+  if (script instanceof HTMLScriptElement) {
+    script.addEventListener('load', () => {
+      configureGoogleAnalytics()
+    }, { once: true })
+  }
 
   router.on('navigate', (event) => {
     const nextUrl = event?.detail?.page?.url || window.location.href
