@@ -373,6 +373,7 @@ final class WelcomeController extends Controller
             'name' => $store->name,
             'category' => $store->category?->name,
             'subcategory' => $store->subcategory,
+            'gender' => $store->gender,
             'description' => $store->description,
             'saleType' => ucfirst($store->sale_type),
             'storeType' => ucfirst((string) $store->store_type),

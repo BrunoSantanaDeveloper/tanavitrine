@@ -3,6 +3,7 @@ import FeaturesCard from '@/Components/FeaturesCard.vue'
 import PricingCard from '@/Components/PricingCard.vue'
 import StoreCard from '@/Components/StoreCard.vue'
 import FloatingMap from '@/Components/FloatingMap.vue'
+import FilterDropdown from '@/Components/FilterDropdown.vue'
 import Accordion from '@/Components/shadcn/ui/accordion/Accordion.vue'
 import AccordionContent from '@/Components/shadcn/ui/accordion/AccordionContent.vue'
 import AccordionItem from '@/Components/shadcn/ui/accordion/AccordionItem.vue'
@@ -16,8 +17,8 @@ import Tabs from '@/Components/shadcn/ui/tabs/Tabs.vue'
 import TabsContent from '@/Components/shadcn/ui/tabs/TabsContent.vue'
 import TabsList from '@/Components/shadcn/ui/tabs/TabsList.vue'
 import TabsTrigger from '@/Components/shadcn/ui/tabs/TabsTrigger.vue'
-import { Popover, PopoverContent, PopoverTrigger } from '@/Components/shadcn/ui/popover'
 import { Checkbox } from '@/Components/shadcn/ui/checkbox'
+import { useExclusivePopoverGroup } from '@/Composables/useExclusivePopoverGroup.js'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
 import WebLayout from '@/Layouts/WebLayout.vue'
 import { Icon } from '@iconify/vue'
@@ -142,38 +143,24 @@ const selectedCategoriasText = computed(() => {
   return `${searchFilters.value.categorias.length} selecionadas`
 })
 
-const activeAtacadoFilter = ref(null)
-const activeVarejoFilter = ref(null)
+const atacadoHeroFilters = useExclusivePopoverGroup()
+const varejoHeroFilters = useExclusivePopoverGroup()
 
-function getActiveFilter(type) {
-  return type === 'atacado' ? activeAtacadoFilter.value : activeVarejoFilter.value
-}
-
-function setActiveFilter(type, filter) {
-  if (type === 'atacado') {
-    activeAtacadoFilter.value = filter
-    return
-  }
-
-  activeVarejoFilter.value = filter
+function getPopoverGroup(type) {
+  return type === 'atacado' ? atacadoHeroFilters : varejoHeroFilters
 }
 
 function isFilterOpen(type, filter) {
-  return getActiveFilter(type) === filter
+  return getPopoverGroup(type).isOpen(filter)
 }
 
 function closeAllHeroOverlays() {
-  activeAtacadoFilter.value = null
-  activeVarejoFilter.value = null
+  atacadoHeroFilters.closeAll()
+  varejoHeroFilters.closeAll()
 }
 
 function handleFilterOpenChange(type, filter, nextOpen) {
-  if (nextOpen) {
-    setActiveFilter(type, filter)
-    return
-  }
-
-  if (isFilterOpen(type, filter)) setActiveFilter(type, null)
+  getPopoverGroup(type).setOpen(filter, nextOpen)
 }
 
 function setSingleFilterValue(key, value) {
@@ -197,8 +184,8 @@ function clearLocationWhenVirtual() {
   if (searchFilters.value.tipoLoja === 'virtual') {
     searchFilters.value.estado = ''
     searchFilters.value.cidade = ''
-    if (activeAtacadoFilter.value === 'location') activeAtacadoFilter.value = null
-    if (activeVarejoFilter.value === 'location') activeVarejoFilter.value = null
+    if (atacadoHeroFilters.isOpen('location')) atacadoHeroFilters.close('location')
+    if (varejoHeroFilters.isOpen('location')) varejoHeroFilters.close('location')
   }
 }
 
@@ -495,137 +482,129 @@ onBeforeUnmount(() => {
                   <!-- Categoria -->
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Categoria</label>
-                    <Popover :open="isFilterOpen('atacado', 'categoria')" @update:open="(open) => handleFilterOpenChange('atacado', 'categoria', open)">
-                      <PopoverTrigger as-child>
+                    <FilterDropdown
+                      :open="isFilterOpen('atacado', 'categoria')"
+                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                      content-class="p-0"
+                      @update:open="(open) => handleFilterOpenChange('atacado', 'categoria', open)"
+                    >
+                      <template #trigger>
+                        {{ selectedCategoriasText }}
+                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </template>
+
+                      <div class="max-h-64 overflow-y-auto p-4 space-y-2">
                         <button
+                          v-for="cat in categorias"
+                          :key="cat.name"
                           type="button"
-                          role="combobox"
-                          class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                          class="flex w-full items-center space-x-2 rounded p-2 text-left hover:bg-muted"
+                          @click="toggleCategoria(cat.name)"
                         >
-                          {{ selectedCategoriasText }}
-                          <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          <Checkbox
+                            :id="undefined"
+                            :checked="searchFilters.categorias.includes(cat.name)"
+                          />
+                          <span class="text-sm font-medium leading-none flex-1">
+                            {{ cat.name }} ({{ cat.count }})
+                          </span>
                         </button>
-                      </PopoverTrigger>
-                      <PopoverContent class="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                        <div class="max-h-64 overflow-y-auto p-4 space-y-2">
-                          <button
-                            v-for="cat in categorias"
-                            :key="cat.name"
-                            type="button"
-                            class="flex w-full items-center space-x-2 rounded p-2 text-left hover:bg-muted"
-                            @click="toggleCategoria(cat.name)"
-                          >
-                            <Checkbox
-                              :id="undefined"
-                              :checked="searchFilters.categorias.includes(cat.name)"
-                            />
-                            <span class="text-sm font-medium leading-none flex-1">
-                              {{ cat.name }} ({{ cat.count }})
-                            </span>
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                    </FilterDropdown>
                   </div>
 
                   <!-- Tipo de Loja -->
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Tipo de Loja</label>
-                    <Popover :open="isFilterOpen('atacado', 'tipoLoja')" @update:open="(open) => handleFilterOpenChange('atacado', 'tipoLoja', open)">
-                      <PopoverTrigger as-child>
+                    <FilterDropdown
+                      :open="isFilterOpen('atacado', 'tipoLoja')"
+                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                      content-class="p-0"
+                      @update:open="(open) => handleFilterOpenChange('atacado', 'tipoLoja', open)"
+                    >
+                      <template #trigger>
+                        {{ selectedTipoLojaText }}
+                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </template>
+
+                      <div class="p-2">
                         <button
+                          v-for="tipo in tiposLoja"
+                          :key="tipo.value"
                           type="button"
-                          role="combobox"
-                          class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                          :class="[
+                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
+                            tipo === tiposLoja[0] ? 'bg-muted' : '',
+                          ]"
+                          @click="handleTipoLojaSelect(tipo.value)"
                         >
-                          {{ selectedTipoLojaText }}
-                          <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          {{ tipo.label }}
                         </button>
-                      </PopoverTrigger>
-                      <PopoverContent class="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                        <div class="p-2">
-                          <button
-                            v-for="tipo in tiposLoja"
-                            :key="tipo.value"
-                            type="button"
-                            :class="[
-                              'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                              tipo === tiposLoja[0] ? 'bg-muted' : '',
-                            ]"
-                            @click="handleTipoLojaSelect(tipo.value)"
-                          >
-                            {{ tipo.label }}
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                    </FilterDropdown>
                   </div>
 
                   <!-- Localização -->
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Localização</label>
-                    <Popover :open="isFilterOpen('atacado', 'location')" @update:open="(open) => handleFilterOpenChange('atacado', 'location', open)">
-                      <PopoverTrigger as-child>
+                    <FilterDropdown
+                      :open="isFilterOpen('atacado', 'location')"
+                      :disabled="searchFilters.tipoLoja === 'virtual'"
+                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                      content-class="p-0"
+                      @update:open="(open) => handleFilterOpenChange('atacado', 'location', open)"
+                    >
+                      <template #trigger>
+                        {{ selectedEstadoText }}
+                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </template>
+
+                      <div class="max-h-64 overflow-y-auto p-2">
                         <button
+                          v-for="(estado, index) in estados"
+                          :key="estado"
                           type="button"
-                          role="combobox"
-                          :disabled="searchFilters.tipoLoja === 'virtual'"
-                          class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                          :class="[
+                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
+                            index === 0 ? 'bg-muted' : '',
+                          ]"
+                          @click="setSingleFilterValue('estado', estado)"
                         >
-                          {{ selectedEstadoText }}
-                          <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          {{ estado }}
                         </button>
-                      </PopoverTrigger>
-                      <PopoverContent class="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                        <div class="max-h-64 overflow-y-auto p-2">
-                          <button
-                            v-for="(estado, index) in estados"
-                            :key="estado"
-                            type="button"
-                            :class="[
-                              'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                              index === 0 ? 'bg-muted' : '',
-                            ]"
-                            @click="setSingleFilterValue('estado', estado)"
-                          >
-                            {{ estado }}
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                    </FilterDropdown>
                   </div>
 
                   <!-- Gênero -->
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Gênero</label>
-                    <Popover :open="isFilterOpen('atacado', 'genero')" @update:open="(open) => handleFilterOpenChange('atacado', 'genero', open)">
-                      <PopoverTrigger as-child>
+                    <FilterDropdown
+                      :open="isFilterOpen('atacado', 'genero')"
+                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                      content-class="p-0"
+                      @update:open="(open) => handleFilterOpenChange('atacado', 'genero', open)"
+                    >
+                      <template #trigger>
+                        {{ selectedGeneroText }}
+                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </template>
+
+                      <div class="p-2">
                         <button
+                          v-for="(gen, index) in generos"
+                          :key="gen"
                           type="button"
-                          role="combobox"
-                          class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                          :class="[
+                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
+                            index === 0 ? 'bg-muted' : '',
+                          ]"
+                          @click="setSingleFilterValue('genero', gen)"
                         >
-                          {{ selectedGeneroText }}
-                          <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          {{ gen }}
                         </button>
-                      </PopoverTrigger>
-                      <PopoverContent class="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                        <div class="p-2">
-                          <button
-                            v-for="(gen, index) in generos"
-                            :key="gen"
-                            type="button"
-                            :class="[
-                              'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                              index === 0 ? 'bg-muted' : '',
-                            ]"
-                            @click="setSingleFilterValue('genero', gen)"
-                          >
-                            {{ gen }}
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                    </FilterDropdown>
                   </div>
                 </div>
 
@@ -642,137 +621,129 @@ onBeforeUnmount(() => {
                   <!-- Categoria -->
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Categoria</label>
-                    <Popover :open="isFilterOpen('varejo', 'categoria')" @update:open="(open) => handleFilterOpenChange('varejo', 'categoria', open)">
-                      <PopoverTrigger as-child>
+                    <FilterDropdown
+                      :open="isFilterOpen('varejo', 'categoria')"
+                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                      content-class="p-0"
+                      @update:open="(open) => handleFilterOpenChange('varejo', 'categoria', open)"
+                    >
+                      <template #trigger>
+                        {{ selectedCategoriasText }}
+                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </template>
+
+                      <div class="max-h-64 overflow-y-auto p-4 space-y-2">
                         <button
+                          v-for="cat in categorias"
+                          :key="cat.name"
                           type="button"
-                          role="combobox"
-                          class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                          class="flex w-full items-center space-x-2 rounded p-2 text-left hover:bg-muted"
+                          @click="toggleCategoria(cat.name)"
                         >
-                          {{ selectedCategoriasText }}
-                          <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          <Checkbox
+                            :id="undefined"
+                            :checked="searchFilters.categorias.includes(cat.name)"
+                          />
+                          <span class="text-sm font-medium leading-none flex-1">
+                            {{ cat.name }} ({{ cat.count }})
+                          </span>
                         </button>
-                      </PopoverTrigger>
-                      <PopoverContent class="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                        <div class="max-h-64 overflow-y-auto p-4 space-y-2">
-                          <button
-                            v-for="cat in categorias"
-                            :key="cat.name"
-                            type="button"
-                            class="flex w-full items-center space-x-2 rounded p-2 text-left hover:bg-muted"
-                            @click="toggleCategoria(cat.name)"
-                          >
-                            <Checkbox
-                              :id="undefined"
-                              :checked="searchFilters.categorias.includes(cat.name)"
-                            />
-                            <span class="text-sm font-medium leading-none flex-1">
-                              {{ cat.name }} ({{ cat.count }})
-                            </span>
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                    </FilterDropdown>
                   </div>
 
                   <!-- Tipo de Loja -->
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Tipo de Loja</label>
-                    <Popover :open="isFilterOpen('varejo', 'tipoLoja')" @update:open="(open) => handleFilterOpenChange('varejo', 'tipoLoja', open)">
-                      <PopoverTrigger as-child>
+                    <FilterDropdown
+                      :open="isFilterOpen('varejo', 'tipoLoja')"
+                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                      content-class="p-0"
+                      @update:open="(open) => handleFilterOpenChange('varejo', 'tipoLoja', open)"
+                    >
+                      <template #trigger>
+                        {{ selectedTipoLojaText }}
+                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </template>
+
+                      <div class="p-2">
                         <button
+                          v-for="tipo in tiposLoja"
+                          :key="tipo.value"
                           type="button"
-                          role="combobox"
-                          class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                          :class="[
+                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
+                            tipo === tiposLoja[0] ? 'bg-muted' : '',
+                          ]"
+                          @click="handleTipoLojaSelect(tipo.value)"
                         >
-                          {{ selectedTipoLojaText }}
-                          <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          {{ tipo.label }}
                         </button>
-                      </PopoverTrigger>
-                      <PopoverContent class="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                        <div class="p-2">
-                          <button
-                            v-for="tipo in tiposLoja"
-                            :key="tipo.value"
-                            type="button"
-                            :class="[
-                              'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                              tipo === tiposLoja[0] ? 'bg-muted' : '',
-                            ]"
-                            @click="handleTipoLojaSelect(tipo.value)"
-                          >
-                            {{ tipo.label }}
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                    </FilterDropdown>
                   </div>
 
                   <!-- Localização -->
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Localização</label>
-                    <Popover :open="isFilterOpen('varejo', 'location')" @update:open="(open) => handleFilterOpenChange('varejo', 'location', open)">
-                      <PopoverTrigger as-child>
+                    <FilterDropdown
+                      :open="isFilterOpen('varejo', 'location')"
+                      :disabled="searchFilters.tipoLoja === 'virtual'"
+                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                      content-class="p-0"
+                      @update:open="(open) => handleFilterOpenChange('varejo', 'location', open)"
+                    >
+                      <template #trigger>
+                        {{ selectedEstadoText }}
+                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </template>
+
+                      <div class="max-h-64 overflow-y-auto p-2">
                         <button
+                          v-for="(estado, index) in estados"
+                          :key="estado"
                           type="button"
-                          role="combobox"
-                          :disabled="searchFilters.tipoLoja === 'virtual'"
-                          class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                          :class="[
+                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
+                            index === 0 ? 'bg-muted' : '',
+                          ]"
+                          @click="setSingleFilterValue('estado', estado)"
                         >
-                          {{ selectedEstadoText }}
-                          <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          {{ estado }}
                         </button>
-                      </PopoverTrigger>
-                      <PopoverContent class="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                        <div class="max-h-64 overflow-y-auto p-2">
-                          <button
-                            v-for="(estado, index) in estados"
-                            :key="estado"
-                            type="button"
-                            :class="[
-                              'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                              index === 0 ? 'bg-muted' : '',
-                            ]"
-                            @click="setSingleFilterValue('estado', estado)"
-                          >
-                            {{ estado }}
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                    </FilterDropdown>
                   </div>
 
                   <!-- Gênero -->
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">Gênero</label>
-                    <Popover :open="isFilterOpen('varejo', 'genero')" @update:open="(open) => handleFilterOpenChange('varejo', 'genero', open)">
-                      <PopoverTrigger as-child>
+                    <FilterDropdown
+                      :open="isFilterOpen('varejo', 'genero')"
+                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                      content-class="p-0"
+                      @update:open="(open) => handleFilterOpenChange('varejo', 'genero', open)"
+                    >
+                      <template #trigger>
+                        {{ selectedGeneroText }}
+                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </template>
+
+                      <div class="p-2">
                         <button
+                          v-for="(gen, index) in generos"
+                          :key="gen"
                           type="button"
-                          role="combobox"
-                          class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                          :class="[
+                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
+                            index === 0 ? 'bg-muted' : '',
+                          ]"
+                          @click="setSingleFilterValue('genero', gen)"
                         >
-                          {{ selectedGeneroText }}
-                          <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          {{ gen }}
                         </button>
-                      </PopoverTrigger>
-                      <PopoverContent class="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                        <div class="p-2">
-                          <button
-                            v-for="(gen, index) in generos"
-                            :key="gen"
-                            type="button"
-                            :class="[
-                              'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                              index === 0 ? 'bg-muted' : '',
-                            ]"
-                            @click="setSingleFilterValue('genero', gen)"
-                          >
-                            {{ gen }}
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                    </FilterDropdown>
                   </div>
                 </div>
 
