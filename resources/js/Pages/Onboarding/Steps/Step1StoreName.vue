@@ -20,7 +20,13 @@ const storeTypes = [
 ]
 
 const isValid = computed(() => {
-  return form.value.store_name && form.value.store_name.trim().length >= 3 && form.value.sale_type && form.value.store_type
+  return (
+    form.value.store_name
+    && form.value.store_name.trim().length >= 3
+    && form.value.sale_type
+    && form.value.store_type
+    && typeof form.value.is_manufacturer === 'boolean'
+  )
 })
 </script>
 
@@ -104,6 +110,55 @@ const isValid = computed(() => {
               <span class="font-semibold text-base">{{ type.label }}</span>
             </div>
             <p class="text-sm text-muted-foreground">{{ type.description }}</p>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <Label class="text-lg mb-4 block">Sua loja possui fabricação própria? *</Label>
+      <div class="space-y-3">
+        <label
+          class="flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-teal-300 hover:bg-teal-50"
+          :class="{
+            'border-teal-600 bg-teal-50': form.is_manufacturer === true,
+            'border-gray-200': form.is_manufacturer !== true
+          }"
+        >
+          <input
+            v-model="form.is_manufacturer"
+            type="radio"
+            :value="true"
+            class="mt-1"
+          />
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <Icon icon="lucide:factory" class="h-5 w-5 text-teal-600" />
+              <span class="font-semibold text-base">Sim, sou fabricante</span>
+            </div>
+            <p class="text-sm text-muted-foreground">Sua vitrine receberá a tag pública "Fabricação Própria".</p>
+          </div>
+        </label>
+
+        <label
+          class="flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-teal-300 hover:bg-teal-50"
+          :class="{
+            'border-teal-600 bg-teal-50': form.is_manufacturer === false,
+            'border-gray-200': form.is_manufacturer !== false
+          }"
+        >
+          <input
+            v-model="form.is_manufacturer"
+            type="radio"
+            :value="false"
+            class="mt-1"
+          />
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <Icon icon="lucide:store" class="h-5 w-5 text-teal-600" />
+              <span class="font-semibold text-base">Não sou fabricante</span>
+            </div>
+            <p class="text-sm text-muted-foreground">Sua vitrine não exibirá a tag de fabricação própria.</p>
           </div>
         </label>
       </div>

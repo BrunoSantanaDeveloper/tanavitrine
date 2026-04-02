@@ -115,6 +115,15 @@ const storeTypeTagLabel = computed(() => {
     return 'Loja Física'
   return null
 })
+const isManufacturerStore = computed(() => {
+  const value = props.store?.is_manufacturer
+
+  if (typeof value === 'boolean') return value
+  if (value === 1 || value === '1') return true
+  if (typeof value === 'string') return value.toLowerCase() === 'true'
+
+  return false
+})
 const isVirtualOnlyStore = computed(() => {
   const raw = normalizedStoreType.value
   return raw === 'virtual' || raw === 'online'
@@ -844,6 +853,9 @@ function scrollToSection(sectionId) {
                         </Badge>
                         <Badge v-if="storeTypeTagLabel" variant="secondary">
                           {{ storeTypeTagLabel }}
+                        </Badge>
+                        <Badge v-if="isManufacturerStore" class="bg-emerald-600 text-white">
+                          Fabricação Própria
                         </Badge>
                       </div>
                       <div class="mb-2 flex flex-wrap items-center gap-3">

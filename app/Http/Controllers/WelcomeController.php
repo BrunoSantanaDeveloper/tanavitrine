@@ -252,6 +252,68 @@ final class WelcomeController extends Controller
         ]);
     }
 
+    public function fabricantes(): Response
+    {
+        // Get all manufacturer stores (no limit for client-side filtering)
+        $allStores = Team::active()
+            ->where('personal_team', false)
+            ->where('is_manufacturer', true)
+            ->with(['category', 'plan', 'photos' => function ($query): void {
+                $query->where('type', 'image')
+                    ->where('media.is_active', true)
+                    ->whereNull('media.team_collection_id')
+                    ->where(function ($nestedQuery): void {
+                        $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo');
+                    })
+                    ->orderByDesc('team_media.is_primary')
+                    ->orderBy('team_media.order');
+            }])
+            ->orderByDesc('featured')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($store) {
+                return $this->transformStore($store);
+            });
+
+        // Get unique states from manufacturer stores
+        $states = Team::active()
+            ->where('personal_team', false)
+            ->where('is_manufacturer', true)
+            ->whereIn('store_type', ['ambos', 'fisica'])
+            ->whereNotNull('state')
+            ->distinct()
+            ->pluck('state')
+            ->sort()
+            ->values();
+
+        // Get unique cities from manufacturer stores
+        $cities = Team::active()
+            ->where('personal_team', false)
+            ->where('is_manufacturer', true)
+            ->whereIn('store_type', ['ambos', 'fisica'])
+            ->whereNotNull('city')
+            ->distinct()
+            ->pluck('city')
+            ->sort()
+            ->values();
+
+        [$categories, $subcategories] = $this->buildFilterOptionsFromStores($allStores);
+
+        return Inertia::render('Fabricantes', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+            'stores' => $allStores,
+            'categories' => $categories,
+            'subcategories' => $subcategories,
+            'states' => $states,
+            'cities' => $cities,
+            'seo' => [
+                'title' => 'Fabricantes - Tá na Vitrine',
+                'description' => 'Conheça fabricantes com produção própria na Tá na Vitrine',
+            ],
+        ]);
+    }
+
     public function prices(): Response
     {
         return Inertia::render('Prices', [
@@ -374,6 +436,7 @@ final class WelcomeController extends Controller
             'category' => $store->category?->name,
             'subcategory' => $store->subcategory,
             'gender' => $store->gender,
+            'is_manufacturer' => (bool) $store->is_manufacturer,
             'description' => $store->description,
             'saleType' => ucfirst($store->sale_type),
             'storeType' => ucfirst((string) $store->store_type),

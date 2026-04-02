@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Com
 import { Input } from '@/Components/shadcn/ui/input'
 import { Label } from '@/Components/shadcn/ui/label'
 import { MultiSelect } from '@/Components/shadcn/ui/multi-select'
+import { Checkbox } from '@/Components/shadcn/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/shadcn/ui/select'
 import { Textarea } from '@/Components/shadcn/ui/textarea'
 import AppLayout from '@/Layouts/AppLayout.vue'
@@ -49,6 +50,7 @@ const form = useForm({
   sale_type: props.store.sale_type,
   // Keep compatibility with legacy "fisica" records by mapping them to "ambos" in the edit UI.
   store_type: props.store.store_type === 'fisica' ? 'ambos' : props.store.store_type,
+  is_manufacturer: !!props.store.is_manufacturer,
   category_id: props.store.category_id ? String(props.store.category_id) : null,
   subcategory: initialSubcategory,
   gender: props.store.gender || null,
@@ -251,6 +253,7 @@ function submit() {
     ...data,
     // Convert empty strings and undefined to null for optional fields
     gender: data.gender || null,
+    is_manufacturer: data.is_manufacturer ? '1' : '0',
     min_order: data.min_order || null,
     website: data.website || null,
     instagram: data.instagram || null,
@@ -386,6 +389,20 @@ function submit() {
                     <p class="text-xs text-muted-foreground mt-2">
                       Loja Virtual: atende por redes sociais, WhatsApp ou site. Virtual / Física: atende online e também em loja física.
                     </p>
+                  </div>
+                </div>
+
+                <div class="rounded-lg border border-border p-3">
+                  <div class="flex items-start space-x-3">
+                    <Checkbox id="is_manufacturer" v-model:checked="form.is_manufacturer" />
+                    <div class="space-y-1">
+                      <Label for="is_manufacturer" class="cursor-pointer">
+                        Sou fabricante (fabricação própria)
+                      </Label>
+                      <p class="text-xs text-muted-foreground">
+                        Exibe a tag pública "Fabricação Própria" na sua vitrine.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

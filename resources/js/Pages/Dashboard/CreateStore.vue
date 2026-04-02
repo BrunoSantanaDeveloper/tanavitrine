@@ -40,6 +40,7 @@ const form = useForm({
   name: '',
   description: '',
   store_type: '',
+  is_manufacturer: false,
   min_order: '',
 
   // Step 4: Localização
@@ -303,6 +304,18 @@ function handleCEPInput(e) {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div class="flex items-center space-x-2 rounded-md border border-border p-3">
+                <input
+                  id="is_manufacturer"
+                  v-model="form.is_manufacturer"
+                  type="checkbox"
+                  class="size-4 rounded border-gray-300 text-primary focus:ring-primary"
+                >
+                <Label for="is_manufacturer" class="cursor-pointer">
+                  Sou fabricante (fabricação própria)
+                </Label>
               </div>
 
               <div v-if="form.sale_type === 'atacado' || form.sale_type === 'ambos'">

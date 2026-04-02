@@ -50,6 +50,15 @@ const storeTypeTagLabel = computed(() => {
     return 'Loja Física'
   return null
 })
+const isManufacturerStore = computed(() => {
+  const value = props.store?.is_manufacturer
+
+  if (typeof value === 'boolean') return value
+  if (value === 1 || value === '1') return true
+  if (typeof value === 'string') return value.toLowerCase() === 'true'
+
+  return false
+})
 const showLocationTag = computed(() => {
   const raw = normalizedStoreType.value
   return raw !== 'virtual' && raw !== 'online'
@@ -370,6 +379,9 @@ async function shareStore() {
                   </Badge>
                   <Badge v-if="storeTypeTagLabel" variant="secondary" class="text-xs">
                     {{ storeTypeTagLabel }}
+                  </Badge>
+                  <Badge v-if="isManufacturerStore" class="bg-emerald-600 text-white text-xs">
+                    Fabricação Própria
                   </Badge>
                 </div>
                 <h3 class="text-xl font-bold text-foreground mb-2 line-clamp-2 min-h-[3.5rem]">

@@ -191,6 +191,7 @@ final class OnboardingController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'min:50'],
             'store_type' => ['required', 'in:fisica,virtual,ambos'],
+            'is_manufacturer' => ['nullable', 'boolean'],
             'min_order' => ['nullable', 'string', 'max:255'],
 
             // Logo e Fotos
@@ -230,6 +231,7 @@ final class OnboardingController extends Controller
                 'description' => $validated['description'],
                 'min_order' => $validated['min_order'],
                 'store_type' => $validated['store_type'],
+                'is_manufacturer' => (bool) ($validated['is_manufacturer'] ?? false),
                 'city' => $validated['city'],
                 'state' => $validated['state'],
                 'latitude' => $validated['latitude'] ?? null,

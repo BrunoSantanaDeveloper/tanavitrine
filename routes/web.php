@@ -53,6 +53,7 @@ Route::get('/storage/{path}', function ($path) {
 Route::get('/', [WelcomeController::class, 'home'])->name('home');
 Route::get('/atacado', [WelcomeController::class, 'atacado'])->name('atacado');
 Route::get('/varejo', [WelcomeController::class, 'varejo'])->name('varejo');
+Route::get('/fabricantes', [WelcomeController::class, 'fabricantes'])->name('fabricantes');
 Route::get('/prices', [WelcomeController::class, 'prices'])->name('prices');
 Route::get('/about', [WelcomeController::class, 'about'])->name('about');
 Route::post('/track/traffic', [TrafficController::class, 'track'])->name('traffic.track');

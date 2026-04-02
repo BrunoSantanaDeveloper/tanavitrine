@@ -156,6 +156,10 @@ final class TeamResource extends Resource
                                 'unissex' => 'Unissex',
                                 'infantil' => 'Infantil',
                             ]),
+                        Forms\Components\Toggle::make('is_manufacturer')
+                            ->label('Fabricante')
+                            ->helperText('Ative quando a loja tiver fabricação própria.')
+                            ->default(false),
                         Forms\Components\TextInput::make('min_order')
                             ->label('Pedido Mínimo')
                             ->numeric()
@@ -653,6 +657,10 @@ final class TeamResource extends Resource
                         'ambos' => 'warning',
                         default => 'gray',
                     }),
+                Tables\Columns\IconColumn::make('is_manufacturer')
+                    ->label('Fabricante')
+                    ->boolean()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('city')
                     ->label('Cidade')
                     ->searchable()
@@ -742,6 +750,11 @@ final class TeamResource extends Resource
                     ->placeholder('Todas')
                     ->trueLabel('Apenas verificadas')
                     ->falseLabel('Não verificadas'),
+                Tables\Filters\TernaryFilter::make('is_manufacturer')
+                    ->label('Fabricante')
+                    ->placeholder('Todos')
+                    ->trueLabel('Somente fabricantes')
+                    ->falseLabel('Não fabricantes'),
                 Tables\Filters\SelectFilter::make('state')
                     ->label('Estado')
                     ->options(fn () => Team::query()

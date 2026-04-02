@@ -72,6 +72,7 @@ final class Team extends JetstreamTeam
         'category_id',
         'subcategory',
         'gender',
+        'is_manufacturer',
         'min_order',
         'whatsapp',
         'phone',
@@ -126,6 +127,7 @@ final class Team extends JetstreamTeam
         return [
             'personal_team' => 'boolean',
             'is_verified' => 'boolean',
+            'is_manufacturer' => 'boolean',
             'featured' => 'boolean',
             'featured_until' => 'datetime',
             'latitude' => 'decimal:8',

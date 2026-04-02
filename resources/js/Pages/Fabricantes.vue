@@ -51,7 +51,6 @@ const filters = ref({
   categorias: [], // Changed to array for multiple selection
   subcategorias: [], // Changed to array for multiple selection
   tipoLoja: '',
-  fabricante: '',
   estado: '',
   cidade: '',
   genero: '',
@@ -67,8 +66,6 @@ onMounted(() => {
     filters.value.categorias = urlParams.getAll('categorias[]')
   }
   if (urlParams.has('tipoLoja')) filters.value.tipoLoja = urlParams.get('tipoLoja')
-  const fabricanteParam = urlParams.get('fabricante') ?? urlParams.get('manufacturer')
-  if (fabricanteParam) filters.value.fabricante = normalizeManufacturerFilter(fabricanteParam)
   if (urlParams.has('estado')) filters.value.estado = urlParams.get('estado')
   if (urlParams.has('cidade')) filters.value.cidade = urlParams.get('cidade')
   if (urlParams.has('genero')) filters.value.genero = urlParams.get('genero')
@@ -116,32 +113,6 @@ const normalizeGender = value =>
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .toLowerCase()
-function normalizeManufacturerFilter(value) {
-  const normalized = String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase()
-
-  if (['fabricante', 'manufacturer', 'sim', 'yes', '1', 'true'].includes(normalized)) {
-    return 'manufacturer'
-  }
-
-  if (['nao-fabricante', 'nao_fabricante', 'nao fabricante', 'non-manufacturer', 'non_manufacturer', 'false', '0', 'nao', 'not'].includes(normalized)) {
-    return 'non_manufacturer'
-  }
-
-  return ''
-}
-function isStoreManufacturer(store) {
-  const value = store?.is_manufacturer
-
-  if (typeof value === 'boolean') return value
-  if (value === 1 || value === '1') return true
-  if (typeof value === 'string') return value.toLowerCase() === 'true'
-
-  return false
-}
 
 // Multi-select functions
 function toggleCategoria(categoria) {
@@ -190,11 +161,6 @@ const selectedTipoLojaText = computed(() => {
   if (filters.value.tipoLoja === 'virtual') return 'Loja Virtual'
   if (filters.value.tipoLoja === 'ambos') return 'Virtual / Física'
   return 'Tipo Loja'
-})
-const selectedFabricanteText = computed(() => {
-  if (filters.value.fabricante === 'manufacturer') return 'Fabricante'
-  if (filters.value.fabricante === 'non_manufacturer') return 'Não fabricante'
-  return 'Fabricante'
 })
 const selectedGeneroText = computed(() => filters.value.genero || 'Gênero')
 const filterTriggerClass =
@@ -301,12 +267,6 @@ const alternatedListings = computed(() => {
     filtered = filtered.filter(store => normalizeGender(store.gender) === selectedGender)
   }
 
-  // Filter by manufacturer flag
-  if (filters.value.fabricante) {
-    const targetIsManufacturer = filters.value.fabricante === 'manufacturer'
-    filtered = filtered.filter(store => isStoreManufacturer(store) === targetIsManufacturer)
-  }
-
   return filtered
 })
 
@@ -328,7 +288,6 @@ function clearFilters() {
     categorias: [],
     subcategorias: [],
     tipoLoja: '',
-    fabricante: '',
     estado: '',
     cidade: '',
     genero: '',
@@ -411,12 +370,12 @@ onBeforeUnmount(() => {
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Icon icon="lucide:shopping-cart" class="size-5 text-primary-foreground" />
+              <Icon icon="lucide:factory" class="size-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 class="text-xl font-bold">Atacado</h1>
+              <h1 class="text-xl font-bold">Fabricantes</h1>
               <p class="text-sm text-muted-foreground">
-                {{ alternatedListings.length }} fornecedores encontrados
+                {{ alternatedListings.length }} fabricantes encontrados
               </p>
             </div>
           </div>
@@ -427,7 +386,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Filters -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-10 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-3">
           <!-- Busca -->
           <div class="col-span-2">
             <Input
@@ -619,45 +578,6 @@ onBeforeUnmount(() => {
             </div>
           </FilterDropdown>
 
-          <!-- Fabricante -->
-          <FilterDropdown
-            :open="isFilterOpen('fabricante')"
-            :trigger-class="filterTriggerClass"
-            :content-class="filterContentClass"
-            @update:open="(open) => handleFilterOpenChange('fabricante', open)"
-          >
-            <template #trigger>
-                {{ selectedFabricanteText }}
-                <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </template>
-
-            <div class="p-2 space-y-1">
-              <button
-                type="button"
-                class="flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted"
-                :class="filters.fabricante === 'manufacturer' ? 'bg-muted' : ''"
-                @click="setSingleFilterValue('fabricante', 'manufacturer')"
-              >
-                Fabricante
-              </button>
-              <button
-                type="button"
-                class="flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted"
-                :class="filters.fabricante === 'non_manufacturer' ? 'bg-muted' : ''"
-                @click="setSingleFilterValue('fabricante', 'non_manufacturer')"
-              >
-                Não fabricante
-              </button>
-              <button
-                type="button"
-                class="flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted"
-                :class="filters.fabricante === '' ? 'bg-muted' : ''"
-                @click="setSingleFilterValue('fabricante', '')"
-              >
-                Todos
-              </button>
-            </div>
-          </FilterDropdown>
         </div>
       </div>
     </section>
@@ -684,7 +604,7 @@ onBeforeUnmount(() => {
     <FloatingMap
       :stores="storesForMap"
       :hovered-store-id="hoveredStoreId"
-      title="Mapa de Fornecedores / Loja Física"
+      title="Mapa de Fabricantes / Loja Física"
       @marker-click="handleMarkerClick"
       @marker-hover="handleStoreHover"
     />

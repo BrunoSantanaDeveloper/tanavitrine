@@ -67,6 +67,7 @@ final class DashboardController extends Controller
             'category' => $userStore->category?->name,
             'subcategory' => $userStore->subcategory,
             'sale_type' => ucfirst($userStore->sale_type),
+            'is_manufacturer' => (bool) $userStore->is_manufacturer,
             'status' => $userStore->status,
             'views_count' => $userStore->views_count ?? 0,
             'whatsapp_clicks' => $userStore->whatsapp_clicks ?? 0,

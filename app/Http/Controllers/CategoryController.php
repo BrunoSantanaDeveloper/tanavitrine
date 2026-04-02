@@ -96,6 +96,7 @@ class CategoryController extends Controller
                 'badge' => ucfirst($store->sale_type),
                 'category' => $store->category?->name,
                 'subcategory' => $store->subcategory,
+                'is_manufacturer' => (bool) $store->is_manufacturer,
                 'location' => $store->city && $store->state ? "{$store->city} - {$store->state}" : null,
                 'min_order' => $store->min_order,
                 'whatsapp' => $store->whatsapp,

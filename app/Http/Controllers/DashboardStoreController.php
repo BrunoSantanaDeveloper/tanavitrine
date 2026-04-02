@@ -58,6 +58,7 @@ class DashboardStoreController extends Controller
             'subcategory' => ['required', 'array'],
             'subcategory.*' => ['string', 'max:255'],
             'gender' => ['nullable', 'in:masculino,feminino,unissex'],
+            'is_manufacturer' => ['nullable', 'boolean'],
             'min_order' => ['nullable', 'string', 'max:255'],
             'whatsapp' => ['required', 'string', 'max:20'],
             'phone' => ['nullable', 'string', 'max:20'],
@@ -88,6 +89,7 @@ class DashboardStoreController extends Controller
         $validated['user_id'] = auth()->id();
         $validated['personal_team'] = false;
         $validated['status'] = 'pendente'; // Needs approval
+        $validated['is_manufacturer'] = (bool) ($validated['is_manufacturer'] ?? false);
 
         $store = Team::create($validated);
 
@@ -115,6 +117,7 @@ class DashboardStoreController extends Controller
                     'status' => $store->status,
                     'featured' => $store->isFeatured(),
                     'sale_type' => $store->sale_type,
+                    'is_manufacturer' => (bool) $store->is_manufacturer,
                     'views_count' => $store->views_count,
                     'whatsapp_clicks' => $store->whatsapp_clicks,
                     'website_clicks' => $store->website_clicks,
@@ -158,6 +161,7 @@ class DashboardStoreController extends Controller
                 'category_id' => $store->category_id,
                 'subcategory' => $store->subcategory,
                 'gender' => $store->gender,
+                'is_manufacturer' => (bool) $store->is_manufacturer,
                 'min_order' => $store->min_order,
                 'whatsapp' => $store->whatsapp,
                 'phone' => $store->phone,
@@ -206,6 +210,7 @@ class DashboardStoreController extends Controller
             'subcategory' => ['nullable', 'array'],
             'subcategory.*' => ['string', 'max:255'],
             'gender' => ['nullable', 'in:masculino,feminino,unissex'],
+            'is_manufacturer' => ['nullable', 'boolean'],
             'min_order' => ['nullable', 'string', 'max:255'],
             'whatsapp' => ['nullable', 'string', 'max:20'],
             'phone' => ['nullable', 'string', 'max:20'],
@@ -238,6 +243,8 @@ class DashboardStoreController extends Controller
 
         // Remove logo file from validated data (only paths should be saved)
         unset($validated['logo']);
+
+        $validated['is_manufacturer'] = (bool) ($validated['is_manufacturer'] ?? false);
 
         $store->update($validated);
 

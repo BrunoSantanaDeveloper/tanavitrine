@@ -27,6 +27,7 @@ const mode = useColorMode({
 const navLinks = [
   { label: 'Atacado', href: '/atacado', external: false },
   { label: 'Varejo', href: '/varejo', external: false },
+  { label: 'Fabricantes', href: '/fabricantes', external: false },
   { label: 'Planos', href: '/prices', external: false },
   { label: 'Contato', href: '#', external: false, action: 'whatsapp' },
 ]
@@ -235,6 +236,11 @@ function sendWhatsApp() {
               <li>
                 <a href="/prices" class="text-muted-foreground hover:text-foreground transition-colors">
                   Planos e Preços
+                </a>
+              </li>
+              <li>
+                <a href="/fabricantes" class="text-muted-foreground hover:text-foreground transition-colors">
+                  Fabricantes
                 </a>
               </li>
               <li>
