@@ -3,7 +3,6 @@ import FeaturesCard from '@/Components/FeaturesCard.vue'
 import PricingCard from '@/Components/PricingCard.vue'
 import StoreCard from '@/Components/StoreCard.vue'
 import FloatingMap from '@/Components/FloatingMap.vue'
-import FilterDropdown from '@/Components/FilterDropdown.vue'
 import Accordion from '@/Components/shadcn/ui/accordion/Accordion.vue'
 import AccordionContent from '@/Components/shadcn/ui/accordion/AccordionContent.vue'
 import AccordionItem from '@/Components/shadcn/ui/accordion/AccordionItem.vue'
@@ -14,15 +13,12 @@ import Card from '@/Components/shadcn/ui/card/Card.vue'
 import Switch from '@/Components/shadcn/ui/switch/Switch.vue'
 import Terminal from '@/Components/Terminal.vue'
 import Tabs from '@/Components/shadcn/ui/tabs/Tabs.vue'
-import TabsContent from '@/Components/shadcn/ui/tabs/TabsContent.vue'
 import TabsList from '@/Components/shadcn/ui/tabs/TabsList.vue'
 import TabsTrigger from '@/Components/shadcn/ui/tabs/TabsTrigger.vue'
-import { Checkbox } from '@/Components/shadcn/ui/checkbox'
-import { useExclusivePopoverGroup } from '@/Composables/useExclusivePopoverGroup.js'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
 import WebLayout from '@/Layouts/WebLayout.vue'
 import { Icon } from '@iconify/vue'
-import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   canLogin: {
@@ -107,121 +103,17 @@ function openWhatsAppChat() {
   window.open(url, '_blank')
 }
 
-// Search filters state
+// Search state
 const searchType = ref('atacado')
-const searchFilters = ref({
-  categorias: [], // Changed to array for multiple selection
-  tipoLoja: '',
-  cidade: '',
-  estado: '',
-  genero: ''
-})
-
-const categorias = computed(() =>
-  (searchType.value === 'atacado' ? props.categoriesAtacado : props.categoriesVarejo)
-    .map(c => ({ name: c.name, count: Number(c.count || 0) }))
-)
-const tiposLoja = [
-  { value: 'virtual', label: 'Loja Virtual' },
-  { value: 'ambos', label: 'Virtual / Física' },
-]
-const estados = computed(() => props.states || [])
-const generos = ['Masculino', 'Feminino', 'Unissex']
-
-function toggleCategoria(categoria) {
-  const index = searchFilters.value.categorias.indexOf(categoria)
-  if (index > -1) {
-    searchFilters.value.categorias.splice(index, 1)
-  } else {
-    searchFilters.value.categorias.push(categoria)
-  }
-}
-
-const selectedCategoriasText = computed(() => {
-  if (searchFilters.value.categorias.length === 0) return 'Selecione'
-  if (searchFilters.value.categorias.length === 1) return searchFilters.value.categorias[0]
-  return `${searchFilters.value.categorias.length} selecionadas`
-})
-
-const atacadoHeroFilters = useExclusivePopoverGroup()
-const varejoHeroFilters = useExclusivePopoverGroup()
-
-function getPopoverGroup(type) {
-  return type === 'atacado' ? atacadoHeroFilters : varejoHeroFilters
-}
-
-function isFilterOpen(type, filter) {
-  return getPopoverGroup(type).isOpen(filter)
-}
-
-function closeAllHeroOverlays() {
-  atacadoHeroFilters.closeAll()
-  varejoHeroFilters.closeAll()
-}
-
-function handleFilterOpenChange(type, filter, nextOpen) {
-  getPopoverGroup(type).setOpen(filter, nextOpen)
-}
-
-function setSingleFilterValue(key, value) {
-  searchFilters.value[key] = value
-  closeAllHeroOverlays()
-}
-
-const selectedTipoLojaText = computed(() => {
-  return tiposLoja.find(tipo => tipo.value === searchFilters.value.tipoLoja)?.label || 'Selecione'
-})
-
-const selectedEstadoText = computed(() => {
-  return searchFilters.value.estado || 'Estado'
-})
-
-const selectedGeneroText = computed(() => {
-  return searchFilters.value.genero || 'Selecione'
-})
-
-function clearLocationWhenVirtual() {
-  if (searchFilters.value.tipoLoja === 'virtual') {
-    searchFilters.value.estado = ''
-    searchFilters.value.cidade = ''
-    if (atacadoHeroFilters.isOpen('location')) atacadoHeroFilters.close('location')
-    if (varejoHeroFilters.isOpen('location')) varejoHeroFilters.close('location')
-  }
-}
-
-function handleTipoLojaSelect(value) {
-  setSingleFilterValue('tipoLoja', value)
-  clearLocationWhenVirtual()
-}
-
-watch(searchType, () => {
-  searchFilters.value.categorias = []
-  closeAllHeroOverlays()
-})
-
-watch(() => searchFilters.value.tipoLoja, clearLocationWhenVirtual)
+const searchQuery = ref('')
 
 function handleSearch() {
-  closeAllHeroOverlays()
-
-  // Redirecionar para a página apropriada (Atacado ou Varejo) com filtros
+  // Redireciona para a página apropriada (Atacado ou Varejo) com busca simples.
   const route = searchType.value === 'atacado' ? '/atacado' : '/varejo'
   const params = new URLSearchParams()
-  const selectedType = searchFilters.value.tipoLoja
-  const isVirtualOnly = selectedType === 'virtual'
+  const normalizedQuery = searchQuery.value.trim()
 
-  // Adicionar filtros preenchidos aos query parameters
-  if (searchFilters.value.categorias.length > 0) {
-    searchFilters.value.categorias.forEach(cat => params.append('categorias[]', cat))
-  }
-  if (selectedType) params.append('tipoLoja', selectedType)
-  if (searchFilters.value.estado && !isVirtualOnly) {
-    params.append('estado', searchFilters.value.estado)
-    // State-based search only applies to stores with physical presence.
-    if (!selectedType) params.append('tipoLoja', 'ambos')
-  }
-  if (searchFilters.value.cidade && !isVirtualOnly) params.append('cidade', searchFilters.value.cidade)
-  if (searchFilters.value.genero) params.append('genero', searchFilters.value.genero)
+  if (normalizedQuery) params.append('busca', normalizedQuery)
 
   const queryString = params.toString()
   window.location.href = queryString ? `${route}?${queryString}` : route
@@ -465,305 +357,48 @@ onBeforeUnmount(() => {
         <!-- Search Tool -->
         <div class="mt-10 mx-auto max-w-4xl">
           <Card class="bg-white/95 backdrop-blur-sm shadow-2xl">
-            <Tabs v-model="searchType" default-value="atacado" class="w-full">
-              <TabsList class="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="atacado" class="text-base flex items-center justify-center gap-2 whitespace-nowrap">
-                  <Icon icon="lucide:shopping-cart" class="size-4" />
-                  <span>Atacado</span>
-                </TabsTrigger>
-                <TabsTrigger value="varejo" class="text-base flex items-center justify-center gap-2 whitespace-nowrap">
-                  <Icon icon="lucide:store" class="size-4" />
-                  <span>Varejo</span>
-                </TabsTrigger>
-              </TabsList>
+            <div class="space-y-5 px-6 py-6 sm:px-8 sm:py-8">
+              <Tabs v-model="searchType" default-value="atacado" class="w-full">
+                <TabsList class="grid w-full grid-cols-2 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-inner backdrop-blur">
+                  <TabsTrigger
+                    value="atacado"
+                    class="h-12 rounded-xl border border-transparent text-base font-semibold flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 transition-all duration-200 data-[state=active]:-translate-y-0.5 data-[state=active]:border-teal-700/80 data-[state=active]:bg-linear-to-r data-[state=active]:from-teal-600 data-[state=active]:to-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-[0_8px_18px_rgba(13,148,136,0.35)]"
+                  >
+                    <Icon icon="lucide:shopping-cart" class="size-4" />
+                    <span>Atacado</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="varejo"
+                    class="h-12 rounded-xl border border-transparent text-base font-semibold flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 transition-all duration-200 data-[state=active]:-translate-y-0.5 data-[state=active]:border-teal-700/80 data-[state=active]:bg-linear-to-r data-[state=active]:from-teal-600 data-[state=active]:to-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-[0_8px_18px_rgba(13,148,136,0.35)]"
+                  >
+                    <Icon icon="lucide:store" class="size-4" />
+                    <span>Varejo</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <p class="text-sm font-medium text-slate-600">
+                Você está buscando em:
+                <span class="font-semibold text-teal-700">{{ searchType === 'atacado' ? 'Atacado' : 'Varejo' }}</span>
+              </p>
 
-              <TabsContent value="atacado" class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6">
-                  <!-- Categoria -->
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">Categoria</label>
-                    <FilterDropdown
-                      :open="isFilterOpen('atacado', 'categoria')"
-                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-                      content-class="p-0"
-                      @update:open="(open) => handleFilterOpenChange('atacado', 'categoria', open)"
-                    >
-                      <template #trigger>
-                        {{ selectedCategoriasText }}
-                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </template>
-
-                      <div class="max-h-64 overflow-y-auto p-4 space-y-2">
-                        <button
-                          v-for="cat in categorias"
-                          :key="cat.name"
-                          type="button"
-                          class="flex w-full items-center space-x-2 rounded p-2 text-left hover:bg-muted"
-                          @click="toggleCategoria(cat.name)"
-                        >
-                          <Checkbox
-                            :id="undefined"
-                            :checked="searchFilters.categorias.includes(cat.name)"
-                          />
-                          <span class="text-sm font-medium leading-none flex-1">
-                            {{ cat.name }} ({{ cat.count }})
-                          </span>
-                        </button>
-                      </div>
-                    </FilterDropdown>
-                  </div>
-
-                  <!-- Tipo de Loja -->
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">Tipo de Loja</label>
-                    <FilterDropdown
-                      :open="isFilterOpen('atacado', 'tipoLoja')"
-                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-                      content-class="p-0"
-                      @update:open="(open) => handleFilterOpenChange('atacado', 'tipoLoja', open)"
-                    >
-                      <template #trigger>
-                        {{ selectedTipoLojaText }}
-                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </template>
-
-                      <div class="p-2">
-                        <button
-                          v-for="tipo in tiposLoja"
-                          :key="tipo.value"
-                          type="button"
-                          :class="[
-                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                            tipo === tiposLoja[0] ? 'bg-muted' : '',
-                          ]"
-                          @click="handleTipoLojaSelect(tipo.value)"
-                        >
-                          {{ tipo.label }}
-                        </button>
-                      </div>
-                    </FilterDropdown>
-                  </div>
-
-                  <!-- Localização -->
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">Localização</label>
-                    <FilterDropdown
-                      :open="isFilterOpen('atacado', 'location')"
-                      :disabled="searchFilters.tipoLoja === 'virtual'"
-                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-                      content-class="p-0"
-                      @update:open="(open) => handleFilterOpenChange('atacado', 'location', open)"
-                    >
-                      <template #trigger>
-                        {{ selectedEstadoText }}
-                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </template>
-
-                      <div class="max-h-64 overflow-y-auto p-2">
-                        <button
-                          v-for="(estado, index) in estados"
-                          :key="estado"
-                          type="button"
-                          :class="[
-                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                            index === 0 ? 'bg-muted' : '',
-                          ]"
-                          @click="setSingleFilterValue('estado', estado)"
-                        >
-                          {{ estado }}
-                        </button>
-                      </div>
-                    </FilterDropdown>
-                  </div>
-
-                  <!-- Gênero -->
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">Gênero</label>
-                    <FilterDropdown
-                      :open="isFilterOpen('atacado', 'genero')"
-                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-                      content-class="p-0"
-                      @update:open="(open) => handleFilterOpenChange('atacado', 'genero', open)"
-                    >
-                      <template #trigger>
-                        {{ selectedGeneroText }}
-                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </template>
-
-                      <div class="p-2">
-                        <button
-                          v-for="(gen, index) in generos"
-                          :key="gen"
-                          type="button"
-                          :class="[
-                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                            index === 0 ? 'bg-muted' : '',
-                          ]"
-                          @click="setSingleFilterValue('genero', gen)"
-                        >
-                          {{ gen }}
-                        </button>
-                      </div>
-                    </FilterDropdown>
-                  </div>
+              <form class="space-y-3" @submit.prevent="handleSearch">
+                <div class="relative">
+                  <Icon icon="lucide:search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    v-model="searchQuery"
+                    type="text"
+                    class="h-12 w-full rounded-md border border-input bg-background pl-10 pr-4 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus:border-ring"
+                    placeholder="Busque lojas e fornecedores de moda"
+                  >
                 </div>
-
-                <div class="px-6 pb-6">
-                  <Button @click="handleSearch" size="lg" class="w-full cursor-pointer">
-                    <Icon icon="lucide:search" class="size-4 mr-2" />
-                    Buscar Fornecedores
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="varejo" class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6">
-                  <!-- Categoria -->
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">Categoria</label>
-                    <FilterDropdown
-                      :open="isFilterOpen('varejo', 'categoria')"
-                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-                      content-class="p-0"
-                      @update:open="(open) => handleFilterOpenChange('varejo', 'categoria', open)"
-                    >
-                      <template #trigger>
-                        {{ selectedCategoriasText }}
-                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </template>
-
-                      <div class="max-h-64 overflow-y-auto p-4 space-y-2">
-                        <button
-                          v-for="cat in categorias"
-                          :key="cat.name"
-                          type="button"
-                          class="flex w-full items-center space-x-2 rounded p-2 text-left hover:bg-muted"
-                          @click="toggleCategoria(cat.name)"
-                        >
-                          <Checkbox
-                            :id="undefined"
-                            :checked="searchFilters.categorias.includes(cat.name)"
-                          />
-                          <span class="text-sm font-medium leading-none flex-1">
-                            {{ cat.name }} ({{ cat.count }})
-                          </span>
-                        </button>
-                      </div>
-                    </FilterDropdown>
-                  </div>
-
-                  <!-- Tipo de Loja -->
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">Tipo de Loja</label>
-                    <FilterDropdown
-                      :open="isFilterOpen('varejo', 'tipoLoja')"
-                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-                      content-class="p-0"
-                      @update:open="(open) => handleFilterOpenChange('varejo', 'tipoLoja', open)"
-                    >
-                      <template #trigger>
-                        {{ selectedTipoLojaText }}
-                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </template>
-
-                      <div class="p-2">
-                        <button
-                          v-for="tipo in tiposLoja"
-                          :key="tipo.value"
-                          type="button"
-                          :class="[
-                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                            tipo === tiposLoja[0] ? 'bg-muted' : '',
-                          ]"
-                          @click="handleTipoLojaSelect(tipo.value)"
-                        >
-                          {{ tipo.label }}
-                        </button>
-                      </div>
-                    </FilterDropdown>
-                  </div>
-
-                  <!-- Localização -->
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">Localização</label>
-                    <FilterDropdown
-                      :open="isFilterOpen('varejo', 'location')"
-                      :disabled="searchFilters.tipoLoja === 'virtual'"
-                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-                      content-class="p-0"
-                      @update:open="(open) => handleFilterOpenChange('varejo', 'location', open)"
-                    >
-                      <template #trigger>
-                        {{ selectedEstadoText }}
-                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </template>
-
-                      <div class="max-h-64 overflow-y-auto p-2">
-                        <button
-                          v-for="(estado, index) in estados"
-                          :key="estado"
-                          type="button"
-                          :class="[
-                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                            index === 0 ? 'bg-muted' : '',
-                          ]"
-                          @click="setSingleFilterValue('estado', estado)"
-                        >
-                          {{ estado }}
-                        </button>
-                      </div>
-                    </FilterDropdown>
-                  </div>
-
-                  <!-- Gênero -->
-                  <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">Gênero</label>
-                    <FilterDropdown
-                      :open="isFilterOpen('varejo', 'genero')"
-                      trigger-class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm font-normal ring-offset-background data-placeholder:text-muted-foreground outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-                      content-class="p-0"
-                      @update:open="(open) => handleFilterOpenChange('varejo', 'genero', open)"
-                    >
-                      <template #trigger>
-                        {{ selectedGeneroText }}
-                        <Icon icon="lucide:chevron-down" class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </template>
-
-                      <div class="p-2">
-                        <button
-                          v-for="(gen, index) in generos"
-                          :key="gen"
-                          type="button"
-                          :class="[
-                            'flex w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted',
-                            index === 0 ? 'bg-muted' : '',
-                          ]"
-                          @click="setSingleFilterValue('genero', gen)"
-                        >
-                          {{ gen }}
-                        </button>
-                      </div>
-                    </FilterDropdown>
-                  </div>
-                </div>
-
-                <div class="px-6 pb-6">
-                  <Button @click="handleSearch" size="lg" class="w-full cursor-pointer">
-                    <Icon icon="lucide:search" class="size-4 mr-2" />
-                    Buscar Lojas
-                  </Button>
-                </div>
-              </TabsContent>
-            </Tabs>
+                <Button type="submit" size="lg" class="w-full cursor-pointer">
+                  Buscar
+                </Button>
+              </form>
+            </div>
           </Card>
         </div>
 
-        <!-- Trust Badges -->
-        <div class="mt-8 sm:mt-12">
-          <p class="text-sm text-yellow-500">
-            As Melhores marcas no atacado
-          </p>
-        </div>
       </div>
 
       <!-- Background Effects -->

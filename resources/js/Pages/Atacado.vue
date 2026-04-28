@@ -72,6 +72,7 @@ onMounted(() => {
   if (urlParams.has('estado')) filters.value.estado = urlParams.get('estado')
   if (urlParams.has('cidade')) filters.value.cidade = urlParams.get('cidade')
   if (urlParams.has('genero')) filters.value.genero = urlParams.get('genero')
+  if (urlParams.has('busca')) filters.value.busca = urlParams.get('busca') || ''
 })
 
 watch(() => filters.value.tipoLoja, (newType) => {
@@ -116,6 +117,30 @@ const normalizeGender = value =>
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .toLowerCase()
+const normalizeText = value =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+
+function getSearchTokens(value) {
+  return normalizeText(value)
+    .split(/\s+/)
+    .filter(Boolean)
+}
+
+function expandTokenVariants(token) {
+  const variants = new Set([token])
+
+  if (token.endsWith('s') && token.length > 3) {
+    variants.add(token.slice(0, -1))
+  } else if (token.length > 3) {
+    variants.add(`${token}s`)
+  }
+
+  return [...variants]
+}
 function normalizeManufacturerFilter(value) {
   const normalized = String(value || '')
     .normalize('NFD')
@@ -219,13 +244,25 @@ function handleTipoLojaSelect(value) {
 const alternatedListings = computed(() => {
   let filtered = props.stores
 
-  // Filter by search term (name)
+  // Filter by search term across multiple fields.
   if (filters.value.busca) {
-    const searchTerm = filters.value.busca.toLowerCase()
-    filtered = filtered.filter(store =>
-      store.name.toLowerCase().includes(searchTerm) ||
-      store.description.toLowerCase().includes(searchTerm)
-    )
+    const searchTokens = getSearchTokens(filters.value.busca)
+
+    filtered = filtered.filter(store => {
+      const searchableText = normalizeText([
+        store.name,
+        store.description,
+        store.category,
+        store.gender,
+        store.saleType,
+        ...(Array.isArray(store.subcategory) ? store.subcategory : [store.subcategory]),
+      ].filter(Boolean).join(' '))
+
+      return searchTokens.every(token => {
+        const variants = expandTokenVariants(token)
+        return variants.some(variant => searchableText.includes(variant))
+      })
+    })
   }
 
   // Filter by categories (multiple)

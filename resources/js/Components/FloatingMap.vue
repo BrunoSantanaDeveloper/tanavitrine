@@ -289,7 +289,7 @@ defineExpose({
     <Button
       v-if="isMobile"
       size="lg"
-      class="fixed bottom-24 right-6 z-50 rounded-full shadow-2xl h-14 w-14 p-0"
+      class="fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] right-4 z-50 rounded-full shadow-2xl h-14 w-14 p-0"
       @click="openWidget"
     >
       <Icon icon="lucide:map" class="size-6" />
