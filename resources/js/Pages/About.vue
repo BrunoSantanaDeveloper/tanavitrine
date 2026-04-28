@@ -1,11 +1,12 @@
 <script setup>
 import Badge from '@/Components/shadcn/ui/badge/Badge.vue'
 import Button from '@/Components/shadcn/ui/button/Button.vue'
-import Card from '@/Components/shadcn/ui/card/Card.vue'
+import Skeleton from '@/Components/shadcn/ui/skeleton/Skeleton.vue'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
 import WebLayout from '@/Layouts/WebLayout.vue'
 import { Icon } from '@iconify/vue'
 import { Link } from '@inertiajs/vue3'
+import { computed } from 'vue'
 
 const props = defineProps({
   canLogin: {
@@ -16,309 +17,402 @@ const props = defineProps({
   },
   seo: {
     type: Object,
-    default: () => ({
-      title: 'Sobre - Tá na Vitrine',
-      description: 'Conheça a Tá na Vitrine, o maior marketplace de moda atacado e varejo do Brasil. Conectando fornecedores e lojistas.',
-    }),
+    default: () => null,
+  },
+  lastUpdated: {
+    type: String,
+    default: '',
+  },
+  metrics: {
+    type: Array,
+    default: () => [],
   },
 })
 
 useSeoMetaTags(props.seo)
 
-const features = [
+const numberFormatter = new Intl.NumberFormat('pt-BR')
+
+const formattedMetrics = computed(() => {
+  return props.metrics.map((metric) => {
+    const parsedValue = Number(metric.value)
+    const hasNumericValue = Number.isFinite(parsedValue)
+
+    return {
+      ...metric,
+      formattedValue: hasNumericValue ? numberFormatter.format(parsedValue) : metric.value,
+    }
+  })
+})
+
+const hasMetrics = computed(() => formattedMetrics.value.length > 0)
+const metricSkeletonItems = [1, 2, 3, 4]
+
+const howItWorks = [
   {
-    icon: 'lucide:users',
-    title: 'Conecte-se com Fornecedores',
-    description: 'Acesse um catálogo completo de fornecedores atacadistas e lojistas varejistas verificados em todo o Brasil.',
+    icon: 'lucide:building-2',
+    title: 'Cadastro Exclusivo',
+    description: 'Lojas se cadastram na plataforma com um processo direto e sem fricção.',
   },
   {
-    icon: 'lucide:shield-check',
-    title: 'Fornecedores Verificados',
-    description: 'Todos os anunciantes passam por um processo de verificação para garantir segurança e qualidade nas transações.',
-  },
-  {
-    icon: 'lucide:trending-up',
-    title: 'Aumente suas Vendas',
-    description: 'Divulgue seus produtos para milhares de compradores em potencial e expanda seu negócio de moda.',
+    icon: 'lucide:store',
+    title: 'Monte sua Vitrine',
+    description: 'Publique fotos, catálogo e informações essenciais para atrair o cliente certo.',
   },
   {
     icon: 'lucide:smartphone',
-    title: 'Plataforma Moderna',
-    description: 'Interface intuitiva e responsiva, com filtros avançados para encontrar exatamente o que você procura.',
+    title: 'Contato Direto',
+    description: 'Clientes encontram seus produtos e chamam você no WhatsApp para fechar negócio.',
   },
 ]
 
-const stats = [
-  { value: '500+', label: 'Fornecedores Cadastrados' },
-  { value: '50+', label: 'Cidades Atendidas' },
-  { value: '10k+', label: 'Visitas Mensais' },
-  { value: '95%', label: 'Satisfação dos Usuários' },
+const sellerBenefits = [
+  {
+    title: 'Mais visibilidade',
+    description: 'Apareça para lojistas que estão procurando fornecedores todos os dias.',
+  },
+  {
+    title: 'Leads qualificados',
+    description: 'Receba contatos de quem realmente tem intenção de compra.',
+  },
+  {
+    title: 'Presença profissional',
+    description: 'Tenha uma vitrine com aparência premium sem depender de time técnico.',
+  },
 ]
 
-const benefits = {
-  buyers: [
-    'Encontre fornecedores atacadistas em um só lugar',
-    'Compare preços e condições de pagamento',
-    'Contato direto via WhatsApp',
-    'Filtros avançados por categoria, localização e tipo',
-    'Acesso gratuito a todos os fornecedores',
-  ],
-  sellers: [
-    'Divulgue seus produtos para milhares de compradores',
-    'Gerenciamento fácil da sua vitrine',
-    'Analytics completo de visualizações e cliques',
-    'Planos acessíveis para todos os tamanhos de negócio',
-    'Destaque sua loja para mais visibilidade',
-  ],
-}
+const buyerBenefits = [
+  {
+    title: 'Fornecedores confiáveis',
+    description: 'Consulte rapidamente o perfil de fábricas e atacadistas em um só lugar.',
+  },
+  {
+    title: 'Acesso direto no WhatsApp',
+    description: 'Sem etapas longas: encontrou, gostou e iniciou a negociação.',
+  },
+  {
+    title: 'Variedade de nichos',
+    description: 'Explore diferentes segmentos de moda com filtros simples e objetivos.',
+  },
+]
+
+const differentials = [
+  {
+    icon: 'lucide:zap',
+    title: 'Zero Comissão',
+    description: 'Sem taxa sobre vendas geradas na plataforma.',
+  },
+  {
+    icon: 'lucide:users',
+    title: 'Contato Direto',
+    description: 'Sem intermediário entre você e seu cliente.',
+  },
+  {
+    icon: 'lucide:award',
+    title: 'Foco no Setor',
+    description: 'Uma plataforma pensada para o mercado da moda.',
+  },
+  {
+    icon: 'lucide:check-circle-2',
+    title: 'Simples e Rápido',
+    description: 'Sua vitrine online ativa em poucos minutos.',
+  },
+]
+
+const missionCards = [
+  {
+    icon: 'lucide:globe-2',
+    title: 'Nossa Missão',
+    description: 'Conectar de forma eficiente o mercado da moda no Brasil, aproximando quem produz com qualidade de quem busca os melhores produtos para vender.',
+    classes: 'border-zinc-200 bg-zinc-100/80',
+    iconClasses: 'text-zinc-700',
+  },
+  {
+    icon: 'lucide:trending-up',
+    title: 'Nossa Visão',
+    description: 'Ser a principal referência digital para fornecedores de moda do país, fortalecendo a economia do setor com conexões comerciais relevantes.',
+    classes: 'border-emerald-200 bg-gradient-to-br from-emerald-100 to-zinc-50',
+    iconClasses: 'text-emerald-600',
+  },
+]
+
+const brandPillars = [
+  {
+    icon: 'lucide:shield-check',
+    title: 'Confiança',
+    description: 'Relacionamentos comerciais com transparência e contato direto entre as partes.',
+  },
+  {
+    icon: 'lucide:gauge',
+    title: 'Eficiência',
+    description: 'Menos etapas, mais velocidade para descobrir, apresentar e negociar coleções.',
+  },
+  {
+    icon: 'lucide:sparkles',
+    title: 'Curadoria',
+    description: 'Foco no mercado de moda para gerar conexões realmente relevantes para o setor.',
+  },
+]
 </script>
 
 <template>
-  <WebLayout :can-login="canLogin" :can-register="canRegister">
-    <!-- Hero Section -->
-    <section class="relative overflow-hidden border-b border-orange-200 bg-gradient-to-br from-teal-900 via-teal-700 to-teal-900 py-20 sm:py-28">
-      <div class="container mx-auto px-4 text-center relative z-10">
-        <!-- Badge -->
-        <div class="mb-8 inline-flex justify-center">
-          <Badge variant="outline" class="rounded-full border border-yellow-500 bg-primary/10 px-4 py-1 text-xs text-white sm:text-sm">
-            <Icon icon="lucide:sparkles" class="size-4 mr-1" aria-hidden="true" />
-            Sobre a Tá na Vitrine
-          </Badge>
-        </div>
+  <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="true">
+    <div class="bg-gradient-to-b from-teal-950 via-[#072b2b] to-teal-950 text-zinc-50">
+      <section class="relative overflow-hidden border-b border-teal-800/60 pt-20 pb-28">
+        <div class="absolute inset-0 bg-[url('/images/home_about.png')] bg-cover bg-center" />
+        <div class="absolute inset-0 bg-black/30" />
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:24px_24px] opacity-15" />
 
-        <!-- Main Heading -->
-        <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl text-white mb-6">
-          O Maior Marketplace de<br>
-          <span class="bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 bg-clip-text text-transparent">
-            Moda do Brasil
-          </span>
-        </h1>
+        <div class="container relative z-10 mx-auto px-4">
+          <div class="mx-auto max-w-4xl text-center">
+            <Badge variant="outline" class="mb-8 rounded-full border-teal-700/70 bg-teal-900/40 px-4 py-1 text-zinc-200">
+              <span class="mr-2 inline-flex h-2 w-2 rounded-full bg-orange-500" />
+              Sobre o Tá na Vitrine
+            </Badge>
 
-        <!-- Subtitle -->
-        <p class="mx-auto max-w-3xl text-lg sm:text-xl text-white/90 leading-relaxed">
-          Conectamos fornecedores atacadistas e lojistas varejistas de moda em uma única plataforma,
-          facilitando negócios e expandindo oportunidades em todo o país.
-        </p>
-      </div>
+            <h1 class="text-5xl font-bold leading-tight tracking-tight text-white sm:text-6xl lg:text-7xl">
+              A vitrine digital para
+              <span class="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent"> fornecedores de moda </span>
+              no Brasil
+            </h1>
 
-      <!-- Background Effects -->
-      <div class="absolute inset-0 -z-10 h-full w-full bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px]" />
-      <div class="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]" />
-    </section>
+            <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-300 sm:text-xl">
+              Conectamos lojistas, fornecedores e fabricantes de forma simples, rápida e direta,
+              sem intermediários no caminho da negociação.
+            </p>
 
-    <!-- Stats Section -->
-    <section class="py-12 bg-muted/30">
-      <div class="container mx-auto px-4">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
-          <div v-for="stat in stats" :key="stat.label" class="text-center">
-            <div class="text-4xl font-bold text-primary mb-2">{{ stat.value }}</div>
-            <div class="text-sm text-muted-foreground">{{ stat.label }}</div>
+            <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Button :as="Link" href="/prices" size="lg" class="w-full bg-orange-500 text-white hover:bg-orange-600 sm:w-auto">
+                Cadastrar minha vitrine
+                <Icon icon="lucide:arrow-right" class="ml-2 size-5" />
+              </Button>
+              <Button :as="Link" href="/atacado" size="lg" variant="outline" class="w-full border-teal-700/70 bg-teal-950/60 text-zinc-200 hover:bg-teal-900/60 sm:w-auto">
+                Explorar fornecedores
+              </Button>
+            </div>
+
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- About Section -->
-    <section class="py-20 bg-background">
-      <div class="container mx-auto px-4">
-        <div class="max-w-4xl mx-auto">
-          <h2 class="text-3xl font-bold tracking-tight sm:text-4xl text-center mb-8">
-            Nossa Missão
-          </h2>
+      <section class="border-y border-teal-100 bg-[#eef6f4] py-20">
+        <div class="container mx-auto px-4">
+          <div class="grid items-center gap-12 lg:grid-cols-2">
+            <div>
+              <h2 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+                Não somos um marketplace tradicional
+              </h2>
+              <p class="mt-6 text-lg leading-relaxed text-zinc-700">
+                O Tá na Vitrine é um hub digital para gerar conexão comercial entre quem compra e quem vende moda.
+                A venda acontece direto entre as partes.
+              </p>
 
-          <div class="space-y-6 text-lg text-muted-foreground leading-relaxed">
-            <p>
-              A <span class="font-semibold text-foreground">Tá na Vitrine</span> nasceu com o objetivo de revolucionar
-              a forma como fornecedores e compradores de moda se conectam no Brasil. Sabemos que encontrar fornecedores
-              confiáveis no atacado ou descobrir novas lojas no varejo pode ser desafiador.
-            </p>
+              <ul class="mt-8 space-y-4">
+                <li class="flex items-start gap-3 text-zinc-700">
+                  <Icon icon="lucide:check-circle-2" class="mt-0.5 size-5 text-orange-500" />
+                  <span>Sem intermediação de pagamento nas suas vendas.</span>
+                </li>
+                <li class="flex items-start gap-3 text-zinc-700">
+                  <Icon icon="lucide:check-circle-2" class="mt-0.5 size-5 text-orange-500" />
+                  <span>Vitrine criada para gerar leads e oportunidades reais.</span>
+                </li>
+                <li class="flex items-start gap-3 text-zinc-700">
+                  <Icon icon="lucide:check-circle-2" class="mt-0.5 size-5 text-orange-500" />
+                  <span>Contato direto no WhatsApp entre cliente e loja.</span>
+                </li>
+              </ul>
+            </div>
 
-            <p>
-              Por isso, criamos uma plataforma que centraliza milhares de fornecedores verificados de roupas, calçados,
-              acessórios e muito mais. Tudo em um só lugar, com filtros inteligentes, contato direto e total transparência.
-            </p>
-
-            <p>
-              Nossa missão é <span class="font-semibold text-foreground">democratizar o acesso ao mercado de moda</span>,
-              permitindo que pequenos e grandes empreendedores tenham as mesmas oportunidades de crescimento e sucesso.
-            </p>
+            <div class="rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 to-zinc-100 p-8 shadow-sm">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="rounded-2xl border border-teal-200 bg-zinc-50 p-4 text-center">
+                  <Icon icon="lucide:store" class="mx-auto mb-2 size-8 text-emerald-400" />
+                  <p class="text-sm font-medium text-zinc-700">Fornecedor</p>
+                </div>
+                <div class="rounded-2xl border border-teal-200 bg-zinc-50 p-4 text-center">
+                  <Icon icon="lucide:search" class="mx-auto mb-2 size-8 text-orange-500" />
+                  <p class="text-sm font-medium text-zinc-700">Lojista</p>
+                </div>
+              </div>
+              <div class="mt-4 rounded-2xl border border-teal-200 bg-zinc-50 p-4 text-center">
+                <Icon icon="lucide:message-circle" class="mx-auto mb-2 size-7 text-emerald-500" />
+                <p class="text-sm font-medium text-zinc-700">Conexão direta e sem fricção</p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Features Grid -->
-    <section class="py-20 bg-muted/30">
-      <div class="container mx-auto px-4">
-        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl mb-12">
-          Por Que Escolher a Tá na Vitrine?
-        </h2>
+      <section class="border-y border-teal-800/60 bg-gradient-to-b from-teal-900 to-teal-950 py-24">
+        <div class="container mx-auto px-4">
+          <div class="mx-auto mb-14 max-w-2xl text-center">
+            <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">Como funciona</h2>
+            <p class="mt-4 text-lg text-teal-100">Três passos simples para conectar oferta e demanda com velocidade.</p>
+          </div>
 
-        <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 mt-12">
-          <Card v-for="feature in features" :key="feature.title" class="p-6 text-center hover:shadow-lg transition-shadow">
-            <div class="flex justify-center mb-4">
-              <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                <Icon :icon="feature.icon" class="size-8 text-primary" />
+          <div class="relative grid gap-6 md:grid-cols-3">
+            <div class="pointer-events-none absolute top-7 left-[17%] right-[17%] hidden h-px bg-gradient-to-r from-transparent via-teal-700 to-transparent md:block" />
+            <article
+              v-for="(step, index) in howItWorks"
+              :key="step.title"
+              class="relative rounded-3xl border border-teal-700/70 bg-teal-900/60 p-7 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-sm"
+            >
+              <div class="absolute top-0 left-8 h-1 w-14 rounded-b-full bg-orange-500/80" />
+              <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-teal-700 bg-teal-950/80">
+                <Icon :icon="step.icon" class="size-7 text-orange-500" />
               </div>
-            </div>
-            <h3 class="text-xl font-semibold mb-3">{{ feature.title }}</h3>
-            <p class="text-muted-foreground">{{ feature.description }}</p>
-          </Card>
+              <span class="absolute top-6 right-6 text-5xl font-black text-teal-700/60">0{{ index + 1 }}</span>
+              <h3 class="text-xl font-semibold text-white">{{ step.title }}</h3>
+              <p class="mt-3 leading-relaxed text-teal-100">{{ step.description }}</p>
+            </article>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Benefits Section -->
-    <section class="py-20 bg-background">
-      <div class="container mx-auto px-4">
-        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl mb-16">
-          Benefícios Para Todos
-        </h2>
+      <section class="border-y border-orange-100/80 bg-[#f7f2eb] py-24">
+        <div class="container mx-auto px-4">
+          <div class="grid gap-6 lg:grid-cols-2">
+            <article class="rounded-[2rem] border border-zinc-200 bg-zinc-100 p-8 sm:p-10 shadow-sm">
+              <Badge class="mb-6 rounded-full bg-emerald-500/10 text-emerald-700">Para quem anuncia</Badge>
+              <h3 class="text-3xl font-bold text-zinc-900">Escale seus resultados com visibilidade qualificada</h3>
+              <ul class="mt-8 space-y-5">
+                <li v-for="benefit in sellerBenefits" :key="benefit.title" class="flex items-start gap-3">
+                  <Icon icon="lucide:check-circle-2" class="mt-1 size-5 text-emerald-500" />
+                  <div>
+                    <p class="font-semibold text-zinc-900">{{ benefit.title }}</p>
+                    <p class="text-zinc-600">{{ benefit.description }}</p>
+                  </div>
+                </li>
+              </ul>
+            </article>
 
-        <div class="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto">
-          <!-- Para Compradores -->
-          <Card class="p-8">
-            <div class="flex items-center gap-3 mb-6">
-              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
-                <Icon icon="lucide:shopping-bag" class="size-6 text-blue-600" />
-              </div>
-              <h3 class="text-2xl font-bold">Para Compradores</h3>
-            </div>
-            <ul class="space-y-3">
-              <li v-for="benefit in benefits.buyers" :key="benefit" class="flex items-start gap-3">
-                <Icon icon="lucide:check-circle" class="size-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <span class="text-muted-foreground">{{ benefit }}</span>
-              </li>
-            </ul>
-            <Button as="a" href="/atacado" class="w-full mt-6" size="lg">
-              <Icon icon="lucide:search" class="size-4 mr-2" />
-              Encontrar Fornecedores
-            </Button>
-          </Card>
-
-          <!-- Para Fornecedores -->
-          <Card class="p-8">
-            <div class="flex items-center gap-3 mb-6">
-              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10">
-                <Icon icon="lucide:store" class="size-6 text-orange-600" />
-              </div>
-              <h3 class="text-2xl font-bold">Para Fornecedores</h3>
-            </div>
-            <ul class="space-y-3">
-              <li v-for="benefit in benefits.sellers" :key="benefit" class="flex items-start gap-3">
-                <Icon icon="lucide:check-circle" class="size-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <span class="text-muted-foreground">{{ benefit }}</span>
-              </li>
-            </ul>
-            <Button as="a" href="/prices" class="w-full mt-6" size="lg" variant="secondary">
-              <Icon icon="lucide:rocket" class="size-4 mr-2" />
-              Anunciar Minha Loja
-            </Button>
-          </Card>
+            <article class="rounded-[2rem] border border-orange-200 bg-gradient-to-br from-orange-100 to-zinc-100 p-8 sm:p-10 shadow-sm">
+              <Badge class="mb-6 rounded-full bg-orange-500/10 text-orange-700">Para quem busca</Badge>
+              <h3 class="text-3xl font-bold text-zinc-900">Encontre as melhores coleções do mercado</h3>
+              <ul class="mt-8 space-y-5">
+                <li v-for="benefit in buyerBenefits" :key="benefit.title" class="flex items-start gap-3">
+                  <Icon icon="lucide:check-circle-2" class="mt-1 size-5 text-orange-500" />
+                  <div>
+                    <p class="font-semibold text-zinc-900">{{ benefit.title }}</p>
+                    <p class="text-zinc-600">{{ benefit.description }}</p>
+                  </div>
+                </li>
+              </ul>
+            </article>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- How It Works Section -->
-    <section class="py-20 bg-muted/30">
-      <div class="container mx-auto px-4">
-        <div class="text-center mb-16">
-          <p class="text-sm font-medium tracking-wider text-muted-foreground uppercase mb-2">
-            SIMPLES E RÁPIDO
+      <section class="bg-gradient-to-b from-[#ecf4f3] to-[#f6fbfa] py-24">
+        <div class="container mx-auto px-4">
+          <div class="mx-auto mb-14 max-w-2xl text-center">
+            <h2 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">Por que Tá na Vitrine</h2>
+            <p class="mt-4 text-lg text-zinc-600">Diferenciais para aumentar resultado sem complicar sua operação.</p>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <article v-for="item in differentials" :key="item.title" class="rounded-3xl border border-teal-100 bg-white/70 p-6 shadow-sm">
+              <Icon :icon="item.icon" class="mb-4 size-9 text-emerald-500" />
+              <h3 class="text-lg font-semibold text-zinc-900">{{ item.title }}</h3>
+              <p class="mt-2 text-zinc-600">{{ item.description }}</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="relative overflow-hidden border-y border-teal-800/60 bg-teal-950/85 py-16">
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:24px_24px]" />
+        <div class="container relative mx-auto px-4">
+          <p class="mb-4 text-center text-sm text-zinc-400">
+            Dados da plataforma atualizados em {{ lastUpdated || 'processamento' }}.
           </p>
-          <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">
-            Como Funciona?
+
+          <div v-if="hasMetrics" class="grid gap-8 md:grid-cols-4">
+            <article v-for="metric in formattedMetrics" :key="metric.key" class="rounded-2xl border border-teal-900/70 bg-teal-950/55 p-6 text-center">
+              <p class="text-4xl font-bold text-white lg:text-5xl">{{ metric.formattedValue }}</p>
+              <p class="mt-2 font-medium text-emerald-300">{{ metric.label }}</p>
+              <p class="mt-2 text-sm text-zinc-400">{{ metric.description }}</p>
+            </article>
+          </div>
+
+          <div v-else class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div
+                v-for="item in metricSkeletonItems"
+                :key="item"
+                class="rounded-2xl border border-teal-900/70 bg-teal-950/55 p-5"
+              >
+                <Skeleton class="h-4 w-2/3 bg-teal-800/70" />
+                <Skeleton class="mt-3 h-8 w-1/2 bg-teal-800/70" />
+                <Skeleton class="mt-4 h-3 w-full bg-teal-800/70" />
+                <Skeleton class="mt-2 h-3 w-5/6 bg-teal-800/70" />
+              </div>
+            </div>
+            <p class="text-center text-sm text-zinc-400">Atualizando métricas da plataforma...</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-[#f2f4f6] py-24">
+        <div class="container mx-auto px-4">
+          <div class="mx-auto mb-12 max-w-3xl text-center">
+            <Badge class="rounded-full bg-teal-100 text-teal-800">Nossa essência</Badge>
+            <h2 class="mt-5 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">Uma marca construída para fortalecer o atacado de moda</h2>
+            <p class="mt-4 text-lg text-zinc-600">
+              Combinamos tecnologia, foco setorial e relacionamento comercial direto para acelerar negócios com qualidade.
+            </p>
+          </div>
+
+          <div class="grid gap-8 lg:grid-cols-3">
+            <article
+              v-for="card in missionCards"
+              :key="card.title"
+              class="rounded-[2rem] border p-8"
+              :class="card.classes"
+            >
+              <div class="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100">
+                <Icon :icon="card.icon" class="size-6" :class="card.iconClasses" />
+              </div>
+              <h3 class="text-2xl font-bold text-zinc-900">{{ card.title }}</h3>
+              <p class="mt-4 text-lg leading-relaxed text-zinc-700">{{ card.description }}</p>
+            </article>
+
+            <article class="rounded-[2rem] border border-teal-200 bg-gradient-to-b from-teal-50 to-zinc-100 p-8">
+              <h3 class="text-2xl font-bold text-zinc-900">Nossos princípios</h3>
+              <ul class="mt-6 space-y-5">
+                <li v-for="pillar in brandPillars" :key="pillar.title" class="flex items-start gap-3">
+                  <div class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg border border-teal-200 bg-white">
+                    <Icon :icon="pillar.icon" class="size-4 text-teal-700" />
+                  </div>
+                  <div>
+                    <p class="font-semibold text-zinc-900">{{ pillar.title }}</p>
+                    <p class="text-sm leading-relaxed text-zinc-600">{{ pillar.description }}</p>
+                  </div>
+                </li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="relative overflow-hidden py-28">
+        <div class="absolute inset-0 bg-orange-500/5" />
+        <div class="absolute left-1/2 top-1/2 h-[340px] w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500/15 blur-[120px]" />
+
+        <div class="container relative mx-auto max-w-4xl px-4 text-center">
+          <h2 class="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            Sua loja já está na
+            <span class="text-orange-500"> vitrine certa? </span>
           </h2>
-        </div>
-
-        <div class="grid gap-8 md:grid-cols-4 mt-12">
-          <!-- Step 1 -->
-          <div class="flex flex-col items-center text-center">
-            <div class="relative mb-6">
-              <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10">
-                <Icon icon="lucide:user-plus" class="size-10 text-primary" />
-              </div>
-              <Badge class="absolute -bottom-2 -right-2 h-8 w-8 rounded-full flex items-center justify-center p-0 text-lg font-bold">
-                1
-              </Badge>
-            </div>
-            <h3 class="text-xl font-bold mb-4">Cadastre-se</h3>
-            <p class="text-muted-foreground">
-              Crie sua conta gratuita em menos de 2 minutos
-            </p>
-          </div>
-
-          <!-- Step 2 -->
-          <div class="flex flex-col items-center text-center">
-            <div class="relative mb-6">
-              <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10">
-                <Icon icon="lucide:store" class="size-10 text-primary" />
-              </div>
-              <Badge class="absolute -bottom-2 -right-2 h-8 w-8 rounded-full flex items-center justify-center p-0 text-lg font-bold">
-                2
-              </Badge>
-            </div>
-            <h3 class="text-xl font-bold mb-4">Configure sua Vitrine</h3>
-            <p class="text-muted-foreground">
-              Adicione fotos, descrição e informações da sua loja
-            </p>
-          </div>
-
-          <!-- Step 3 -->
-          <div class="flex flex-col items-center text-center">
-            <div class="relative mb-6">
-              <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10">
-                <Icon icon="lucide:credit-card" class="size-10 text-primary" />
-              </div>
-              <Badge class="absolute -bottom-2 -right-2 h-8 w-8 rounded-full flex items-center justify-center p-0 text-lg font-bold">
-                3
-              </Badge>
-            </div>
-            <h3 class="text-xl font-bold mb-4">Escolha seu Plano</h3>
-            <p class="text-muted-foreground">
-              Selecione o plano ideal para o seu negócio
-            </p>
-          </div>
-
-          <!-- Step 4 -->
-          <div class="flex flex-col items-center text-center">
-            <div class="relative mb-6">
-              <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10">
-                <Icon icon="lucide:rocket" class="size-10 text-primary" />
-              </div>
-              <Badge class="absolute -bottom-2 -right-2 h-8 w-8 rounded-full flex items-center justify-center p-0 text-lg font-bold">
-                4
-              </Badge>
-            </div>
-            <h3 class="text-xl font-bold mb-4">Comece a Vender</h3>
-            <p class="text-muted-foreground">
-              Sua vitrine fica ativa imediatamente após o pagamento
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="py-20 bg-gradient-to-br from-teal-900 to-teal-700">
-      <div class="container mx-auto px-4 text-center">
-        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl text-white mb-6">
-          Pronto para Expandir Seu Negócio?
-        </h2>
-        <p class="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
-          Junte-se a centenas de fornecedores que já estão vendendo mais com a Tá na Vitrine
-        </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button as="a" href="/prices" size="lg" variant="secondary" class="text-lg">
-            <Icon icon="lucide:store" class="size-5 mr-2" />
-            Ver Planos
-          </Button>
-          <Button as="a" href="/atacado" size="lg" variant="outline" class="text-lg border-white text-white hover:bg-white/10">
-            <Icon icon="lucide:search" class="size-5 mr-2" />
-            Explorar Fornecedores
+          <p class="mx-auto mt-6 max-w-2xl text-xl text-zinc-300">
+            Junte-se às lojas que já recebem contatos qualificados diretamente no WhatsApp.
+          </p>
+          <Button :as="Link" href="/prices" size="lg" class="mt-10 bg-orange-500 px-10 py-5 text-lg font-bold text-white hover:bg-orange-600">
+            Cadastrar minha vitrine agora
+            <Icon icon="lucide:arrow-right" class="ml-3 size-6" />
           </Button>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </WebLayout>
 </template>

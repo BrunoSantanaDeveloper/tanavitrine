@@ -28,6 +28,8 @@ const navLinks = [
   { label: 'Atacado', href: '/atacado', external: false },
   { label: 'Varejo', href: '/varejo', external: false },
   { label: 'Fabricantes', href: '/fabricantes', external: false },
+  { label: 'Mapa de Lojas', href: '/mapa-de-lojas', external: false },
+  { label: 'Sobre', href: '/about', external: false },
   { label: 'Planos', href: '/prices', external: false },
   { label: 'Contato', href: '#', external: false, action: 'whatsapp' },
 ]
@@ -248,6 +250,11 @@ function sendWhatsApp() {
                   Sobre
                 </a>
               </li>
+              <li>
+                <a href="/mapa-de-lojas" class="text-muted-foreground hover:text-foreground transition-colors">
+                  Mapa de Lojas
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -326,9 +333,8 @@ function sendWhatsApp() {
       </div>
     </footer>
 
-    <!-- WhatsApp Floating Button -->
-    <div v-if="props.showFloatingWhatsApp" class="fixed bottom-6 right-6 z-[100]">
-      <!-- Chat Box -->
+    <!-- WhatsApp Chat Box -->
+    <div class="fixed bottom-6 right-6 z-[100]">
       <Transition
         enter-active-class="transition ease-out duration-200"
         enter-from-class="opacity-0 translate-y-4"
@@ -394,8 +400,9 @@ function sendWhatsApp() {
         </div>
       </Transition>
 
-      <!-- WhatsApp Button -->
+      <!-- WhatsApp Floating Button -->
       <button
+        v-if="props.showFloatingWhatsApp"
         @click="toggleWhatsApp"
         class="bg-[#25D366] hover:bg-[#20BA5A] text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 relative group"
         aria-label="WhatsApp"

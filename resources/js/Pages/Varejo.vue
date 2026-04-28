@@ -403,7 +403,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <WebLayout :can-login="canLogin" :can-register="canRegister">
+  <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="false">
     <!-- Sticky Filter Section -->
     <section class="sticky top-16 z-30 bg-background border-b border-border shadow-md">
       <div class="container mx-auto px-4 py-4">

@@ -314,6 +314,40 @@ final class WelcomeController extends Controller
         ]);
     }
 
+    public function mapaDeLojas(): Response
+    {
+        $stores = Team::active()
+            ->where('personal_team', false)
+            ->featured()
+            ->whereIn('store_type', ['ambos', 'fisica'])
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->with(['category', 'plan', 'photos' => function ($query): void {
+                $query->where('type', 'image')
+                    ->where('media.is_active', true)
+                    ->whereNull('media.team_collection_id')
+                    ->where(function ($nestedQuery): void {
+                        $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo');
+                    })
+                    ->orderByDesc('team_media.is_primary')
+                    ->orderBy('team_media.order');
+            }])
+            ->orderByDesc('featured')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get()
+            ->map(function ($store) {
+                return $this->transformStore($store);
+            })
+            ->values();
+
+        return Inertia::render('MapaDeLojas', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+            'stores' => $stores,
+        ]);
+    }
+
     public function prices(): Response
     {
         return Inertia::render('Prices', [
@@ -354,12 +388,62 @@ final class WelcomeController extends Controller
 
     public function about(): Response
     {
+        $aboutMetrics = Cache::remember('about:metrics:v1', now()->addMinutes(15), function (): array {
+            $activeStoresQuery = Team::active()
+                ->where('personal_team', false);
+
+            $activeStoresCount = (clone $activeStoresQuery)->count();
+            $statesWithPhysicalStoresCount = (clone $activeStoresQuery)
+                ->whereIn('store_type', ['ambos', 'fisica'])
+                ->whereNotNull('state')
+                ->distinct()
+                ->count('state');
+            $manufacturersCount = (clone $activeStoresQuery)
+                ->where('is_manufacturer', true)
+                ->count();
+            $verifiedStoresCount = (clone $activeStoresQuery)
+                ->where('is_verified', true)
+                ->count();
+
+            return [
+                'updated_at' => now()->format('d/m/Y H:i'),
+                'items' => [
+                    [
+                        'key' => 'active_stores',
+                        'label' => 'Lojas ativas',
+                        'value' => $activeStoresCount,
+                        'description' => 'Operando na plataforma com presença pública.',
+                    ],
+                    [
+                        'key' => 'physical_states',
+                        'label' => 'Estados com lojas físicas',
+                        'value' => $statesWithPhysicalStoresCount,
+                        'description' => 'Capilaridade de operação física no Brasil.',
+                    ],
+                    [
+                        'key' => 'manufacturers',
+                        'label' => 'Fabricantes na rede',
+                        'value' => $manufacturersCount,
+                        'description' => 'Marcas com produção própria cadastradas.',
+                    ],
+                    [
+                        'key' => 'verified_stores',
+                        'label' => 'Lojas verificadas',
+                        'value' => $verifiedStoresCount,
+                        'description' => 'Perfis com verificação concluída.',
+                    ],
+                ],
+            ];
+        });
+
         return Inertia::render('About', [
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
+            'lastUpdated' => $aboutMetrics['updated_at'] ?? '',
+            'metrics' => $aboutMetrics['items'] ?? [],
             'seo' => [
-                'title' => 'Sobre - Tá na Vitrine',
-                'description' => 'Conheça o Tá na Vitrine, o maior marketplace de moda atacado e varejo do Brasil. Conectando fornecedores e lojistas.',
+                'title' => 'Sobre a Tá na Vitrine',
+                'description' => 'Conheça a história, os diferenciais e os números atuais da Tá na Vitrine para atacado, varejo e fabricantes.',
             ],
         ]);
     }

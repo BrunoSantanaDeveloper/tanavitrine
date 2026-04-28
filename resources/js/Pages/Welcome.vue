@@ -367,7 +367,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <WebLayout :can-login="canLogin" :can-register="canRegister">
+  <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="false">
     <!-- Sticky Selector Buttons (shown only when section is out of view) -->
     <template #sticky-selector>
       <Transition
@@ -885,4 +885,5 @@ onBeforeUnmount(() => {
     :stores="storesForMap"
     title="Mapa de Lojas Físicas"
   />
+
 </template>

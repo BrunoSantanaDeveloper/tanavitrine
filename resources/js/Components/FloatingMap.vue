@@ -297,36 +297,43 @@ defineExpose({
 
     <!-- Mobile Modal -->
     <Dialog v-model:open="isMobileModalOpen">
-      <DialogContent class="max-w-full h-full w-full p-0 gap-0">
-        <div class="flex flex-col h-full">
+      <DialogContent class="w-[calc(100vw-1rem)] max-w-md rounded-2xl p-0 gap-0 border shadow-2xl [&>button]:hidden">
+        <div class="flex flex-col max-h-[88vh] overflow-hidden">
+          <div class="flex justify-center pt-2 pb-1">
+            <div class="h-1.5 w-12 rounded-full bg-muted-foreground/30" />
+          </div>
           <!-- Header -->
-          <div class="p-4 pb-3 border-b flex items-center justify-between">
-            <div>
-              <h2 class="text-lg font-semibold">
-                {{ title }}
-              </h2>
-              <Badge
-                v-if="hasFeaturedStores"
-                class="mt-2 bg-primary text-primary-foreground shadow-lg w-fit"
-              >
-                <Icon icon="lucide:star" class="size-3 mr-1" />
-                Destaque
-              </Badge>
+          <div class="p-4 pb-3 border-b flex items-start justify-between bg-background/95 backdrop-blur-sm">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="text-lg font-semibold leading-tight">
+                  {{ title }}
+                </h2>
+                <Badge
+                  v-if="hasFeaturedStores"
+                  class="bg-primary text-primary-foreground shadow-lg w-fit"
+                >
+                  <Icon icon="lucide:star" class="size-3 mr-1" />
+                  Destaque
+                </Badge>
+              </div>
               <p class="text-sm text-muted-foreground mt-1">
                 {{ stores.length }} {{ stores.length === 1 ? 'loja encontrada' : 'lojas encontradas' }}
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              @click="isMobileModalOpen = false"
-            >
+              <Button
+                variant="ghost"
+                size="icon"
+                class="shrink-0 -mt-1"
+                aria-label="Fechar mapa"
+                @click="isMobileModalOpen = false"
+              >
               <Icon icon="lucide:x" class="size-5" />
             </Button>
           </div>
 
           <!-- Map Content -->
-          <div class="flex-1 h-[calc(100vh-6rem)]">
+          <div class="h-[min(62vh,520px)] p-3">
             <StoreMap
               v-if="isMounted && isMobileModalOpen"
               :stores="stores"
