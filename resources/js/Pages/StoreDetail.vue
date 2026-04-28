@@ -199,12 +199,14 @@ onMounted(() => {
   document.addEventListener('scroll', handleBackToTopVisibility, { passive: true, capture: true })
   window.addEventListener('keydown', handleLightboxKeydown)
   handleBackToTopVisibility()
+  startTopCarouselAutoplay()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleBackToTopVisibility)
   document.removeEventListener('scroll', handleBackToTopVisibility, true)
   window.removeEventListener('keydown', handleLightboxKeydown)
+  stopTopCarouselAutoplay()
 })
 
 // Função para extrair ID do vídeo do YouTube/Vimeo
@@ -291,6 +293,8 @@ const mediaItems = computed(() => {
 
 const scrollPosition = ref(0)
 const carouselContainer = ref(null)
+const isTopCarouselAutoplayPaused = ref(false)
+let topCarouselAutoplayTimer = null
 const isFavorited = ref(props.store.is_favorited || false)
 const isFavoriting = ref(false)
 const isGalleryLightboxOpen = ref(false)
@@ -583,6 +587,32 @@ function scrollPrev() {
   }
 }
 
+function startTopCarouselAutoplay() {
+  stopTopCarouselAutoplay()
+
+  if ((mediaItems.value?.length || 0) <= 1) return
+
+  topCarouselAutoplayTimer = window.setInterval(() => {
+    if (isTopCarouselAutoplayPaused.value) return
+    scrollNext()
+  }, 4500)
+}
+
+function stopTopCarouselAutoplay() {
+  if (topCarouselAutoplayTimer !== null) {
+    window.clearInterval(topCarouselAutoplayTimer)
+    topCarouselAutoplayTimer = null
+  }
+}
+
+function pauseTopCarouselAutoplay() {
+  isTopCarouselAutoplayPaused.value = true
+}
+
+function resumeTopCarouselAutoplay() {
+  isTopCarouselAutoplayPaused.value = false
+}
+
 function openTopGalleryLightboxByMediaIndex(mediaIndex) {
   const imageIndex = topGalleryMedia.value.findIndex(item => item.originalIndex === mediaIndex)
   if (imageIndex === -1) return
@@ -704,7 +734,13 @@ function scrollToSection(sectionId) {
       <section class="bg-muted/30 py-2">
         <div class="w-full">
           <!-- Carousel Container -->
-          <div class="relative">
+          <div
+            class="relative"
+            @mouseenter="pauseTopCarouselAutoplay"
+            @mouseleave="resumeTopCarouselAutoplay"
+            @touchstart.passive="pauseTopCarouselAutoplay"
+            @touchend.passive="resumeTopCarouselAutoplay"
+          >
             <!-- Media Grid (1 column on mobile, 3 on desktop) -->
             <div
               ref="carouselContainer"
@@ -815,6 +851,15 @@ function scrollToSection(sectionId) {
             >
               <Icon icon="lucide:map-pin" class="size-5" />
               Ver Localização
+            </button>
+
+            <button
+              v-if="store.whatsapp"
+              @click="openWhatsApp"
+              class="absolute bottom-4 right-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2 font-medium z-10 sm:hidden"
+            >
+              <Icon icon="lucide:message-circle" class="size-5" />
+              WhatsApp
             </button>
           </div>
         </div>
