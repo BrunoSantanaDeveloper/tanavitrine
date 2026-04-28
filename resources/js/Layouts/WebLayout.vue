@@ -1,7 +1,7 @@
 <script setup>
 import Button from '@/Components/shadcn/ui/button/Button.vue'
 import { Icon } from '@iconify/vue'
-import { Link } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 import { useColorMode } from '@vueuse/core'
 import { ref } from 'vue'
 
@@ -23,6 +23,7 @@ const mode = useColorMode({
   modes: { light: '', dark: 'dark' },
   initialValue: 'light',
 })
+const page = usePage()
 
 const navLinks = [
   { label: 'Atacado', href: '/atacado', external: false },
@@ -33,6 +34,18 @@ const navLinks = [
   { label: 'Planos', href: '/prices', external: false },
   { label: 'Contato', href: '#', external: false, action: 'whatsapp' },
 ]
+const mobileBottomLinks = [
+  { label: 'Início', href: '/', icon: 'lucide:house' },
+  { label: 'Atacado', href: '/atacado', icon: 'lucide:shopping-cart' },
+  { label: 'Varejo', href: '/varejo', icon: 'lucide:store' },
+  { label: 'Fabricantes', href: '/fabricantes', icon: 'lucide:factory' },
+  { label: 'Planos', href: '/prices', icon: 'lucide:badge-dollar-sign' },
+]
+
+function isMobileBottomActive(href) {
+  const currentPath = String(page.url || '').split('?')[0]
+  return currentPath === href
+}
 
 function handleNavClick(link, event) {
   if (link.action === 'whatsapp') {
@@ -199,7 +212,28 @@ function sendWhatsApp() {
       <slot name="sticky-selector" />
     </div>
 
-    <slot />
+    <div class="pb-24 md:pb-0">
+      <slot />
+    </div>
+
+    <nav
+      class="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 shadow-[0_-6px_18px_rgba(15,23,42,0.08)] backdrop-blur-sm md:hidden"
+      style="padding-bottom: env(safe-area-inset-bottom);"
+    >
+      <div class="grid min-h-[64px] grid-cols-5">
+        <Link
+          v-for="link in mobileBottomLinks"
+          :key="link.href"
+          :href="link.href"
+          class="mx-1 my-1.5 flex min-h-[44px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-medium transition-colors"
+          :class="isMobileBottomActive(link.href) ? 'bg-primary/10 text-primary' : 'text-muted-foreground'"
+          prefetch="mount"
+        >
+          <Icon :icon="link.icon" class="size-4" aria-hidden="true" />
+          <span>{{ link.label }}</span>
+        </Link>
+      </div>
+    </nav>
 
     <!-- Footer -->
     <footer class="border-t bg-muted/30">
@@ -334,7 +368,7 @@ function sendWhatsApp() {
     </footer>
 
     <!-- WhatsApp Chat Box -->
-    <div class="fixed bottom-6 right-6 z-[100]">
+    <div class="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-4 z-[100] md:bottom-6 md:right-6">
       <Transition
         enter-active-class="transition ease-out duration-200"
         enter-from-class="opacity-0 translate-y-4"
