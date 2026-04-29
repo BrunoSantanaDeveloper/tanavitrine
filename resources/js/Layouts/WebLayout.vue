@@ -42,6 +42,16 @@ const mobileBottomLinks = [
   { label: 'Planos', href: '/prices', icon: 'lucide:badge-dollar-sign' },
 ]
 
+function getNavIcon(href) {
+  if (href === '/atacado') return 'lucide:shopping-cart'
+  if (href === '/varejo') return 'lucide:store'
+  if (href === '/fabricantes') return 'lucide:factory'
+  if (href === '/mapa-de-lojas') return 'lucide:map-pin'
+  if (href === '/about') return 'lucide:info'
+  if (href === '/prices') return 'lucide:badge-dollar-sign'
+  return 'lucide:circle'
+}
+
 function isMobileBottomActive(href) {
   const currentPath = String(page.url || '').split('?')[0]
   return currentPath === href
@@ -87,7 +97,7 @@ function sendWhatsApp() {
 <template>
   <div class="min-h-screen overflow-x-hidden">
     <header
-      class="sticky top-0 z-50 w-full bg-linear-to-r from-teal-900 via-teal-700 to-teal-900 backdrop-blur-sm supports-backdrop-filter:bg-orange-100/40"
+      class="fixed top-0 left-0 right-0 z-50 w-full border-b border-teal-200/20 bg-linear-to-r from-teal-900/95 via-teal-700/95 to-teal-900/95 backdrop-blur-sm"
     >
       <div class="container flex h-16 items-center justify-between">
         <div class="flex items-center">
@@ -165,29 +175,36 @@ function sendWhatsApp() {
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-show="isMenuOpen" class="md:hidden border-t bg-background/95 backdrop-blur-sm">
+        <div v-show="isMenuOpen" class="md:hidden border-t border-teal-200/20 bg-gradient-to-b from-teal-900/95 via-teal-800/95 to-teal-900/95 backdrop-blur-md shadow-2xl">
           <nav class="flex flex-col p-4 space-y-3">
+            <div class="px-1 pt-1 pb-2">
+              <p class="text-xs font-semibold tracking-wider text-teal-100/80 uppercase">Navegação</p>
+            </div>
             <a
               v-for="link in navLinks" :key="link.href" :href="link.href"
-              class="px-4 py-2 text-sm font-medium transition-colors hover:bg-muted rounded-lg cursor-pointer"
+              class="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10 cursor-pointer"
               :target="link.href.startsWith('http') ? '_blank' : undefined"
               :rel="link.href.startsWith('http') ? 'noreferrer' : undefined"
               @click="handleNavClick(link, $event)"
             >
-              {{ link.label }}
+              <span class="flex items-center gap-3">
+                <Icon :icon="getNavIcon(link.href)" class="size-4 text-yellow-300" aria-hidden="true" />
+                <span>{{ link.label }}</span>
+              </span>
+              <Icon icon="lucide:chevron-right" class="size-4 text-white/60" aria-hidden="true" />
             </a>
 
-            <div class="pt-3 border-t space-y-2">
+            <div class="pt-3 border-t border-white/15 space-y-2">
               <template v-if="!$page.props.auth.user">
                 <Button
-                  variant="outline" :as="Link" href="/login" class="w-full" prefetch="mount"
+                  variant="outline" :as="Link" href="/login" class="w-full border-white/30 bg-transparent text-white hover:bg-white/10" prefetch="mount"
                   @click="toggleMenu"
                 >
                   <Icon icon="lucide:log-in" class="size-4 mr-2" aria-hidden="true" />
                   Entrar
                 </Button>
                 <Button
-                  :as="Link" href="/prices" class="w-full" prefetch="mount"
+                  :as="Link" href="/prices" class="w-full bg-yellow-400 text-teal-900 hover:bg-yellow-300" prefetch="mount"
                   @click="toggleMenu"
                 >
                   <Icon icon="lucide:rocket" class="size-4 mr-2" aria-hidden="true" />
@@ -195,7 +212,7 @@ function sendWhatsApp() {
                 </Button>
               </template>
               <Button
-                v-else :as="Link" href="/dashboard" class="w-full"
+                v-else :as="Link" href="/dashboard" class="w-full border-white/30 bg-transparent text-white hover:bg-white/10"
                 prefetch="mount" @click="toggleMenu"
               >
                 <Icon icon="lucide:layout-dashboard" class="size-4 mr-2" aria-hidden="true" />
@@ -207,6 +224,8 @@ function sendWhatsApp() {
       </Transition>
     </header>
 
+    <div class="h-16" />
+
     <!-- Sticky Selector Slot (background only applied when content is visible) -->
     <div class="sticky top-16 z-40">
       <slot name="sticky-selector" />
@@ -217,7 +236,7 @@ function sendWhatsApp() {
     </div>
 
     <nav
-      class="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 shadow-[0_-6px_18px_rgba(15,23,42,0.08)] backdrop-blur-sm md:hidden"
+      class="fixed inset-x-0 bottom-0 z-50 border-t border-teal-200/20 bg-linear-to-r from-teal-900/95 via-teal-700/95 to-teal-900/95 shadow-[0_-8px_18px_rgba(15,23,42,0.22)] backdrop-blur-sm md:hidden"
       style="padding-bottom: env(safe-area-inset-bottom);"
     >
       <div class="grid min-h-[64px] grid-cols-5">
@@ -226,7 +245,7 @@ function sendWhatsApp() {
           :key="link.href"
           :href="link.href"
           class="mx-1 my-1.5 flex min-h-[44px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-medium transition-colors"
-          :class="isMobileBottomActive(link.href) ? 'bg-primary/10 text-primary' : 'text-muted-foreground'"
+          :class="isMobileBottomActive(link.href) ? 'bg-yellow-400/20 text-yellow-300' : 'text-white/85'"
           prefetch="mount"
         >
           <Icon :icon="link.icon" class="size-4" aria-hidden="true" />
@@ -325,8 +344,13 @@ function sendWhatsApp() {
                 </a>
               </li>
               <li class="flex items-center gap-2">
-                <Icon icon="lucide:phone" class="size-4" aria-hidden="true" />
-                <a href="tel:+556231900204" class="hover:text-foreground transition-colors">
+                <Icon icon="lucide:message-circle" class="size-4" aria-hidden="true" />
+                <a
+                  href="https://wa.me/556231900204"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="hover:text-foreground transition-colors"
+                >
                   (62) 3190- 0204
                 </a>
               </li>

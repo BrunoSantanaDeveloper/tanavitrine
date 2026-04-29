@@ -313,19 +313,17 @@ onBeforeUnmount(() => {
       <!-- Background Image -->
       <div class="absolute inset-0 -z-10">
         <img
-          src="/images/bg-hero.png"
+          src="/images/home_index.png"
           alt=""
           class="h-full w-full object-cover"
         />
       </div>
-
-      <!-- Overlay with transparency -->
-      <div class="absolute inset-0 -z-10 bg-gradient-to-r from-teal-900/90 via-teal-700/80 to-teal-950/90" />
+      <div class="absolute inset-0 -z-10 bg-gradient-to-b from-teal-950/60 via-teal-900/35 to-teal-950/65" />
 
       <div class="container mx-auto px-4 text-center relative z-10">
         <!-- Badge -->
         <div class="mb-8 inline-flex justify-center">
-          <Badge variant="outline" class="rounded-full border border-yellow-500 bg-primary/10 px-4 py-1 text-xs text-white sm:text-sm">
+          <Badge variant="outline" class="rounded-full border border-yellow-400/80 bg-teal-900/40 px-4 py-1 text-xs text-white sm:text-sm">
             <Icon icon="lucide:award" class="size-4" aria-hidden="true" /> Fornecedores Verificados
           </Badge>
         </div>
@@ -333,12 +331,12 @@ onBeforeUnmount(() => {
         <!-- Main Heading -->
         <div class="mx-auto max-w-4xl">
           <h1
-            class="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl"
+            class="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-[5.2rem]"
             :style="{ contain: 'layout paint' }"
           >
             <span class="block text-white">Compre direto com</span>
             <span
-              class="mt-2 block bg-linear-to-r from-yellow-500 via-rose-400 to-amber-500 bg-clip-text text-transparent"
+              class="mt-2 block bg-linear-to-r from-yellow-400 via-amber-300 to-orange-300 bg-clip-text text-transparent"
             >
               Os Melhores Fornecedores
             </span>
@@ -347,7 +345,7 @@ onBeforeUnmount(() => {
 
         <!-- Subtitle - Add priority hint -->
         <p
-          class="mx-auto mt-6 max-w-2xl text-center text-base text-white sm:text-lg md:text-xl"
+          class="mx-auto mt-7 max-w-xl text-center text-base text-white/90 sm:text-lg md:text-xl"
           :style="{ contain: 'layout paint' }"
           fetchpriority="high"
         >
@@ -356,42 +354,42 @@ onBeforeUnmount(() => {
 
         <!-- Search Tool -->
         <div class="mt-10 mx-auto max-w-4xl">
-          <Card class="bg-white/95 backdrop-blur-sm shadow-2xl">
-            <div class="space-y-5 px-6 py-6 sm:px-8 sm:py-8">
+          <Card class="border border-teal-200/35 bg-teal-900/35 backdrop-blur-md shadow-[0_20px_40px_rgba(0,0,0,0.35)]">
+            <div class="space-y-4 px-6 py-6 sm:px-8 sm:py-8">
               <Tabs v-model="searchType" default-value="atacado" class="w-full">
-                <TabsList class="grid w-full grid-cols-2 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-inner backdrop-blur">
+                <TabsList class="grid w-full grid-cols-2 rounded-xl border border-teal-200/30 bg-teal-950/40 p-1">
                   <TabsTrigger
                     value="atacado"
-                    class="h-12 rounded-xl border border-transparent text-base font-semibold flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 transition-all duration-200 data-[state=active]:-translate-y-0.5 data-[state=active]:border-teal-700/80 data-[state=active]:bg-linear-to-r data-[state=active]:from-teal-600 data-[state=active]:to-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-[0_8px_18px_rgba(13,148,136,0.35)]"
+                    class="h-10 rounded-lg border border-transparent text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap text-teal-100/85 transition-all duration-200 data-[state=active]:border-teal-400 data-[state=active]:bg-teal-500 data-[state=active]:text-white"
                   >
                     <Icon icon="lucide:shopping-cart" class="size-4" />
                     <span>Atacado</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="varejo"
-                    class="h-12 rounded-xl border border-transparent text-base font-semibold flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 transition-all duration-200 data-[state=active]:-translate-y-0.5 data-[state=active]:border-teal-700/80 data-[state=active]:bg-linear-to-r data-[state=active]:from-teal-600 data-[state=active]:to-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-[0_8px_18px_rgba(13,148,136,0.35)]"
+                    class="h-10 rounded-lg border border-transparent text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap text-teal-100/85 transition-all duration-200 data-[state=active]:border-teal-400 data-[state=active]:bg-teal-500 data-[state=active]:text-white"
                   >
                     <Icon icon="lucide:store" class="size-4" />
                     <span>Varejo</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
-              <p class="text-sm font-medium text-slate-600">
+              <p class="text-xs font-medium text-teal-100/90">
                 Você está buscando em:
-                <span class="font-semibold text-teal-700">{{ searchType === 'atacado' ? 'Atacado' : 'Varejo' }}</span>
+                <span class="font-semibold text-yellow-300">{{ searchType === 'atacado' ? 'Atacado' : 'Varejo' }}</span>
               </p>
 
               <form class="space-y-3" @submit.prevent="handleSearch">
                 <div class="relative">
-                  <Icon icon="lucide:search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Icon icon="lucide:search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-teal-100/80" />
                   <input
                     v-model="searchQuery"
                     type="text"
-                    class="h-12 w-full rounded-md border border-input bg-background pl-10 pr-4 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus:border-ring"
+                    class="h-11 w-full rounded-lg border border-teal-200/35 bg-white/95 pl-10 pr-4 text-sm text-teal-900 outline-none placeholder:text-teal-700/70 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-300/50"
                     placeholder="Busque lojas e fornecedores de moda"
                   >
                 </div>
-                <Button type="submit" size="lg" class="w-full cursor-pointer">
+                <Button type="submit" size="lg" class="h-11 w-full cursor-pointer rounded-lg bg-yellow-400 text-teal-900 hover:bg-yellow-300">
                   Buscar
                 </Button>
               </form>
@@ -401,13 +399,6 @@ onBeforeUnmount(() => {
 
       </div>
 
-      <!-- Background Effects -->
-      <div
-        class="absolute inset-0 -z-10 h-full w-full bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px]"
-      />
-      <div
-        class="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]"
-      />
     </section>
 
         <!-- Selector Section -->
