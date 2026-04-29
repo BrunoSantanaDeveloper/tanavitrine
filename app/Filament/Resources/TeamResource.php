@@ -300,6 +300,12 @@ final class TeamResource extends Resource
                             ->url()
                             ->maxLength(500)
                             ->placeholder('https://maps.app.goo.gl/... ou https://www.google.com/maps/...'),
+                        Forms\Components\Textarea::make('google_maps_embed_url')
+                            ->label('Incorporação do Google Maps (iframe ou URL embed)')
+                            ->rows(3)
+                            ->maxLength(5000)
+                            ->placeholder('<iframe src=\"https://www.google.com/maps/embed?...\"> ou https://www.google.com/maps/embed?...')
+                            ->columnSpanFull(),
                         Forms\Components\TextInput::make('city')
                             ->label('Cidade')
                             ->required(fn (Forms\Get $get): bool => $get('store_type') !== 'virtual')

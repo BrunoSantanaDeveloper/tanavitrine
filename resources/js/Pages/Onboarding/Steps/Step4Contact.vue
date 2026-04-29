@@ -338,6 +338,19 @@ watch(
           </p>
         </div>
 
+        <div class="mt-4">
+          <Label for="google_maps_embed_url">Incorporação do Google Maps (opcional)</Label>
+          <Input
+            id="google_maps_embed_url"
+            v-model="form.google_maps_embed_url"
+            placeholder='<iframe src="https://www.google.com/maps/embed?..."></iframe> ou URL embed'
+            class="mt-2"
+          />
+          <p class="text-xs text-muted-foreground mt-1">
+            Você pode colar o iframe completo de “Incorporar um mapa” que extraímos automaticamente a URL.
+          </p>
+        </div>
+
         <!-- Geocoding Feedback -->
         <div class="mt-4">
           <!-- Geocoding Loading State -->

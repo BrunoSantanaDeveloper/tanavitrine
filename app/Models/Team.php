@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\GoogleMapsEmbed;
 use Carbon\CarbonImmutable;
 use Database\Factories\TeamFactory;
 use Laravel\Jetstream\Events\TeamCreated;
@@ -85,6 +86,7 @@ final class Team extends JetstreamTeam
         'address_number',
         'address_complement',
         'google_maps_url',
+        'google_maps_embed_url',
         'city',
         'state',
         'zip_code',
@@ -143,6 +145,13 @@ final class Team extends JetstreamTeam
             'tiktok_clicks' => 'integer',
             'subcategory' => 'array',
         ];
+    }
+
+    public function setGoogleMapsEmbedUrlAttribute($value): void
+    {
+        $this->attributes['google_maps_embed_url'] = GoogleMapsEmbed::sanitize(
+            is_string($value) ? $value : null
+        );
     }
 
     public function playlists(): HasMany

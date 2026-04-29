@@ -101,6 +101,7 @@ class StoreController extends Controller
             'address_number' => $store->address_number,
             'address_complement' => $store->address_complement,
             'google_maps_url' => $store->google_maps_url,
+            'google_maps_embed_url' => $store->google_maps_embed_url,
             'zip_code' => $store->zip_code,
             'latitude' => $store->latitude,
             'longitude' => $store->longitude,

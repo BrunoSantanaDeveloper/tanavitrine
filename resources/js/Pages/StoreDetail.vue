@@ -4,7 +4,6 @@ import Button from '@/Components/shadcn/ui/button/Button.vue'
 import Card from '@/Components/shadcn/ui/card/Card.vue'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags'
 import { Dialog, DialogContent } from '@/Components/shadcn/ui/dialog'
-import FloatingMap from '@/Components/FloatingMap.vue'
 import WebLayout from '@/Layouts/WebLayout.vue'
 import { formatWhatsAppNumber } from '@/utils/formatters'
 import { Icon } from '@iconify/vue'
@@ -133,6 +132,10 @@ const fullAddressDisplay = computed(() => {
 })
 const locationSummaryDisplay = computed(() => {
   return props.store?.location || fullAddressDisplay.value || ''
+})
+const mapEmbedUrl = computed(() => {
+  const raw = String(props.store?.google_maps_embed_url || '').trim()
+  return raw || null
 })
 const storesForMap = computed(() => {
   if (isVirtualOnlyStore.value) return []
@@ -1242,6 +1245,17 @@ function scrollToSection(sectionId) {
                     <Icon icon="lucide:map-pin" class="size-4 mt-1 flex-shrink-0" />
                     {{ fullAddressDisplay }}
                   </p>
+
+                  <div v-if="mapEmbedUrl" class="mt-3 overflow-hidden rounded-lg border border-border">
+                    <iframe
+                      :src="mapEmbedUrl"
+                      class="h-52 w-full"
+                      style="border: 0;"
+                      loading="lazy"
+                      referrerpolicy="no-referrer-when-downgrade"
+                      allowfullscreen
+                    />
+                  </div>
                 </div>
 
                 <!-- Social Media -->
@@ -1456,11 +1470,5 @@ function scrollToSection(sectionId) {
       <span class="text-sm font-medium text-white">Voltar ao topo</span>
     </button>
 
-    <FloatingMap
-      v-if="storesForMap.length > 0"
-      ref="floatingMapRef"
-      :stores="storesForMap"
-      title="Mapa de Lojas Físicas"
-    />
   </WebLayout>
 </template>

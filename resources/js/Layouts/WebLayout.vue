@@ -29,7 +29,6 @@ const navLinks = [
   { label: 'Atacado', href: '/atacado', external: false },
   { label: 'Varejo', href: '/varejo', external: false },
   { label: 'Fabricantes', href: '/fabricantes', external: false },
-  { label: 'Mapa de Lojas', href: '/mapa-de-lojas', external: false },
   { label: 'Sobre', href: '/about', external: false },
   { label: 'Planos', href: '/prices', external: false },
   { label: 'Contato', href: '#', external: false, action: 'whatsapp' },
@@ -46,7 +45,6 @@ function getNavIcon(href) {
   if (href === '/atacado') return 'lucide:shopping-cart'
   if (href === '/varejo') return 'lucide:store'
   if (href === '/fabricantes') return 'lucide:factory'
-  if (href === '/mapa-de-lojas') return 'lucide:map-pin'
   if (href === '/about') return 'lucide:info'
   if (href === '/prices') return 'lucide:badge-dollar-sign'
   return 'lucide:circle'
@@ -236,8 +234,8 @@ function sendWhatsApp() {
     </div>
 
     <nav
-      class="fixed inset-x-0 bottom-0 z-50 border-t border-teal-200/20 bg-linear-to-r from-teal-900/95 via-teal-700/95 to-teal-900/95 shadow-[0_-8px_18px_rgba(15,23,42,0.22)] md:hidden"
-      style="padding-bottom: max(env(safe-area-inset-bottom), 0px); transform: translateZ(0); -webkit-transform: translateZ(0); backface-visibility: hidden; -webkit-backface-visibility: hidden;"
+      class="fixed inset-x-0 bottom-0 z-50 border-t border-teal-200/20 bg-teal-800 shadow-[0_-6px_14px_rgba(15,23,42,0.18)] md:hidden"
+      style="padding-bottom: env(safe-area-inset-bottom); transform: translate3d(0, 0, 0); -webkit-transform: translate3d(0, 0, 0); backface-visibility: hidden; -webkit-backface-visibility: hidden;"
     >
       <div class="grid min-h-[64px] grid-cols-5">
         <Link
@@ -301,11 +299,6 @@ function sendWhatsApp() {
               <li>
                 <a href="/about" class="text-muted-foreground hover:text-foreground transition-colors">
                   Sobre
-                </a>
-              </li>
-              <li>
-                <a href="/mapa-de-lojas" class="text-muted-foreground hover:text-foreground transition-colors">
-                  Mapa de Lojas
                 </a>
               </li>
             </ul>

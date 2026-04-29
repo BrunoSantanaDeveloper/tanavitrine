@@ -2,7 +2,6 @@
 import FeaturesCard from '@/Components/FeaturesCard.vue'
 import PricingCard from '@/Components/PricingCard.vue'
 import StoreCard from '@/Components/StoreCard.vue'
-import FloatingMap from '@/Components/FloatingMap.vue'
 import Accordion from '@/Components/shadcn/ui/accordion/Accordion.vue'
 import AccordionContent from '@/Components/shadcn/ui/accordion/AccordionContent.vue'
 import AccordionItem from '@/Components/shadcn/ui/accordion/AccordionItem.vue'
@@ -505,11 +504,5 @@ onBeforeUnmount(() => {
     <Icon icon="lucide:arrow-up" class="size-4 text-white" />
     <span class="text-sm font-medium text-white">Voltar ao topo</span>
   </button>
-
-  <FloatingMap
-    v-if="storesForMap.length > 0"
-    :stores="storesForMap"
-    title="Mapa de Lojas Físicas"
-  />
 
 </template>

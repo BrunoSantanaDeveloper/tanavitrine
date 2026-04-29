@@ -64,6 +64,7 @@ const form = useForm({
   address_number: props.store.address_number || '',
   address_complement: props.store.address_complement || '',
   google_maps_url: props.store.google_maps_url || '',
+  google_maps_embed_url: props.store.google_maps_embed_url || '',
   city: props.store.city || '',
   state: props.store.state || '',
   zip_code: props.store.zip_code || '',
@@ -263,6 +264,7 @@ function submit() {
     address_number: data.address_number || null,
     address_complement: data.address_complement || null,
     google_maps_url: data.google_maps_url || null,
+    google_maps_embed_url: data.google_maps_embed_url || null,
     zip_code: data.zip_code || null,
     _method: 'PUT'
   })).post(route('dashboard.stores.update', props.store.slug), {
@@ -577,6 +579,16 @@ function submit() {
                   v-model="form.google_maps_url"
                   type="url"
                   placeholder="https://maps.app.goo.gl/... ou https://www.google.com/maps/..."
+                />
+              </div>
+
+              <div>
+                <Label for="google_maps_embed_url">Incorporação do Google Maps (opcional)</Label>
+                <Textarea
+                  id="google_maps_embed_url"
+                  v-model="form.google_maps_embed_url"
+                  rows="3"
+                  placeholder='<iframe src="https://www.google.com/maps/embed?..."></iframe> ou cole só a URL https://www.google.com/maps/embed?...'
                 />
               </div>
 

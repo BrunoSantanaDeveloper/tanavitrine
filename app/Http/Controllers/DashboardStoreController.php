@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\Category;
+use App\Support\GoogleMapsEmbed;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -71,6 +72,7 @@ class DashboardStoreController extends Controller
             'address_number' => ['nullable', 'string', 'max:50'],
             'address_complement' => ['nullable', 'string', 'max:255'],
             'google_maps_url' => ['nullable', 'url', 'max:500'],
+            'google_maps_embed_url' => ['nullable', 'string', 'max:5000'],
             'city' => ['required', 'string', 'max:255'],
             'state' => ['required', 'string', 'size:2'],
             'zip_code' => ['nullable', 'string', 'max:10'],
@@ -90,6 +92,7 @@ class DashboardStoreController extends Controller
         $validated['personal_team'] = false;
         $validated['status'] = 'pendente'; // Needs approval
         $validated['is_manufacturer'] = (bool) ($validated['is_manufacturer'] ?? false);
+        $validated['google_maps_embed_url'] = GoogleMapsEmbed::sanitize($validated['google_maps_embed_url'] ?? null);
 
         $store = Team::create($validated);
 
@@ -174,6 +177,7 @@ class DashboardStoreController extends Controller
                 'address_number' => $store->address_number,
                 'address_complement' => $store->address_complement,
                 'google_maps_url' => $store->google_maps_url,
+                'google_maps_embed_url' => $store->google_maps_embed_url,
                 'city' => $store->city,
                 'state' => $store->state,
                 'zip_code' => $store->zip_code,
@@ -223,6 +227,7 @@ class DashboardStoreController extends Controller
             'address_number' => ['nullable', 'string', 'max:50'],
             'address_complement' => ['nullable', 'string', 'max:255'],
             'google_maps_url' => ['nullable', 'url', 'max:500'],
+            'google_maps_embed_url' => ['nullable', 'string', 'max:5000'],
             'city' => ['nullable', 'string', 'max:255'],
             'state' => ['nullable', 'string', 'size:2'],
             'zip_code' => ['nullable', 'string', 'max:10'],
@@ -245,6 +250,7 @@ class DashboardStoreController extends Controller
         unset($validated['logo']);
 
         $validated['is_manufacturer'] = (bool) ($validated['is_manufacturer'] ?? false);
+        $validated['google_maps_embed_url'] = GoogleMapsEmbed::sanitize($validated['google_maps_embed_url'] ?? null);
 
         $store->update($validated);
 

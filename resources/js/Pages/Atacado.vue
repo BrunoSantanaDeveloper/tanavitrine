@@ -4,7 +4,6 @@ import Input from '@/Components/shadcn/ui/input/Input.vue'
 import FilterDropdown from '@/Components/FilterDropdown.vue'
 import { Checkbox } from '@/Components/shadcn/ui/checkbox'
 import StoreCard from '@/Components/StoreCard.vue'
-import FloatingMap from '@/Components/FloatingMap.vue'
 import { useExclusivePopoverGroup } from '@/Composables/useExclusivePopoverGroup.js'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
 import WebLayout from '@/Layouts/WebLayout.vue'
@@ -717,14 +716,6 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <!-- Floating Map Widget -->
-    <FloatingMap
-      :stores="storesForMap"
-      :hovered-store-id="hoveredStoreId"
-      title="Mapa de Fornecedores / Loja Física"
-      @marker-click="handleMarkerClick"
-      @marker-hover="handleStoreHover"
-    />
     <button
       v-show="showBackToTop"
       type="button"

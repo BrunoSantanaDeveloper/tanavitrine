@@ -48,6 +48,7 @@ const form = useForm({
   address_number: '',
   address_complement: '',
   google_maps_url: '',
+  google_maps_embed_url: '',
   city: '',
   state: '',
   zip_code: '',
@@ -364,6 +365,16 @@ function handleCEPInput(e) {
                   v-model="form.google_maps_url"
                   type="url"
                   placeholder="https://maps.app.goo.gl/... ou https://www.google.com/maps/..."
+                />
+              </div>
+
+              <div>
+                <Label for="google_maps_embed_url">Incorporação do Google Maps (opcional)</Label>
+                <Textarea
+                  id="google_maps_embed_url"
+                  v-model="form.google_maps_embed_url"
+                  rows="3"
+                  placeholder='<iframe src="https://www.google.com/maps/embed?..."></iframe> ou URL embed'
                 />
               </div>
 

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Plan;
 use App\Models\PlanInterval;
 use App\Models\Media;
+use App\Support\GoogleMapsEmbed;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Laravel\Jetstream\Jetstream;
@@ -59,6 +60,7 @@ final class CreateNewUser implements CreatesNewUsers
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'video_url' => ['nullable', 'string', 'max:500'],
             'google_maps_url' => ['nullable', 'url', 'max:500'],
+            'google_maps_embed_url' => ['nullable', 'string', 'max:5000'],
             'logo' => [$isStoreRegistration ? 'required' : 'nullable', 'image', 'max:2048'],
             'photos' => $photoRules,
             'photos.*' => ['image', 'max:5120'],
@@ -262,6 +264,7 @@ final class CreateNewUser implements CreatesNewUsers
             'address_complement' => $address['complement'] ?? null,
             'zip_code' => $address['cep'] ?? null,
             'google_maps_url' => $input['google_maps_url'] ?? null,
+            'google_maps_embed_url' => GoogleMapsEmbed::sanitize($input['google_maps_embed_url'] ?? null),
             'instagram' => $socialMedia['instagram'] ?? null,
             'facebook' => $socialMedia['facebook'] ?? null,
             'tiktok' => $socialMedia['tiktok'] ?? null,

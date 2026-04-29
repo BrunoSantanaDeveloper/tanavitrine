@@ -89,6 +89,7 @@ const form = useForm({
   },
   whatsapp: '',
   google_maps_url: '',
+  google_maps_embed_url: '',
   phone: '',
   social_media: {
     instagram: '',
@@ -145,6 +146,7 @@ watch(form, async (newForm) => {
     address: newForm.address,
     whatsapp: newForm.whatsapp,
     google_maps_url: newForm.google_maps_url,
+    google_maps_embed_url: newForm.google_maps_embed_url,
     phone: newForm.phone,
     social_media: newForm.social_media,
     latitude: newForm.latitude,
@@ -320,6 +322,7 @@ function submitForm() {
   formData.append('address', JSON.stringify(form.address))
   formData.append('whatsapp', form.whatsapp)
   if (form.google_maps_url) formData.append('google_maps_url', form.google_maps_url)
+  if (form.google_maps_embed_url) formData.append('google_maps_embed_url', form.google_maps_embed_url)
   if (form.phone) formData.append('phone', form.phone)
   formData.append('social_media', JSON.stringify(form.social_media))
 

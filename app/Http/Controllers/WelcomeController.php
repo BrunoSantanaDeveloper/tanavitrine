@@ -530,6 +530,7 @@ final class WelcomeController extends Controller
             'state' => $store->state,
             'latitude' => $store->latitude ? (float) $store->latitude : null,
             'longitude' => $store->longitude ? (float) $store->longitude : null,
+            'google_maps_embed_url' => $store->google_maps_embed_url,
             'whatsapp' => $store->whatsapp,
             'logo' => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
             'image' => $photos[0] ?? null,
