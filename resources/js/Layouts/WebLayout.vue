@@ -236,8 +236,8 @@ function sendWhatsApp() {
     </div>
 
     <nav
-      class="fixed inset-x-0 bottom-0 z-50 border-t border-teal-200/20 bg-linear-to-r from-teal-900/95 via-teal-700/95 to-teal-900/95 shadow-[0_-8px_18px_rgba(15,23,42,0.22)] backdrop-blur-sm md:hidden"
-      style="padding-bottom: env(safe-area-inset-bottom);"
+      class="fixed inset-x-0 bottom-0 z-50 border-t border-teal-200/20 bg-linear-to-r from-teal-900/95 via-teal-700/95 to-teal-900/95 shadow-[0_-8px_18px_rgba(15,23,42,0.22)] md:hidden"
+      style="padding-bottom: max(env(safe-area-inset-bottom), 0px); transform: translateZ(0); -webkit-transform: translateZ(0); backface-visibility: hidden; -webkit-backface-visibility: hidden;"
     >
       <div class="grid min-h-[64px] grid-cols-5">
         <Link
