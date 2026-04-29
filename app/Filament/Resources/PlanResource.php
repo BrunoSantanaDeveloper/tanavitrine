@@ -197,7 +197,7 @@ class PlanResource extends Resource
                                 'views' => 'Visualizações da página',
                                 'whatsapp_clicks' => 'Cliques no WhatsApp',
                                 'website_clicks' => 'Cliques no site',
-                                'map_clicks' => 'Cliques no mapa/localização',
+                                'map_clicks' => 'Cliques em "Ver Localização"',
                                 'shares' => 'Compartilhamentos',
                                 'instagram_clicks' => 'Cliques no Instagram',
                                 'facebook_clicks' => 'Cliques no Facebook',
@@ -272,7 +272,7 @@ class PlanResource extends Resource
                     ->label('Destaque')
                     ->boolean(),
                 Tables\Columns\IconColumn::make('show_on_map')
-                    ->label('Mapa')
+                    ->label('Localização')
                     ->boolean(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Ativo')

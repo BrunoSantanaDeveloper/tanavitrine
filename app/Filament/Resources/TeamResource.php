@@ -82,7 +82,7 @@ final class TeamResource extends Resource
                         Forms\Components\Textarea::make('description')
                             ->label('Descrição')
                             ->rows(3)
-                            ->maxLength(1000)
+                            ->maxLength(5000)
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
@@ -458,7 +458,7 @@ final class TeamResource extends Resource
                             ->disabled()
                             ->dehydrated(false),
                         Forms\Components\TextInput::make('map_clicks')
-                            ->label('Cliques no Mapa')
+                            ->label('Cliques em Ver Localização')
                             ->numeric()
                             ->disabled()
                             ->dehydrated(false),

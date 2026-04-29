@@ -185,7 +185,7 @@ const getMetricValue = (metric) => {
           <Card class="relative overflow-hidden">
             <CardHeader class="flex flex-row items-center justify-between pb-2">
               <CardTitle class="text-sm font-medium text-muted-foreground">
-                Cliques Mapa
+                Cliques Ver Localização
               </CardTitle>
               <Icon icon="lucide:map-pin" class="h-5 w-5 text-purple-600" />
             </CardHeader>
@@ -347,7 +347,7 @@ const getMetricValue = (metric) => {
 
               <div v-if="showMapClicks">
                 <div class="flex items-center justify-between mb-2">
-                  <span class="text-sm font-medium">Mapa</span>
+                  <span class="text-sm font-medium">Ver Localização</span>
                   <span class="text-sm text-muted-foreground">
                     {{ store.views_count > 0 ? Math.round((store.map_clicks / store.views_count) * 100) : 0 }}%
                   </span>

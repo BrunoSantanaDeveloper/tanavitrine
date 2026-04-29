@@ -137,29 +137,6 @@ const mapEmbedUrl = computed(() => {
   const raw = String(props.store?.google_maps_embed_url || '').trim()
   return raw || null
 })
-const storesForMap = computed(() => {
-  if (isVirtualOnlyStore.value) return []
-  if (props.store.show_on_map !== true) return []
-  if (!props.store.latitude || !props.store.longitude) return []
-
-  return [
-    {
-      id: props.store.id,
-      code: props.store.code,
-      slug: props.store.slug,
-      name: props.store.name,
-      category: props.store.category,
-      description: props.store.description,
-      featured: props.store.featured,
-      location: fullAddressDisplay.value || props.store.location,
-      latitude: props.store.latitude,
-      longitude: props.store.longitude,
-      logo: props.store.logo,
-      image: props.store.images?.[0]?.url || null,
-      url: `/loja/${props.store.slug}`,
-    },
-  ]
-})
 
 const showBackToTop = ref(false)
 const lastScrollTop = ref(0)
@@ -167,7 +144,6 @@ const activeSectionTab = ref('sobre')
 const showAllCollections = ref(false)
 const selectedCollectionId = ref(null)
 const selectedCollectionImageIndex = ref(0)
-const floatingMapRef = ref(null)
 const selectedCollectionPreviewRef = ref(null)
 
 function handleBackToTopVisibility() {
@@ -412,11 +388,6 @@ async function openLocation() {
   const query = encodeURIComponent(fullAddressDisplay.value || props.store.name)
   window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
   trackMapClick()
-}
-
-function openMapWidget() {
-  trackMapClick()
-  floatingMapRef.value?.openWidget?.()
 }
 
 function openWhatsApp() {
@@ -1224,18 +1195,6 @@ function scrollToSection(sectionId) {
                 >
                   <Icon icon="lucide:globe" class="size-5 mr-2" />
                   Visitar Site
-                </Button>
-
-                <!-- Location Button -->
-                <Button
-                  v-if="storesForMap.length > 0"
-                  @click="openMapWidget"
-                  size="lg"
-                  variant="outline"
-                  class="w-full mb-6"
-                >
-                  <Icon icon="lucide:map-pin" class="size-5 mr-2" />
-                  Ver no Mapa
                 </Button>
 
                 <!-- Location -->

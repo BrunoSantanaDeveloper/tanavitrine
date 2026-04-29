@@ -317,7 +317,6 @@ onBeforeUnmount(() => {
           class="h-full w-full object-cover"
         />
       </div>
-      <div class="absolute inset-0 -z-10 bg-gradient-to-b from-teal-950/60 via-teal-900/35 to-teal-950/65" />
 
       <div class="container mx-auto px-4 text-center relative z-10">
         <!-- Badge -->

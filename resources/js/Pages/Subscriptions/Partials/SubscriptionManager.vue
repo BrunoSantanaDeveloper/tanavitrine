@@ -209,7 +209,7 @@ const summarizedPlanFeatures = {
     'Exposição premium: prioridade nas listagens, home e mapa de destaque.',
     'Credibilidade: badge visual de destaque e elegibilidade ao selo de loja verificada.',
     'Conteúdo e mídia: 20 fotos destaque, até 5 coleções, 1 vídeo na vitrine e até 2 vídeos nas coleções.',
-    'Analytics completo: vitrine, WhatsApp, site, mapa/localização, compartilhamentos e redes sociais.',
+    'Analytics completo: vitrine, WhatsApp, site, Ver Localização, compartilhamentos e redes sociais.',
     'Canais de contato completos: WhatsApp, Instagram, Site, Facebook e TikTok.',
     'Identidade completa da loja: descrição, categoria/subcategorias, logo e informações principais.',
   ],

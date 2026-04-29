@@ -39,7 +39,7 @@ final class LeadsRelationManager extends RelationManager
                         'whatsapp' => 'WhatsApp',
                         'website' => 'Website',
                         'phone' => 'Telefone',
-                        'map' => 'Mapa/Localização',
+                        'map' => 'Localização',
                         'other' => 'Outro',
                     ])
                     ->required(),
@@ -85,7 +85,7 @@ final class LeadsRelationManager extends RelationManager
                         'whatsapp' => 'WhatsApp',
                         'website' => 'Website',
                         'phone' => 'Telefone',
-                        'map' => 'Mapa',
+                        'map' => 'Localização',
                         default => ucfirst($state),
                     }),
                 Tables\Columns\TextColumn::make('ip_address')
@@ -106,7 +106,7 @@ final class LeadsRelationManager extends RelationManager
                         'whatsapp' => 'WhatsApp',
                         'website' => 'Website',
                         'phone' => 'Telefone',
-                        'map' => 'Mapa/Localização',
+                        'map' => 'Localização',
                         'other' => 'Outro',
                     ]),
                 Tables\Filters\Filter::make('created_at')
