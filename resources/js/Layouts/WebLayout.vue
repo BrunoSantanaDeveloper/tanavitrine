@@ -331,13 +331,13 @@ function sendWhatsApp() {
             <h3 class="font-semibold mb-4">Contato</h3>
             <ul class="space-y-3 text-sm text-muted-foreground">
               <li class="flex items-center gap-2">
-                <Icon icon="lucide:mail" class="size-4" aria-hidden="true" />
+                <Icon icon="lucide:mail" class="size-4 text-muted-foreground" aria-hidden="true" />
                 <a href="mailto:contato@tanavitrine.com.br" class="hover:text-foreground transition-colors">
                   contato@tanavitrine.com.br
                 </a>
               </li>
               <li class="flex items-center gap-2">
-                <Icon icon="lucide:message-circle" class="size-4" aria-hidden="true" />
+                <Icon icon="ri:whatsapp-line" class="size-4 text-muted-foreground" aria-hidden="true" />
                 <a
                   href="https://wa.me/556231900204"
                   target="_blank"
@@ -348,7 +348,7 @@ function sendWhatsApp() {
                 </a>
               </li>
               <li class="flex items-center gap-2 mt-4">
-                <Icon icon="lucide:instagram" class="size-5" aria-hidden="true" />
+                <Icon icon="lucide:instagram" class="size-4 text-muted-foreground" aria-hidden="true" />
                 <a
                   href="https://instagram.com/tanavitrineoficial/"
                   target="_blank"

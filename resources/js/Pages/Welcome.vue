@@ -105,6 +105,11 @@ function openWhatsAppChat() {
 // Search state
 const searchType = ref('atacado')
 const searchQuery = ref('')
+const searchPlaceholder = computed(() =>
+  searchType.value === 'atacado'
+    ? 'Ex: fornecedor de moda feminina em Goiânia'
+    : 'Ex: loja de moda feminina em Goiânia'
+)
 
 function handleSearch() {
   // Redireciona para a página apropriada (Atacado ou Varejo) com busca simples.
@@ -308,93 +313,97 @@ onBeforeUnmount(() => {
     </template>
 
     <!-- Hero Section -->
-    <section class="relative overflow-hidden border-b border-orange-200 py-10 sm:py-20">
+    <section class="relative overflow-hidden border-b border-orange-200 py-10 sm:py-14 lg:flex lg:min-h-screen lg:items-center">
       <!-- Background Image -->
       <div class="absolute inset-0 -z-10">
         <img
-          src="/images/home_index.png"
+          src="/images/home_influencer.webp"
           alt=""
           class="h-full w-full object-cover"
         />
+        <div class="absolute inset-0 bg-gradient-to-r from-black/42 via-black/22 to-transparent" />
       </div>
 
-      <div class="container mx-auto px-4 text-center relative z-10">
-        <!-- Badge -->
-        <div class="mb-8 inline-flex justify-center">
-          <Badge variant="outline" class="rounded-full border border-yellow-400/80 bg-teal-900/40 px-4 py-1 text-xs text-white sm:text-sm">
-            <Icon icon="lucide:award" class="size-4" aria-hidden="true" /> Fornecedores Verificados
-          </Badge>
-        </div>
-
-        <!-- Main Heading -->
-        <div class="mx-auto max-w-4xl">
-          <h1
-            class="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-[5.2rem]"
-            :style="{ contain: 'layout paint' }"
-          >
-            <span class="block text-white">Compre direto com</span>
-            <span
-              class="mt-2 block bg-linear-to-r from-yellow-400 via-amber-300 to-orange-300 bg-clip-text text-transparent"
-            >
-              Os Melhores Fornecedores
-            </span>
-          </h1>
-        </div>
-
-        <!-- Subtitle - Add priority hint -->
-        <p
-          class="mx-auto mt-7 max-w-xl text-center text-base text-white/90 sm:text-lg md:text-xl"
-          :style="{ contain: 'layout paint' }"
-          fetchpriority="high"
-        >
-        Conecte-se com as melhores lojas disponíveis no maior catálogo de fornecedores atacadista de moda  do Brasil.
-        </p>
-
-        <!-- Search Tool -->
-        <div class="mt-10 mx-auto max-w-4xl">
-          <Card class="border border-teal-200/35 bg-teal-900/35 backdrop-blur-md shadow-[0_20px_40px_rgba(0,0,0,0.35)]">
-            <div class="space-y-4 px-6 py-6 sm:px-8 sm:py-8">
-              <Tabs v-model="searchType" default-value="atacado" class="w-full">
-                <TabsList class="grid w-full grid-cols-2 rounded-xl border border-teal-200/30 bg-teal-950/40 p-1">
-                  <TabsTrigger
-                    value="atacado"
-                    class="h-10 rounded-lg border border-transparent text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap text-teal-100/85 transition-all duration-200 data-[state=active]:border-teal-400 data-[state=active]:bg-teal-500 data-[state=active]:text-white"
-                  >
-                    <Icon icon="lucide:shopping-cart" class="size-4" />
-                    <span>Atacado</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="varejo"
-                    class="h-10 rounded-lg border border-transparent text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap text-teal-100/85 transition-all duration-200 data-[state=active]:border-teal-400 data-[state=active]:bg-teal-500 data-[state=active]:text-white"
-                  >
-                    <Icon icon="lucide:store" class="size-4" />
-                    <span>Varejo</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-              <p class="text-xs font-medium text-teal-100/90">
-                Você está buscando em:
-                <span class="font-semibold text-yellow-300">{{ searchType === 'atacado' ? 'Atacado' : 'Varejo' }}</span>
-              </p>
-
-              <form class="space-y-3" @submit.prevent="handleSearch">
-                <div class="relative">
-                  <Icon icon="lucide:search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-teal-100/80" />
-                  <input
-                    v-model="searchQuery"
-                    type="text"
-                    class="h-11 w-full rounded-lg border border-teal-200/35 bg-white/95 pl-10 pr-4 text-sm text-teal-900 outline-none placeholder:text-teal-700/70 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-300/50"
-                    placeholder="Busque lojas e fornecedores de moda"
-                  >
-                </div>
-                <Button type="submit" size="lg" class="h-11 w-full cursor-pointer rounded-lg bg-yellow-400 text-teal-900 hover:bg-yellow-300">
-                  Buscar
-                </Button>
-              </form>
+      <div class="container relative z-10 mx-auto px-4">
+        <div class="lg:grid lg:grid-cols-12 lg:items-center lg:gap-8 xl:gap-10">
+          <div class="text-center lg:col-span-6 lg:text-left lg:pr-6">
+            <!-- Badge -->
+            <div class="mb-8 inline-flex justify-center lg:justify-start">
+              <Badge variant="outline" class="rounded-full border border-yellow-400/80 bg-teal-900/40 px-4 py-1 text-xs text-white sm:text-sm">
+                <Icon icon="lucide:award" class="size-4" aria-hidden="true" /> Fornecedores Verificados
+              </Badge>
             </div>
-          </Card>
-        </div>
 
+            <!-- Main Heading -->
+            <div class="mx-auto max-w-3xl lg:mx-0">
+              <h1
+                class="text-4xl font-extrabold leading-[1.04] tracking-tight sm:text-5xl md:text-[3.25rem] lg:text-[2.5rem] xl:text-[3rem] 2xl:text-[3.3rem]"
+                :style="{ contain: 'layout paint' }"
+              >
+                <span class="block text-white lg:whitespace-nowrap">Encontre fornecedores</span>
+                <span class="mt-2 block bg-linear-to-r from-yellow-300 via-yellow-400 to-amber-400 bg-clip-text text-transparent">
+                  em poucos cliques
+                </span>
+              </h1>
+            </div>
+
+            <!-- Subtitle - Add priority hint -->
+            <p
+              class="mx-auto mt-6 max-w-md text-center text-base font-medium text-white/92 sm:text-lg lg:mx-0 lg:text-left"
+              :style="{ contain: 'layout paint' }"
+              fetchpriority="high"
+            >
+              Vitrines verificadas, filtros inteligentes e contato direto com quem vende.
+            </p>
+          </div>
+
+          <!-- Search Tool -->
+          <div class="mt-10 lg:col-span-6 lg:mt-0 lg:flex lg:justify-end lg:pl-6">
+            <div class="mx-auto w-full max-w-xl lg:mx-0">
+              <Card class="border border-cyan-300/35 bg-[#054d50]/72 backdrop-blur-md shadow-[0_24px_55px_rgba(0,0,0,0.4)]">
+                <div class="space-y-5 px-6 py-6 sm:px-10 sm:py-9">
+                  <Tabs v-model="searchType" default-value="atacado" class="w-full">
+                    <TabsList class="grid w-full grid-cols-2 rounded-xl border border-cyan-200/30 bg-[#043a3d]/65 p-1">
+                      <TabsTrigger
+                        value="atacado"
+                        class="h-10 rounded-lg border border-transparent text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap text-cyan-100/85 transition-all duration-200 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-500 data-[state=active]:text-slate-950"
+                      >
+                        <Icon icon="lucide:shopping-cart" class="size-4" />
+                        <span>Atacado</span>
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="varejo"
+                        class="h-10 rounded-lg border border-transparent text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap text-cyan-100/85 transition-all duration-200 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-500 data-[state=active]:text-slate-950"
+                      >
+                        <Icon icon="lucide:store" class="size-4" />
+                        <span>Varejo</span>
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  <p class="text-xs font-medium text-cyan-50/90">
+                    O que você procura hoje:
+                    <span class="font-semibold text-yellow-300">{{ searchType === 'atacado' ? 'Atacado' : 'Varejo' }}</span>
+                  </p>
+
+                  <form class="space-y-3" @submit.prevent="handleSearch">
+                    <div class="relative">
+                      <Icon icon="lucide:search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
+                      <input
+                        v-model="searchQuery"
+                        type="text"
+                        class="h-12 w-full rounded-lg border border-cyan-100/25 bg-white/96 pl-10 pr-4 text-sm text-teal-950 outline-none placeholder:text-slate-500 focus:border-yellow-300 focus:ring-1 focus:ring-yellow-300/60"
+                        :placeholder="searchPlaceholder"
+                      >
+                    </div>
+                    <Button type="submit" size="lg" class="h-12 w-full cursor-pointer rounded-lg bg-yellow-400 text-teal-950 hover:bg-yellow-300">
+                      Buscar agora
+                    </Button>
+                  </form>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
       </div>
 
     </section>

@@ -25,6 +25,7 @@ const props = defineProps({
 const page = usePage()
 const route = inject('route')
 const activeTab = useLocalStorage('login-active-tab', 'password')
+const accessProfile = useLocalStorage('login-access-profile', 'supplier')
 
 // Form state
 const passwordForm = useForm({
@@ -45,6 +46,8 @@ const hasOauthProviders = computed(() =>
 const isProcessing = computed(() =>
   passwordForm.processing || loginLinkForm.processing,
 )
+
+const isSupplierProfile = computed(() => accessProfile.value === 'supplier')
 
 // Methods
 function handlePasswordLogin() {
@@ -95,51 +98,74 @@ useSeoMetaTags({
   <WebLayout :can-login="true" :can-register="true">
     <Sonner position="top-center" />
 
-    <div class="flex min-h-screen flex-col items-center justify-center bg-background">
-      <Card class="mx-auto w-[420px] shadow-lg transition-all duration-300 hover:shadow-xl">
+    <div class="relative min-h-[calc(100vh-4rem)] overflow-hidden">
+      <div class="absolute inset-0" aria-hidden="true">
+        <img
+          src="/images/login/tanavitrine-3840x2030.webp"
+          alt=""
+          class="h-full w-full object-cover object-center"
+        >
+      </div>
+      <div class="relative z-10 flex min-h-[calc(100vh-4rem)] items-center justify-center px-3 py-4 sm:px-4 sm:py-6">
+        <Card class="mx-auto w-full max-w-[420px] border border-cyan-300/35 bg-[#054d50]/72 text-cyan-50 shadow-[0_24px_55px_rgba(0,0,0,0.4)] backdrop-blur-md transition-all duration-300">
         <!-- Header -->
-        <CardHeader>
+        <CardHeader class="px-4 pt-4 sm:px-5 sm:pt-5">
           <CardTitle class="flex justify-center">
-            <img src="/tanavitrine_light_icon1.png" alt="Tanavitrine" class="w-20 h-20">
+            <img src="/tanavitrine_light_icon1.png" alt="Tanavitrine" class="h-14 w-14 sm:h-16 sm:w-16">
           </CardTitle>
-          <CardDescription class="text-center text-2xl font-light">
+          <CardDescription class="text-center text-lg font-light text-white sm:text-xl">
             {{ __('login.welcome_back') }}
           </CardDescription>
+
+          <div class="mt-2">
+            <Tabs v-model="accessProfile" class="w-full">
+              <TabsList class="grid w-full grid-cols-2 rounded-xl border border-cyan-200/30 bg-[#043a3d]/65 p-1">
+                <TabsTrigger value="supplier" class="h-9 rounded-lg border border-transparent text-sm font-semibold text-cyan-100/85 transition-all duration-200 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-500 data-[state=active]:text-slate-950">
+                  Fornecedor
+                </TabsTrigger>
+                <TabsTrigger value="buyer" class="h-9 rounded-lg border border-transparent text-sm font-semibold text-cyan-100/85 transition-all duration-200 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-500 data-[state=active]:text-slate-950">
+                  Comprador
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent class="px-4 pb-4 sm:px-5 sm:pb-5">
+
           <!-- Status Message -->
-          <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
+          <div v-if="status" class="mb-3 rounded-lg border border-cyan-200/35 bg-cyan-400/15 px-3 py-2 text-xs font-medium text-cyan-50">
             {{ status }}
           </div>
 
           <!-- Login Tabs -->
           <Tabs v-model="activeTab" class="w-full">
-            <TabsList class="grid w-full grid-cols-2 rounded-lg p-1">
-              <TabsTrigger value="password">
+            <TabsList class="grid w-full grid-cols-2 rounded-xl border border-cyan-200/30 bg-[#043a3d]/65 p-1">
+              <TabsTrigger value="password" class="h-9 rounded-lg border border-transparent text-sm font-semibold text-cyan-100/85 transition-all duration-200 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-500 data-[state=active]:text-slate-950">
                 {{ __('login.password_tab') }}
               </TabsTrigger>
-              <TabsTrigger value="login-link">
+              <TabsTrigger value="login-link" class="h-9 rounded-lg border border-transparent text-sm font-semibold text-cyan-100/85 transition-all duration-200 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-500 data-[state=active]:text-slate-950">
                 {{ __('login.login_link_tab') }}
               </TabsTrigger>
             </TabsList>
 
-            <div class="mt-6">
+            <div class="mt-4">
               <!-- Password Login -->
-              <TabsContent value="password" class="space-y-4">
+              <TabsContent value="password" class="space-y-3">
                 <form @submit.prevent="handlePasswordLogin">
-                  <div class="grid gap-4">
+                  <div class="grid gap-3">
                     <!-- Email -->
                     <div class="grid gap-2">
-                      <Label for="email">{{ __('login.email') }}</Label>
+                      <Label for="email" class="text-cyan-50/95">{{ __('login.email') }}</Label>
                       <Input
                         id="email"
                         v-model="passwordForm.email"
                         type="email"
-                        placeholder="name@example.com"
+                        placeholder="voce@exemplo.com.br"
                         required
                         autofocus
                         autocomplete="username"
+                        class="h-10 rounded-lg border border-cyan-100/25 bg-white/96 text-sm text-teal-950 placeholder:text-slate-500 focus-visible:border-yellow-300 focus-visible:ring-1 focus-visible:ring-yellow-300/60 focus-visible:ring-offset-0"
                       />
                       <InputError :message="passwordForm.errors.email" />
                     </div>
@@ -147,11 +173,11 @@ useSeoMetaTags({
                     <!-- Password -->
                     <div class="grid gap-2">
                       <div class="flex items-center justify-between">
-                        <Label for="password">{{ __('login.password') }}</Label>
+                        <Label for="password" class="text-cyan-50/95">{{ __('login.password') }}</Label>
                         <Link
                           v-if="canResetPassword"
                           :href="route('password.request')"
-                          class="text-sm text-muted-foreground hover:text-primary hover:underline underline-offset-4"
+                          class="text-xs text-cyan-100/80 hover:text-yellow-300 hover:underline underline-offset-4"
                         >
                           {{ __('login.forgot_password') }}
                         </Link>
@@ -162,6 +188,7 @@ useSeoMetaTags({
                         type="password"
                         required
                         autocomplete="current-password"
+                        class="h-10 rounded-lg border border-cyan-100/25 bg-white/96 text-sm text-teal-950 placeholder:text-slate-500 focus-visible:border-yellow-300 focus-visible:ring-1 focus-visible:ring-yellow-300/60 focus-visible:ring-offset-0"
                       />
                       <InputError :message="passwordForm.errors.password" />
                     </div>
@@ -173,45 +200,46 @@ useSeoMetaTags({
                         v-model:checked="passwordForm.remember"
                         name="remember"
                       />
-                      <label for="remember" class="text-sm text-muted-foreground">
+                      <label for="remember" class="text-xs text-cyan-100/85">
                         {{ __('login.remember_me') }}
                       </label>
                     </div>
 
                     <Button
                       type="submit"
-                      class="w-full"
+                      class="h-10 w-full cursor-pointer rounded-lg bg-yellow-400 font-semibold text-teal-950 hover:bg-yellow-300"
                       :class="{ 'opacity-75': passwordForm.processing }"
                       :disabled="isProcessing"
                     >
-                      {{ passwordForm.processing ? __('login.signing_in') : __('login.sign_in') }}
+                      {{ passwordForm.processing ? __('login.signing_in') : `Entrar como ${isSupplierProfile ? 'fornecedor' : 'comprador'}` }}
                     </Button>
                   </div>
                 </form>
               </TabsContent>
 
               <!-- Login Link -->
-              <TabsContent value="login-link" class="space-y-4">
-                <div class="text-sm text-muted-foreground">
+              <TabsContent value="login-link" class="space-y-3">
+                <div class="text-xs text-cyan-100/85">
                   {{ __('login.login_link_description') }}
                 </div>
                 <form @submit.prevent="handleLoginLink">
-                  <div class="grid gap-4">
+                  <div class="grid gap-3">
                     <div class="grid gap-2">
-                      <Label for="login-link-email">{{ __('login.email') }}</Label>
+                      <Label for="login-link-email" class="text-cyan-50/95">{{ __('login.email') }}</Label>
                       <Input
                         id="login-link-email"
                         v-model="loginLinkForm.email"
                         type="email"
                         required
-                        placeholder="name@example.com"
+                        placeholder="voce@exemplo.com.br"
+                        class="h-10 rounded-lg border border-cyan-100/25 bg-white/96 text-sm text-teal-950 placeholder:text-slate-500 focus-visible:border-yellow-300 focus-visible:ring-1 focus-visible:ring-yellow-300/60 focus-visible:ring-offset-0"
                       />
                       <InputError :message="loginLinkForm.errors.email" />
                     </div>
 
                     <Button
                       type="submit"
-                      class="w-full"
+                      class="h-10 w-full cursor-pointer rounded-lg bg-yellow-400 font-semibold text-teal-950 hover:bg-yellow-300"
                       :class="{ 'opacity-75': loginLinkForm.processing }"
                       :disabled="isProcessing"
                     >
@@ -247,17 +275,18 @@ useSeoMetaTags({
           </div>
 
           <!-- Sign Up Link -->
-          <div class="mt-6 text-center text-sm text-muted-foreground">
-            {{ __('login.dont_have_account') }}
+          <div class="mt-4 text-center text-xs text-cyan-100/85">
+            {{ isSupplierProfile ? 'Ainda não anuncia na plataforma?' : __('login.dont_have_account') }}
             <Link
-              href="prices/#pricing"
-              class="font-medium text-primary hover:underline underline-offset-4"
+              :href="isSupplierProfile ? '/prices/#pricing' : route('register')"
+              class="font-semibold text-yellow-300 hover:text-yellow-200 hover:underline underline-offset-4"
             >
-              {{ __('login.sign_up') }}
+              {{ isSupplierProfile ? 'Começar agora' : 'Criar conta de comprador' }}
             </Link>
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   </WebLayout>
 </template>
