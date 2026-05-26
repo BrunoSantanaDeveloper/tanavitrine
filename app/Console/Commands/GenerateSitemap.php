@@ -39,6 +39,7 @@ final class GenerateSitemap extends Command
             ['path' => '/', 'frequency' => Url::CHANGE_FREQUENCY_DAILY, 'priority' => 1.0],
             ['path' => '/atacado', 'frequency' => Url::CHANGE_FREQUENCY_DAILY, 'priority' => 0.9],
             ['path' => '/varejo', 'frequency' => Url::CHANGE_FREQUENCY_DAILY, 'priority' => 0.9],
+            ['path' => '/fabricantes', 'frequency' => Url::CHANGE_FREQUENCY_DAILY, 'priority' => 0.9],
             ['path' => '/prices', 'frequency' => Url::CHANGE_FREQUENCY_WEEKLY, 'priority' => 0.8],
             ['path' => '/about', 'frequency' => Url::CHANGE_FREQUENCY_WEEKLY, 'priority' => 0.7],
             ['path' => '/privacy-policy', 'frequency' => Url::CHANGE_FREQUENCY_MONTHLY, 'priority' => 0.5],

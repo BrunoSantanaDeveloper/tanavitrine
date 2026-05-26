@@ -29,7 +29,7 @@ function getDefaultSeoMeta() {
     title: 'Home',
     titleTemplate: '%s | Tá na Vitrine',
     description: 'Tá na Vitrine conecta fornecedores e lojistas de moda em todo o Brasil. Também conhecida como Tanavitrine, reúne lojas de atacado e varejo com contato direto.',
-    keywords: 'tá na vitrine, tanavitrine, tana vitrine, ta na vitrine, atacado de moda, varejo de moda, fornecedores de moda, catálogo de lojas, marketplace de moda, lojas atacadistas, lojas varejistas',
+    keywords: 'tá na vitrine, tanavitrine, tana vitrine, ta na vitrine, fornecedor de moda, fornecedores de moda, atacado de moda, moda atacado, atacado moda, moda no atacado, fornecedores atacado, varejo de moda, catálogo de fornecedores, catalogo de fornecedores, catálogo de lojas, marketplace de moda, lojas atacadistas, lojas varejistas',
     robots: 'index, follow',
     themeColor: '#0f766e',
 
@@ -63,7 +63,9 @@ function getDefaultSeoMeta() {
  */
 export function useSeoMetaTags(seoMeta, options = { merge: true }) {
   const defaultSeoMeta = getDefaultSeoMeta()
-  const currentPageUrl = typeof window !== 'undefined' ? window.location.href : defaultSeoMeta.ogUrl
+  const currentPageUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}`
+    : defaultSeoMeta.ogUrl
 
   if (!seoMeta) {
     useHead({

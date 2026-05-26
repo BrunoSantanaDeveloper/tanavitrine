@@ -353,7 +353,7 @@ onBeforeUnmount(() => {
               :style="{ contain: 'layout paint' }"
               fetchpriority="high"
             >
-              Vitrines verificadas, filtros inteligentes e contato direto com quem vende.
+              Tá na Vitrine é o maior catálogo de fornecedores de moda do Brasil, com atacado e varejo e contato direto com quem vende.
             </p>
           </div>
 

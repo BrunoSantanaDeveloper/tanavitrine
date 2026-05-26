@@ -123,7 +123,7 @@ final class WelcomeController extends Controller
                 }),
             'seo' => [
                 'title' => 'Tá na Vitrine - O maior catálogo de fornecedores de moda do Brasil',
-                'description' => 'Conecte-se com as melhores lojas e fornecedores de moda. Atacado e varejo com os melhores preços.',
+                'description' => 'Tá na Vitrine é o maior catálogo de fornecedores de moda do Brasil para quem busca fornecedor de moda, moda no atacado e varejo com contato direto.',
             ],
         ]);
     }

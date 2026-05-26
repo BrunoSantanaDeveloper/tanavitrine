@@ -8,7 +8,7 @@
         $appName = 'Tá na Vitrine';
         $appUrl = rtrim(config('app.url', url('/')), '/');
         $defaultDescription = 'Tá na Vitrine conecta fornecedores e lojistas de moda em todo o Brasil. Encontre lojas de atacado e varejo com contato direto.';
-        $defaultKeywords = 'tá na vitrine, tanavitrine, tana vitrine, ta na vitrine, atacado de moda, varejo de moda, fornecedores de moda';
+        $defaultKeywords = 'tá na vitrine, tanavitrine, tana vitrine, ta na vitrine, fornecedor de moda, fornecedores de moda, atacado de moda, moda atacado, atacado moda, moda no atacado, fornecedores atacado, varejo de moda, catálogo de fornecedores, catalogo de fornecedores';
         $defaultOgImage = $appUrl . '/images/og.png';
         $pageProps = is_array($page['props'] ?? null) ? $page['props'] : [];
         $seo = is_array($pageProps['seo'] ?? null) ? $pageProps['seo'] : [];
