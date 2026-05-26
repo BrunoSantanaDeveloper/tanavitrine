@@ -101,7 +101,7 @@ useSeoMetaTags({
     <div class="relative min-h-[calc(100vh-4rem)] overflow-hidden">
       <div class="absolute inset-0" aria-hidden="true">
         <img
-          src="/images/login/tanavitrine-3840x2030.webp"
+          src="/images/login/tanavitrine-login-background.webp"
           alt=""
           class="h-full w-full object-cover object-center"
         >
