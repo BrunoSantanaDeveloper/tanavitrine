@@ -392,7 +392,8 @@ async function openLocation() {
 
 function openWhatsApp() {
   const phone = formatWhatsAppNumber(props.store.whatsapp)
-  const message = `Olá! Vi a vitrine de ${props.store.name} no Tá na Vitrine e gostaria de saber mais.`
+  const storeUrl = window.location.href
+  const message = `Olá! Vi a vitrine da *${props.store.name}* no Tá na Vitrine e gostaria de saber mais sobre os produtos e condições. Link da vitrine: ${storeUrl}`
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
   window.open(url, '_blank')
   trackWhatsAppClick()
