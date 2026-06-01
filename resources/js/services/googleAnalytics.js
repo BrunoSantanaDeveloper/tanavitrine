@@ -1,5 +1,5 @@
 const GA_MEASUREMENT_ID = (import.meta.env.VITE_GA_MEASUREMENT_ID || '').trim()
-const GOOGLE_ADS_WHATSAPP_CONVERSION_ID = (import.meta.env.VITE_GOOGLE_ADS_WHATSAPP_CONVERSION_ID || '').trim()
+const GOOGLE_ADS_WHATSAPP_CONVERSION_ID = (import.meta.env.VITE_GOOGLE_ADS_WHATSAPP_CONVERSION_ID || 'AW-17767970269/jkblCO-KhrccEN3rtphC').trim()
 
 let started = false
 let lastTrackedPage = null
