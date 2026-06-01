@@ -309,7 +309,13 @@ final class WelcomeController extends Controller
             'cities' => $cities,
             'seo' => [
                 'title' => 'Fabricantes - Tá na Vitrine',
-                'description' => 'Conheça fabricantes com produção própria na Tá na Vitrine',
+                'description' => 'Encontre fabricantes de moda com produção própria na Tá na Vitrine. Compare fornecedores, descubra novos parceiros e fale direto com quem fabrica para atacado e varejo em todo o Brasil.',
+                'keywords' => 'fabricantes de moda, fábrica de roupas, fornecedores de moda, atacado de moda, fabricantes atacado, produção própria, fornecedores para lojistas, fabricantes no brasil',
+                'canonical' => '/fabricantes',
+                'ogTitle' => 'Fabricantes de Moda - Tá na Vitrine',
+                'ogDescription' => 'Descubra fabricantes de moda com produção própria e contato direto para compras no atacado e varejo.',
+                'twitterTitle' => 'Fabricantes de Moda - Tá na Vitrine',
+                'twitterDescription' => 'Encontre fabricantes e fornecedores de moda em um só lugar, com contato direto para negociar.',
             ],
         ]);
     }
