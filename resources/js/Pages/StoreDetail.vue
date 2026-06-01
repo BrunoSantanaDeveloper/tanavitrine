@@ -9,6 +9,7 @@ import { formatWhatsAppNumber } from '@/utils/formatters'
 import { Icon } from '@iconify/vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
+import { trackWhatsAppAdsConversion } from '@/services/googleAnalytics'
 import { computed, ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 
 const props = defineProps({
@@ -395,6 +396,7 @@ function openWhatsApp() {
   const storeUrl = window.location.href
   const message = `Olá! Vi a vitrine da *${props.store.name}* no Tá na Vitrine e gostaria de saber mais sobre os produtos e condições. Link da vitrine: ${storeUrl}`
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+  trackWhatsAppAdsConversion()
   window.open(url, '_blank')
   trackWhatsAppClick()
 }

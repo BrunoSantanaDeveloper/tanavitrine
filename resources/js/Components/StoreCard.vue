@@ -7,6 +7,7 @@ import { Icon } from '@iconify/vue'
 import { Link, router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import axios from 'axios'
+import { trackWhatsAppAdsConversion } from '@/services/googleAnalytics'
 import { formatWhatsAppNumber } from '@/utils/formatters'
 
 const props = defineProps({
@@ -246,6 +247,7 @@ async function openWhatsApp() {
   const storeUrl = `${window.location.origin}${storeDetailHref.value}`
   const message = `Olá! Vi a vitrine da *${props.store.name}* no Tá na Vitrine e gostaria de saber mais sobre os produtos e condições. Link da vitrine: ${storeUrl}`
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+  trackWhatsAppAdsConversion()
   window.open(url, '_blank')
 
   // Fire-and-forget tracking to keep Safari/iOS popup flow tied to user gesture.

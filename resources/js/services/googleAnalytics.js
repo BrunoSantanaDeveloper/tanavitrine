@@ -1,4 +1,5 @@
 const GA_MEASUREMENT_ID = (import.meta.env.VITE_GA_MEASUREMENT_ID || '').trim()
+const GOOGLE_ADS_WHATSAPP_CONVERSION_ID = (import.meta.env.VITE_GOOGLE_ADS_WHATSAPP_CONVERSION_ID || '').trim()
 
 let started = false
 let lastTrackedPage = null
@@ -124,4 +125,18 @@ export function trackGoogleAnalyticsEvent(eventName, params = {}) {
   }
 
   window.gtag('event', eventName, params)
+}
+
+export function trackWhatsAppAdsConversion() {
+  if (
+    typeof window === 'undefined'
+    || typeof window.gtag !== 'function'
+    || GOOGLE_ADS_WHATSAPP_CONVERSION_ID === ''
+  ) {
+    return
+  }
+
+  window.gtag('event', 'conversion', {
+    send_to: GOOGLE_ADS_WHATSAPP_CONVERSION_ID,
+  })
 }

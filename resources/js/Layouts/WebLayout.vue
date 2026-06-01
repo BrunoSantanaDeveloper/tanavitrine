@@ -4,6 +4,7 @@ import { Icon } from '@iconify/vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import { useColorMode } from '@vueuse/core'
 import { ref } from 'vue'
+import { trackWhatsAppAdsConversion } from '@/services/googleAnalytics'
 
 const props = defineProps({
   canLogin: {
@@ -87,6 +88,7 @@ function sendWhatsApp() {
   const phone = '556231900204'
   const message = whatsappMessage.value || 'Olá! Gostaria de saber mais sobre a Tá na Vitrine.'
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+  trackWhatsAppAdsConversion()
   window.open(url, '_blank')
   toggleWhatsApp()
 }
