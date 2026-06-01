@@ -42,7 +42,7 @@
         $twitterTitle = trim((string) ($seo['twitterTitle'] ?? '')) ?: $ogTitle;
         $twitterDescription = trim((string) ($seo['twitterDescription'] ?? '')) ?: $ogDescription;
         $twitterImage = $toAbsoluteUrl($seo['twitterImage'] ?? null) ?? $ogImage;
-        $googleAdsTagId = trim((string) config('services.google_ads.tag_id', 'AW-17767970269'));
+        $googleAdsTagId = trim((string) (config('services.google_ads.tag_id') ?: 'AW-17767970269'));
 
         $schema = [
             '@context' => 'https://schema.org',
