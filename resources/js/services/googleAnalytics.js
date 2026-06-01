@@ -1,12 +1,11 @@
 const GA_MEASUREMENT_ID = (import.meta.env.VITE_GA_MEASUREMENT_ID || '').trim()
-const GOOGLE_ADS_ID = (import.meta.env.VITE_GOOGLE_ADS_ID || '').trim()
 
 let started = false
 let lastTrackedPage = null
 let gaConfigured = false
 
 function isEnabled() {
-  return typeof window !== 'undefined' && (GA_MEASUREMENT_ID !== '' || GOOGLE_ADS_ID !== '')
+  return typeof window !== 'undefined' && GA_MEASUREMENT_ID !== ''
 }
 
 function ensureGtagGlobals() {
@@ -23,20 +22,15 @@ function ensureGtagGlobals() {
 }
 
 function ensureGaScriptTag() {
-  const scriptId = GA_MEASUREMENT_ID || GOOGLE_ADS_ID
-  if (!scriptId) {
-    return null
-  }
-
-  const existingScript = document.querySelector(`script[data-gtag-id="${scriptId}"]`)
+  const existingScript = document.querySelector(`script[data-ga4-id="${GA_MEASUREMENT_ID}"]`)
   if (existingScript) {
     return existingScript
   }
 
   const script = document.createElement('script')
   script.async = true
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(scriptId)}`
-  script.dataset.gtagId = scriptId
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA_MEASUREMENT_ID)}`
+  script.dataset.ga4Id = GA_MEASUREMENT_ID
   document.head.appendChild(script)
 
   return script
@@ -89,16 +83,10 @@ function configureGoogleAnalytics() {
 
   window.gtag('js', new Date())
 
-  if (GA_MEASUREMENT_ID !== '') {
-    window.gtag('config', GA_MEASUREMENT_ID, {
-      send_page_view: false,
-      anonymize_ip: true,
-    })
-  }
-
-  if (GOOGLE_ADS_ID !== '') {
-    window.gtag('config', GOOGLE_ADS_ID)
-  }
+  window.gtag('config', GA_MEASUREMENT_ID, {
+    send_page_view: false,
+    anonymize_ip: true,
+  })
 
   trackPageView(window.location.href)
 }

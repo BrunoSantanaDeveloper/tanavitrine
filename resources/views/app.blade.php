@@ -42,6 +42,7 @@
         $twitterTitle = trim((string) ($seo['twitterTitle'] ?? '')) ?: $ogTitle;
         $twitterDescription = trim((string) ($seo['twitterDescription'] ?? '')) ?: $ogDescription;
         $twitterImage = $toAbsoluteUrl($seo['twitterImage'] ?? null) ?? $ogImage;
+        $googleAdsTagId = trim((string) config('services.google_ads.tag_id', ''));
 
         $schema = [
             '@context' => 'https://schema.org',
@@ -141,6 +142,21 @@
     <script type="application/ld+json">
         {!! json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
     </script>
+
+    @if ($googleAdsTagId !== '')
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ urlencode($googleAdsTagId) }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+
+            gtag('js', new Date());
+            gtag('config', '{{ $googleAdsTagId }}');
+        </script>
+    @endif
 
     <!-- Scripts -->
     @routes

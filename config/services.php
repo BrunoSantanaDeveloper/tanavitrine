@@ -44,6 +44,10 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/callback/google'),
     ],
 
+    'google_ads' => [
+        'tag_id' => env('VITE_GOOGLE_ADS_ID'),
+    ],
+
     'x' => [
         'client_id' => env('X_CLIENT_ID'),
         'client_secret' => env('X_CLIENT_SECRET'),

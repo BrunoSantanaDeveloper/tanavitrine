@@ -68,15 +68,21 @@ jobs:
             export STRIPE_SECRET='${{ secrets.STRIPE_SECRET }}'
             export STRIPE_WEBHOOK_SECRET='${{ secrets.STRIPE_WEBHOOK_SECRET }}'
             export VITE_GA_MEASUREMENT_ID='${{ secrets.VITE_GA_MEASUREMENT_ID }}'
+            export VITE_GOOGLE_ADS_ID='${{ secrets.VITE_GOOGLE_ADS_ID }}'
 
             if [ -z "$STRIPE_KEY" ] || [ -z "$STRIPE_SECRET" ] || [ -z "$STRIPE_WEBHOOK_SECRET" ] || [ -z "$VITE_GA_MEASUREMENT_ID" ]; then
               echo "❌ Secrets ausentes no GitHub (STRIPE_KEY / STRIPE_SECRET / STRIPE_WEBHOOK_SECRET / VITE_GA_MEASUREMENT_ID)."
               exit 1
             fi
 
+            if [ -z "$VITE_GOOGLE_ADS_ID" ]; then
+              echo "⚠️ Secret VITE_GOOGLE_ADS_ID não configurado. A tag do Google Ads não será injetada."
+            fi
+
             echo "🐳 Construindo nova imagem Docker..."
             docker build \
               --build-arg VITE_GA_MEASUREMENT_ID="$VITE_GA_MEASUREMENT_ID" \
+              --build-arg VITE_GOOGLE_ADS_ID="$VITE_GOOGLE_ADS_ID" \
               -t tanavitrine-app:latest .
 
             echo "🔄 Atualizando stack no Swarm..."

@@ -5,6 +5,8 @@ COPY . .
 RUN bun install --no-frozen-lockfile || (rm -f bun.lockb && bun install)
 ARG VITE_GA_MEASUREMENT_ID=""
 ENV VITE_GA_MEASUREMENT_ID=${VITE_GA_MEASUREMENT_ID}
+ARG VITE_GOOGLE_ADS_ID=""
+ENV VITE_GOOGLE_ADS_ID=${VITE_GOOGLE_ADS_ID}
 RUN bun run build
 
 # Stage 2: Final image
