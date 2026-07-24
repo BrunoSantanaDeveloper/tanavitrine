@@ -53,6 +53,7 @@ final class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Deployment refresh marker; no runtime behavior changes.
         $this->configureCommands();
         $this->configureDates();
         $this->configureModels();
