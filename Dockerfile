@@ -70,7 +70,7 @@ RUN composer install --prefer-dist --optimize-autoloader && \
     chown -R appuser:appgroup /app && \
     chmod -R 755 storage bootstrap/cache && \
     rm -rf tests node_modules && \
-    composer clear-cache
+    composer clear-cache || true
 
 # Copy and make entrypoint scripts executable (after cleanup)
 COPY --chown=appuser:appgroup docker/scripts/ ./docker/scripts/
