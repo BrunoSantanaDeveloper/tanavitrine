@@ -103,6 +103,9 @@ jobs:
             echo "📊 Executando migrações..."
             docker exec $(docker ps -q --filter "name=tanavitrine_app_app_tanavitrine" --filter "status=running" | head -1) php artisan migrate --force
 
+            echo "💳 Validando configuração Stripe..."
+            docker exec $(docker ps -q --filter "name=tanavitrine_app_app_tanavitrine" --filter "status=running" | head -1) php artisan subscriptions:stripe-check --ping --validate-prices
+
             echo "🗺️ Gerando sitemap..."
             docker exec $(docker ps -q --filter "name=tanavitrine_app_app_tanavitrine" --filter "status=running" | head -1) php artisan sitemap:generate
 

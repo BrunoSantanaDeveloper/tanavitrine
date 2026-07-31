@@ -127,6 +127,9 @@ jobs:
             echo "📊 Executando migrações..."
             docker exec "${APP_CONTAINER_ID}" php artisan migrate --force
 
+            echo "💳 Validando configuração Stripe..."
+            docker exec "${APP_CONTAINER_ID}" php artisan subscriptions:stripe-check --ping --validate-prices
+
             echo "🗺️ Gerando sitemap..."
             docker exec "${APP_CONTAINER_ID}" php artisan sitemap:generate
 
