@@ -65,16 +65,21 @@ services:
     volumes:
       - logs:/app/storage/logs:rw
       - storage:/app/storage/app:rw
+    env_file:
+      - .env
     environment:
       - TRUST_CLOUDFLARE=true
       - CONTAINER_ROLE=app_tanavitrine
       - WWWUSER=1000
       - WWWGROUP=1000
       # APLICAÇÃO BASE
+      - APP_NAME=Tanavitrine
       - APP_ENV=production
       - APP_DEBUG=false
       - APP_URL=https://tanavitrine.com.br
       - SITEMAP_BASE_URL=https://tanavitrine.com.br
+      - APP_LOCALE=pt_BR
+      - APP_FALLBACK_LOCALE=pt_BR
       # CACHE, SESSIONS E QUEUE NO DATABASE (Redis está read-only)
       - CACHE_STORE=database
       - SESSION_DRIVER=database
@@ -90,6 +95,7 @@ services:
       # OCTANE
       - OCTANE_SERVER=frankenphp
       - OCTANE_HTTPS=false
+      - SERVER_NAME=:8000
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8000/up || exit 1" ]
       interval: 30s
@@ -112,13 +118,18 @@ services:
     volumes:
       - logs:/app/storage/logs:rw
       - storage:/app/storage/app:rw
+    env_file:
+      - .env
     environment:
       - CONTAINER_ROLE=queue_tanavitrine
       - WWWUSER=1000
       - WWWGROUP=1000
       # MESMAS CONFIGURAÇÕES DO APP
+      - APP_NAME=Tanavitrine
       - APP_ENV=production
       - APP_DEBUG=false
+      - APP_LOCALE=pt_BR
+      - APP_FALLBACK_LOCALE=pt_BR
       - CACHE_STORE=database
       - SESSION_DRIVER=database
       - QUEUE_CONNECTION=database
@@ -152,14 +163,19 @@ services:
     volumes:
       - logs:/app/storage/logs:rw
       - storage:/app/storage/app:rw
+    env_file:
+      - .env
     environment:
       - CONTAINER_ROLE=scheduler_tanavitrine
       - WWWUSER=1000
       - WWWGROUP=1000
+      - APP_NAME=Tanavitrine
       - APP_ENV=production
       - APP_DEBUG=false
       - APP_URL=https://tanavitrine.com.br
       - SITEMAP_BASE_URL=https://tanavitrine.com.br
+      - APP_LOCALE=pt_BR
+      - APP_FALLBACK_LOCALE=pt_BR
       - CACHE_STORE=database
       - SESSION_DRIVER=database
       - QUEUE_CONNECTION=database

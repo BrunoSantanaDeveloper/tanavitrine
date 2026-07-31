@@ -63,6 +63,11 @@ jobs:
             git fetch "$REPO_URL" main
             git reset --hard FETCH_HEAD
 
+            if [ ! -f .env ]; then
+              echo "❌ Arquivo .env não encontrado na VPS. Ele é necessário como env_file de runtime e não será copiado para a imagem Docker."
+              exit 1
+            fi
+
             echo "🔐 Carregando variáveis Stripe (GitHub Secrets)..."
             export STRIPE_KEY='${{ secrets.STRIPE_KEY }}'
             export STRIPE_SECRET='${{ secrets.STRIPE_SECRET }}'
