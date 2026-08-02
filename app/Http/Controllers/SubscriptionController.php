@@ -99,7 +99,11 @@ final class SubscriptionController extends Controller
                     }
                 }
 
-                $currentPlan->subscription = $accessRules->buildSubscriptionMeta($activeSubscription);
+                $subscriptionMeta = $accessRules->buildSubscriptionMeta($activeSubscription);
+                $currentPlan->subscription = $subscriptionMeta;
+                $currentPlan->store_status = $team?->status;
+                $currentPlan->requires_payment = $team?->status === 'pendente'
+                    && !$subscriptionMeta['is_formalized'];
 
                 $limits = $currentPlan->limits->pluck('limit_value', 'resource')->toArray();
 
@@ -116,6 +120,8 @@ final class SubscriptionController extends Controller
                 $firstInterval = $currentPlan->intervals->first();
                 $currentPlan->current_price = floatval($firstInterval->pivot->price);
                 $currentPlan->current_interval = $firstInterval->name;
+                $currentPlan->store_status = $team->status;
+                $currentPlan->requires_payment = $team->status === 'pendente';
                 $limits = $currentPlan->limits->pluck('limit_value', 'resource')->toArray();
                 $usage = [];
             }

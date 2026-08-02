@@ -78,12 +78,21 @@ const isFormalizedSubscription = computed(() => {
   return Boolean(props.currentPlan?.subscription?.is_formalized)
 })
 
+const isPendingCheckout = computed(() => {
+  return Boolean(props.currentPlan?.requires_payment)
+    || (props.currentPlan?.store_status === 'pendente' && !hasSubscriptionMeta.value)
+})
+
 const isCancellationScheduled = computed(() => {
   return Boolean(props.currentPlan?.subscription?.on_grace_period)
 })
 
 const hasActiveAccess = computed(() => {
   if (!hasActivePlan.value) {
+    return false
+  }
+
+  if (isPendingCheckout.value) {
     return false
   }
 
@@ -104,6 +113,10 @@ const needsSubscriptionAction = computed(() => {
     return false
   }
 
+  if (isPendingCheckout.value) {
+    return true
+  }
+
   if (!hasActiveAccess.value) {
     return true
   }
@@ -122,6 +135,10 @@ const planStatusText = computed(() => {
 
   if (isCancellationScheduled.value) {
     return 'Cancelamento Agendado'
+  }
+
+  if (isPendingCheckout.value) {
+    return 'Pagamento Pendente'
   }
 
   if (isFormalizedSubscription.value) {
@@ -591,6 +608,10 @@ const subscribeButtonLabel = computed(() => {
     return 'Intervalo indisponível'
   }
 
+  if (isPendingCheckout.value) {
+    return 'Concluir Assinatura'
+  }
+
   if (needsSubscriptionAction.value) {
     return 'Assinar Agora'
   }
@@ -709,6 +730,10 @@ const plansSectionDescription = computed(() => {
     return 'Seu período de acesso terminou e sua vitrine está fora do ar. Assine agora para reativar.'
   }
 
+  if (isPendingCheckout.value) {
+    return 'Sua vitrine está pendente e ainda não aparece no catálogo. Conclua a assinatura para publicá-la.'
+  }
+
   if (needsSubscriptionAction.value) {
     return 'Seu acesso atual é promocional. Escolha um plano para formalizar sua assinatura.'
   }
@@ -722,7 +747,7 @@ const plansSectionDescription = computed(() => {
 
 const ctaLabel = computed(() => {
   if (needsSubscriptionAction.value) {
-    return 'Assinar Agora'
+    return isPendingCheckout.value ? 'Concluir Assinatura' : 'Assinar Agora'
   }
 
   if (hasPlanChangeOptions.value) {
@@ -739,6 +764,10 @@ const currentStatusText = computed(() => {
 
   if (isCancellationScheduled.value) {
     return 'Cancelamento agendado'
+  }
+
+  if (isPendingCheckout.value) {
+    return 'Pagamento pendente'
   }
 
   if (isFormalizedSubscription.value) {
@@ -773,6 +802,10 @@ const accessUntilText = computed(() => {
     return 'Acesso encerrado'
   }
 
+  if (isPendingCheckout.value) {
+    return 'Aguardando assinatura'
+  }
+
   return 'Sem data definida'
 })
 
@@ -782,7 +815,7 @@ const nextActionText = computed(() => {
   }
 
   if (needsSubscriptionAction.value) {
-    return 'Concluir assinatura'
+    return isPendingCheckout.value ? 'Finalizar pagamento' : 'Concluir assinatura'
   }
 
   if (hasPlanChangeOptions.value) {
@@ -799,6 +832,10 @@ const nextStepTitle = computed(() => {
 
   if (isExpiredAccess.value) {
     return 'Reative sua vitrine'
+  }
+
+  if (isPendingCheckout.value) {
+    return 'Conclua sua assinatura'
   }
 
   if (isCancellationScheduled.value) {
@@ -823,6 +860,10 @@ const nextStepDescription = computed(() => {
 
   if (isExpiredAccess.value) {
     return 'Seu acesso venceu e sua vitrine está fora do ar. Assine agora para voltar a aparecer no catálogo.'
+  }
+
+  if (isPendingCheckout.value) {
+    return 'Sua vitrine está pendente e só ficará pública após a confirmação da assinatura na Stripe.'
   }
 
   if (isCancellationScheduled.value) {
@@ -1356,12 +1397,15 @@ async function subscribeSelectedPlan() {
                       ? 'bg-amber-50 text-amber-700'
                       : (isFormalizedSubscription
                           ? 'bg-green-50 text-green-700'
-                          : (isTrialAccess
+                          : (isPendingCheckout
+                            ? 'bg-amber-50 text-amber-700'
+                            : (isTrialAccess
                               ? 'bg-yellow-50 text-yellow-700'
-                              : (hasCouponAccess ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'))))"
+                              : (hasCouponAccess ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700')))))"
               >
                 <TriangleAlert v-if="isExpiredAccess" class="h-4 w-4" />
                 <TriangleAlert v-else-if="isCancellationScheduled" class="h-4 w-4" />
+                <TriangleAlert v-else-if="isPendingCheckout" class="h-4 w-4" />
                 <Sparkles v-else-if="!isFormalizedSubscription && (isTrialAccess || hasCouponAccess)" class="h-4 w-4" />
                 <Check v-else class="h-4 w-4" />
                 <span class="text-sm font-medium">{{ planStatusText }}</span>
@@ -1378,6 +1422,16 @@ async function subscribeSelectedPlan() {
             <AlertDescription class="text-red-800">
               Sua vitrine está fora do ar no site público. Você ainda tem acesso ao painel para gerenciar seus dados.
               Para reativar a vitrine, conclua sua assinatura.
+            </AlertDescription>
+          </Alert>
+
+          <Alert v-if="isPendingCheckout" class="mx-6 mb-4 w-auto border-amber-200 bg-amber-50">
+            <TriangleAlert class="h-4 w-4 text-amber-700" />
+            <AlertTitle class="text-amber-900">
+              Pagamento pendente
+            </AlertTitle>
+            <AlertDescription class="text-amber-800">
+              Sua vitrine está criada, mas ainda não aparece no site público. Conclua a assinatura na Stripe para publicar sua vitrine.
             </AlertDescription>
           </Alert>
 

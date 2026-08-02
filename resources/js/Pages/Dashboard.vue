@@ -115,6 +115,14 @@ const isTrialPlanAccess = computed(() => Boolean(props.plan?.subscription?.is_tr
 const hasCouponPlanAccess = computed(() => Boolean(props.plan?.subscription?.has_active_discount))
 const hasSubscriptionData = computed(() => Boolean(props.plan?.subscription))
 const isFormalizedPlanSubscription = computed(() => Boolean(props.plan?.subscription?.is_formalized))
+const hasPaidContext = computed(() => {
+  return String(props.plan?.name || '').toLowerCase() !== 'gratuito'
+})
+const isPendingSubscription = computed(() => {
+  return props.store?.status === 'pendente'
+    && hasPaidContext.value
+    && (!hasSubscriptionData.value || Boolean(props.plan?.requires_payment))
+})
 
 const hasActivePlanAccess = computed(() => {
   const explicit = props.plan?.subscription?.has_active_access
@@ -131,16 +139,16 @@ const isTopPaidPlan = computed(() => {
   return String(props.plan?.name || '').toLowerCase().includes('destaque')
 })
 
-const hasPaidContext = computed(() => {
-  return String(props.plan?.name || '').toLowerCase() !== 'gratuito'
-})
-
 const needsSubscriptionAction = computed(() => {
   if (!hasPaidContext.value) {
     return false
   }
 
   if (isPlanExpired.value) {
+    return true
+  }
+
+  if (isPendingSubscription.value) {
     return true
   }
 
@@ -152,6 +160,10 @@ const needsSubscriptionAction = computed(() => {
 })
 
 const dashboardPlanCtaLabel = computed(() => {
+  if (isPendingSubscription.value) {
+    return 'Concluir Assinatura'
+  }
+
   if (needsSubscriptionAction.value) {
     return 'Assinar Agora'
   }
@@ -185,7 +197,7 @@ const showDashboardPlanCta = computed(() => {
             </p>
           </div>
           <Button
-            v-if="store"
+            v-if="store && store.status === 'ativo'"
             :as="Link"
             :href="route('store.show', store.slug)"
             class="bg-teal-600 hover:bg-teal-700 mt-4 md:mt-0"
@@ -287,11 +299,11 @@ const showDashboardPlanCta = computed(() => {
                       Plano {{ plan.name }}
                     </h2>
                     <Badge
-                      v-if="plan.subscription"
-                      :variant="isPlanExpired ? 'destructive' : (isFormalizedPlanSubscription ? 'secondary' : (isTrialPlanAccess ? 'default' : 'secondary'))"
+                      v-if="plan.subscription || isPendingSubscription"
+                      :variant="isPlanExpired || isPendingSubscription ? 'destructive' : (isFormalizedPlanSubscription ? 'secondary' : (isTrialPlanAccess ? 'default' : 'secondary'))"
                       class="text-xs"
                     >
-                      {{ isPlanExpired ? 'Expirado' : (isFormalizedPlanSubscription ? 'Ativo' : (isTrialPlanAccess ? 'Trial Grátis' : (hasCouponPlanAccess ? 'Cupom Ativo' : 'Ativo'))) }}
+                      {{ isPendingSubscription ? 'Pagamento pendente' : (isPlanExpired ? 'Expirado' : (isFormalizedPlanSubscription ? 'Ativo' : (isTrialPlanAccess ? 'Trial Grátis' : (hasCouponPlanAccess ? 'Cupom Ativo' : 'Ativo')))) }}
                     </Badge>
                   </div>
                 </div>
@@ -305,6 +317,23 @@ const showDashboardPlanCta = computed(() => {
                 <p v-else class="text-sm font-medium text-teal-700">
                   Você já está no melhor plano
                 </p>
+              </div>
+
+              <div
+                v-if="isPendingSubscription"
+                class="p-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg"
+              >
+                <div class="flex items-start gap-2">
+                  <Icon icon="lucide:alert-triangle" class="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p class="text-sm font-semibold text-amber-900">
+                      Sua assinatura ainda não foi concluída
+                    </p>
+                    <p class="text-xs text-amber-800 mt-1">
+                      Sua vitrine está pendente e ainda não aparece no catálogo público. Clique em <strong>Concluir Assinatura</strong> para finalizar na Stripe.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div

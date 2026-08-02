@@ -126,11 +126,16 @@ final class DashboardController extends Controller
             }
 
             if ($plan) {
+                $subscriptionMeta = $accessRules->buildSubscriptionMeta($subscription);
+
                 $planData = [
                     'name' => $plan->name,
                     'max_photos' => $plan->getModuleLimit('store', 'photos_per_vitrine'),
                     'features' => $plan->features ?? [],
-                    'subscription' => $accessRules->buildSubscriptionMeta($subscription),
+                    'subscription' => $subscriptionMeta,
+                    'store_status' => $user->currentTeam?->status,
+                    'requires_payment' => $user->currentTeam?->status === 'pendente'
+                        && !$subscriptionMeta['is_formalized'],
                 ];
             }
         } elseif ($user->currentTeam && $user->currentTeam->plan) {
@@ -141,6 +146,8 @@ final class DashboardController extends Controller
                 'max_photos' => $plan->getModuleLimit('store', 'photos_per_vitrine'),
                 'features' => $plan->features ?? [],
                 'subscription' => null,
+                'store_status' => $user->currentTeam->status,
+                'requires_payment' => $user->currentTeam->status === 'pendente',
             ];
         }
 
