@@ -1,28 +1,33 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Responses;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
-use Laravel\Fortify\Fortify;
-use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\Session;
-use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
+use Log;
+use Exception;
 use App\Models\Plan;
-use App\Models\PlanInterval;
-use App\Models\Coupon;
+use App\Models\User;
 use Inertia\Inertia;
-use App\Services\SubscriptionAccessRuleService;
+use RuntimeException;
+use App\Models\Coupon;
 use Stripe\StripeClient;
+use App\Models\PlanInterval;
+use App\Models\Subscription;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
+use App\Services\SubscriptionAccessRuleService;
+use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
 
-class RegisterResponse implements RegisterResponseContract
+final class RegisterResponse implements RegisterResponseContract
 {
     /**
      * Create an HTTP response that represents the object.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @param  Request  $request
+     * @return Response
      */
     public function toResponse($request): Response|RedirectResponse
     {
@@ -39,28 +44,27 @@ class RegisterResponse implements RegisterResponseContract
 
             $planInterval = PlanInterval::find($planIntervalId);
 
-            if (!$planInterval) {
+            if (! $planInterval) {
                 return redirect()->route('dashboard')->with('error', 'Plano inválido');
             }
 
             $accessRules = app(SubscriptionAccessRuleService::class);
-            $planName = $planInterval->plan->name . ' ' . $planInterval->interval->name;
 
             // Check if coupon was applied
             $coupon = null;
             $couponCode = session('applied_coupon');
             if ($couponCode) {
-                $coupon = Coupon::where('code', strtoupper($couponCode))->first();
+                $coupon = Coupon::where('code', mb_strtoupper($couponCode))->first();
 
                 if ($coupon && $coupon->isValid()) {
-                    \Log::info('Cupom encontrado e válido', [
+                    Log::info('Cupom encontrado e válido', [
                         'user_id' => $user->id,
                         'coupon_code' => $coupon->code,
                         'discount' => $coupon->value,
                         'type' => $coupon->type,
                     ]);
                 } else {
-                    \Log::warning('Cupom inválido ou expirado', [
+                    Log::warning('Cupom inválido ou expirado', [
                         'user_id' => $user->id,
                         'coupon_code' => $couponCode,
                     ]);
@@ -71,11 +75,11 @@ class RegisterResponse implements RegisterResponseContract
             // If no coupon, check if plan has automatic new user discount
             $applyPlanDiscount = false;
             if (
-                !$coupon &&
+                ! $coupon &&
                 $accessRules->shouldAllowPlanNewUserDiscounts() &&
                 $planInterval->plan->hasNewUserDiscount()
             ) {
-                \Log::info('Aplicando desconto automático do plano', [
+                Log::info('Aplicando desconto automático do plano', [
                     'user_id' => $user->id,
                     'plan' => $planInterval->plan->name,
                     'discount_type' => $planInterval->plan->new_user_discount_type,
@@ -88,33 +92,30 @@ class RegisterResponse implements RegisterResponseContract
             $originalPrice = (float) $planInterval->price;
             $discountAmount = 0;
             $finalPrice = $originalPrice;
-            $isFreeCoupon = false;
+            $isFreePeriodCoupon = false;
             $trialDays = $accessRules->getDefaultTrialDays();
-            $discountEndsAt = null;
 
             if ($coupon) {
                 $discountAmount = $coupon->calculateDiscount($originalPrice);
                 $finalPrice = max(0, $originalPrice - $discountAmount);
 
-                // Check if coupon is 100% discount (special free access)
-                $isFreeCoupon = $coupon->type === 'percentage' && $coupon->value >= 100;
+                // Cupom que zera o plano e possui duração concede acesso local temporário.
+                $isFreePeriodCoupon = $finalPrice <= 0 && $this->resolveCouponDurationInDays($coupon) > 0;
 
-                if ($isFreeCoupon) {
+                if ($isFreePeriodCoupon) {
                     // Calculate trial days from coupon duration
-                    $durationValue = $coupon->duration_value ?? 1;
-                    $durationUnit = $coupon->duration_unit ?? 'months';
+                    $durationValue = $coupon->duration_value;
+                    $durationUnit = $coupon->duration_unit;
 
                     // Convert to days
-                    $trialDays = match($durationUnit) {
+                    $trialDays = match ($durationUnit) {
                         'days' => $durationValue,
                         'months' => $durationValue * 30,
                         'years' => $durationValue * 365,
-                        default => 30,
+                        default => 0,
                     };
 
-                    $discountEndsAt = now()->addDays($trialDays);
-
-                    \Log::info('Cupom de 100% detectado - seguindo para checkout Stripe com benefício', [
+                    Log::info('Cupom de período grátis detectado - ativando trial local', [
                         'user_id' => $user->id,
                         'coupon_code' => $coupon->code,
                         'duration_value' => $durationValue,
@@ -126,7 +127,7 @@ class RegisterResponse implements RegisterResponseContract
                     ]);
                 } else {
                     // Regular coupon with discount
-                    \Log::info('Cupom aplicado com desconto parcial', [
+                    Log::info('Cupom aplicado com desconto parcial', [
                         'user_id' => $user->id,
                         'coupon_code' => $coupon->code,
                         'original_price' => $originalPrice,
@@ -141,39 +142,17 @@ class RegisterResponse implements RegisterResponseContract
                 if ($plan->new_user_discount_type === 'trial') {
                     // Trial period
                     $trialDays = $plan->getNewUserTrialDays();
-                    $discountEndsAt = $trialDays ? now()->addDays($trialDays) : null;
-                    $isFreeCoupon = true; // Treat trial as free period
                 } elseif ($plan->new_user_discount_type === 'percentage') {
                     // Percentage discount
                     $discountAmount = $originalPrice * ($plan->new_user_discount_value / 100);
                     $finalPrice = max(0, $originalPrice - $discountAmount);
-
-                    // Calculate discount end date
-                    if ($plan->new_user_discount_duration_value && $plan->new_user_discount_duration_unit) {
-                        $discountEndsAt = match($plan->new_user_discount_duration_unit) {
-                            'days' => now()->addDays($plan->new_user_discount_duration_value),
-                            'months' => now()->addMonths($plan->new_user_discount_duration_value),
-                            'years' => now()->addYears($plan->new_user_discount_duration_value),
-                            default => null,
-                        };
-                    }
                 } elseif ($plan->new_user_discount_type === 'fixed') {
                     // Fixed amount discount
                     $discountAmount = min($plan->new_user_discount_value, $originalPrice);
                     $finalPrice = max(0, $originalPrice - $discountAmount);
-
-                    // Calculate discount end date
-                    if ($plan->new_user_discount_duration_value && $plan->new_user_discount_duration_unit) {
-                        $discountEndsAt = match($plan->new_user_discount_duration_unit) {
-                            'days' => now()->addDays($plan->new_user_discount_duration_value),
-                            'months' => now()->addMonths($plan->new_user_discount_duration_value),
-                            'years' => now()->addYears($plan->new_user_discount_duration_value),
-                            default => null,
-                        };
-                    }
                 }
 
-                \Log::info('Desconto automático do plano aplicado', [
+                Log::info('Desconto automático do plano aplicado', [
                     'user_id' => $user->id,
                     'plan' => $plan->name,
                     'discount_type' => $plan->new_user_discount_type,
@@ -184,9 +163,42 @@ class RegisterResponse implements RegisterResponseContract
             }
 
             try {
-                // Jornada de assinatura sempre formaliza via Stripe Checkout.
-                // Mesmo com cupom 100% / período grátis, seguimos para Checkout
-                // para coletar método de pagamento e iniciar a recorrência correta.
+                if ($coupon && $isFreePeriodCoupon) {
+                    $subscription = $this->activateFreeCouponTrial(
+                        user: $user,
+                        planInterval: $planInterval,
+                        coupon: $coupon,
+                        originalPrice: (float) $originalPrice,
+                        discountAmount: (float) $discountAmount,
+                        finalPrice: (float) $finalPrice,
+                        trialDays: $trialDays
+                    );
+
+                    $durationText = $coupon->getDurationText() ?? "{$trialDays} dias";
+
+                    session([
+                        'show_welcome_discount' => true,
+                        'welcome_discount_type' => 'coupon_trial',
+                        'welcome_discount_text' => "{$durationText} grátis",
+                        'welcome_plan_name' => $planInterval->plan->name,
+                        'welcome_coupon_code' => $coupon->code,
+                    ]);
+                    session()->forget('applied_coupon');
+
+                    Log::info('Trial promocional ativado sem Stripe', [
+                        'user_id' => $user->id,
+                        'subscription_id' => $subscription->id,
+                        'coupon_code' => $coupon->code,
+                        'trial_ends_at' => $subscription->trial_ends_at,
+                    ]);
+
+                    return redirect()->route('dashboard')->with(
+                        'success',
+                        "Parabéns! Você ganhou {$durationText} grátis no plano {$planInterval->plan->name}."
+                    );
+                }
+
+                // Assinatura sem benefício integral e desconto parcial seguem para a Stripe.
                 $this->assignPlanToCurrentTeam($user, $planInterval, 'pendente');
 
                 $checkoutUrl = $this->createStripeCheckoutSession(
@@ -204,8 +216,8 @@ class RegisterResponse implements RegisterResponseContract
                 }
 
                 return redirect()->away($checkoutUrl);
-            } catch (\Exception $e) {
-                \Log::error('Erro ao criar assinatura', [
+            } catch (Exception $e) {
+                Log::error('Erro ao criar assinatura', [
                     'user_id' => $user->id,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
@@ -223,22 +235,94 @@ class RegisterResponse implements RegisterResponseContract
         return redirect()->route('dashboard');
     }
 
+    private function activateFreeCouponTrial(
+        User $user,
+        PlanInterval $planInterval,
+        Coupon $coupon,
+        float $originalPrice,
+        float $discountAmount,
+        float $finalPrice,
+        int $trialDays
+    ): Subscription {
+        return DB::transaction(function () use (
+            $user,
+            $planInterval,
+            $coupon,
+            $originalPrice,
+            $discountAmount,
+            $finalPrice,
+            $trialDays
+        ): Subscription {
+            /** @var Coupon|null $lockedCoupon */
+            $lockedCoupon = Coupon::query()->lockForUpdate()->find($coupon->id);
+
+            if (! $lockedCoupon || ! $lockedCoupon->isValid()) {
+                throw new RuntimeException('Cupom inválido ou expirado.');
+            }
+
+            $trialEndsAt = $lockedCoupon->calculateExpirationDate() ?? now()->addDays($trialDays);
+            $stripePrice = $planInterval->stripe_price_id ?: 'price_'.$planInterval->id;
+            $subscriptionType = $planInterval->plan->name.' Trial Promocional';
+
+            /** @var Subscription $subscription */
+            $subscription = $user->subscriptions()->updateOrCreate(
+                ['name' => 'default'],
+                [
+                    'type' => $subscriptionType,
+                    'stripe_id' => 'coupon_'.uniqid(),
+                    'stripe_status' => 'active',
+                    'stripe_price' => $stripePrice,
+                    'quantity' => 1,
+                    'trial_ends_at' => $trialEndsAt,
+                    'ends_at' => null,
+                    'coupon_id' => $lockedCoupon->id,
+                    'original_price' => $originalPrice,
+                    'discount_amount' => $discountAmount,
+                    'final_price' => $finalPrice,
+                    'discount_ends_at' => $trialEndsAt->copy(),
+                ]
+            );
+
+            $subscriptionItem = $subscription->items()->first();
+            $itemPayload = [
+                'stripe_product' => $planInterval->plan->stripe_product_id ?? 'product_'.$planInterval->plan_id,
+                'stripe_price' => $stripePrice,
+                'quantity' => 1,
+            ];
+
+            if ($subscriptionItem) {
+                $subscriptionItem->update($itemPayload);
+            } else {
+                $subscription->items()->create([
+                    'stripe_id' => 'item_'.uniqid(),
+                    ...$itemPayload,
+                ]);
+            }
+
+            $this->assignPlanToCurrentTeam($user, $planInterval, 'ativo');
+            $lockedCoupon->incrementUses();
+
+            return $subscription->refresh();
+        });
+    }
+
     private function assignPlanToCurrentTeam($user, PlanInterval $planInterval, string $status): void
     {
         $teamPayload = $this->buildTeamPlanPayload($planInterval, $status);
 
         if ($user->currentTeam) {
             $user->currentTeam->updateQuietly($teamPayload);
+
             return;
         }
 
-        \Log::warning('Usuário não tem currentTeam definido', [
+        Log::warning('Usuário não tem currentTeam definido', [
             'user_id' => $user->id,
             'owned_teams' => $user->ownedTeams->pluck('id')->toArray(),
         ]);
 
         $firstTeam = $user->ownedTeams->first();
-        if (!$firstTeam) {
+        if (! $firstTeam) {
             return;
         }
 
@@ -246,7 +330,7 @@ class RegisterResponse implements RegisterResponseContract
 
         $user->forceFill(['current_team_id' => $firstTeam->id])->save();
 
-        \Log::info('Current team definido automaticamente', [
+        Log::info('Current team definido automaticamente', [
             'user_id' => $user->id,
             'team_id' => $firstTeam->id,
         ]);
@@ -265,7 +349,7 @@ class RegisterResponse implements RegisterResponseContract
 
         $secret = (string) config('cashier.secret');
         if ($secret === '') {
-            throw new \RuntimeException('Stripe não está configurado no ambiente.');
+            throw new RuntimeException('Stripe não está configurado no ambiente.');
         }
 
         $stripe = new StripeClient($secret);
@@ -273,7 +357,7 @@ class RegisterResponse implements RegisterResponseContract
 
         $stripePriceId = (string) ($planInterval->stripe_price_id ?? '');
         if ($stripePriceId === '') {
-            throw new \RuntimeException('Este plano ainda não possui Stripe Price ID configurado.');
+            throw new RuntimeException('Este plano ainda não possui Stripe Price ID configurado.');
         }
 
         $discounts = $this->buildStripeDiscounts(
@@ -286,7 +370,7 @@ class RegisterResponse implements RegisterResponseContract
         );
 
         $successUrl = route('subscriptions.success', ['mode' => 'stripe']);
-        $successUrl .= (str_contains($successUrl, '?') ? '&' : '?') . 'session_id={CHECKOUT_SESSION_ID}';
+        $successUrl .= (str_contains($successUrl, '?') ? '&' : '?').'session_id={CHECKOUT_SESSION_ID}';
 
         $payload = [
             'mode' => 'subscription',
@@ -322,15 +406,15 @@ class RegisterResponse implements RegisterResponseContract
 
     private function warnIfProductionKeysLookInvalid(): void
     {
-        if (!app()->isProduction()) {
+        if (! app()->isProduction()) {
             return;
         }
 
         $publishableKey = (string) config('cashier.key');
         $secretKey = (string) config('cashier.secret');
 
-        if (!str_starts_with($publishableKey, 'pk_live_') || !str_starts_with($secretKey, 'sk_live_')) {
-            \Log::warning('Stripe em produção com chaves não-LIVE detectadas no onboarding. Verifique STRIPE_KEY/STRIPE_SECRET.');
+        if (! str_starts_with($publishableKey, 'pk_live_') || ! str_starts_with($secretKey, 'sk_live_')) {
+            Log::warning('Stripe em produção com chaves não-LIVE detectadas no onboarding. Verifique STRIPE_KEY/STRIPE_SECRET.');
         }
     }
 
@@ -361,12 +445,12 @@ class RegisterResponse implements RegisterResponseContract
         float $discountAmount,
         float $finalPrice
     ): array {
-        if (!$coupon || $discountAmount <= 0 || $finalPrice >= $originalPrice) {
+        if (! $coupon || $discountAmount <= 0 || $finalPrice >= $originalPrice) {
             return [];
         }
 
         $couponPayload = [
-            'name' => 'TV-' . $coupon->code . '-' . now()->format('YmdHis'),
+            'name' => 'TV-'.$coupon->code.'-'.now()->format('YmdHis'),
             'duration' => $this->resolveStripeCouponDuration($coupon),
             'metadata' => [
                 'internal_coupon_id' => (string) $coupon->id,
@@ -381,7 +465,7 @@ class RegisterResponse implements RegisterResponseContract
         if ($coupon->type === 'percentage') {
             $couponPayload['percent_off'] = (float) min(100, max(0, $coupon->value));
         } else {
-            $currency = strtolower((string) ($planInterval->plan->currency ?? 'brl'));
+            $currency = mb_strtolower((string) ($planInterval->plan->currency ?? 'brl'));
             $amountOff = (int) max(1, round((float) $coupon->value * 100));
             $couponPayload['amount_off'] = $amountOff;
             $couponPayload['currency'] = $currency;
@@ -434,12 +518,12 @@ class RegisterResponse implements RegisterResponseContract
 
         $planInterval = $this->resolveTrialPlanInterval($request);
 
-        if (!$planInterval) {
+        if (! $planInterval) {
             return redirect()->route('dashboard')
                 ->with('error', 'Nenhum plano disponível para teste no momento.');
         }
 
-        $couponCode = strtoupper((string) ($request->input('coupon_code') ?: session('applied_coupon', '')));
+        $couponCode = mb_strtoupper((string) ($request->input('coupon_code') ?: session('applied_coupon', '')));
         $couponCode = trim($couponCode);
         $appliedCoupon = null;
 
@@ -454,13 +538,13 @@ class RegisterResponse implements RegisterResponseContract
                     $trialDays = max($trialDays, $couponDays);
                     $appliedCoupon = $candidateCoupon;
                 } else {
-                    \Log::info('Cupom informado no trial sem duração, ignorado para extensão de período.', [
+                    Log::info('Cupom informado no trial sem duração, ignorado para extensão de período.', [
                         'user_id' => $user->id,
                         'coupon_code' => $couponCode,
                     ]);
                 }
             } else {
-                \Log::warning('Cupom inválido informado na jornada trial.', [
+                Log::warning('Cupom inválido informado na jornada trial.', [
                     'user_id' => $user->id,
                     'coupon_code' => $couponCode,
                 ]);
@@ -474,10 +558,10 @@ class RegisterResponse implements RegisterResponseContract
             $trialEndsAt = now()->addDays($trialDays);
 
             $subscription = $user->subscriptions()->create([
-                'type' => $planInterval->plan->name . ' Trial',
-                'stripe_id' => 'trial_' . uniqid(),
+                'type' => $planInterval->plan->name.' Trial',
+                'stripe_id' => 'trial_'.uniqid(),
                 'stripe_status' => 'active',
-                'stripe_price' => $planInterval->stripe_price_id ?? 'price_' . $planInterval->id,
+                'stripe_price' => $planInterval->stripe_price_id ?? 'price_'.$planInterval->id,
                 'quantity' => 1,
                 'trial_ends_at' => $trialEndsAt,
                 'ends_at' => null,
@@ -489,9 +573,9 @@ class RegisterResponse implements RegisterResponseContract
             ]);
 
             $subscription->items()->create([
-                'stripe_id' => 'item_' . uniqid(),
-                'stripe_product' => $planInterval->plan->stripe_product_id ?? 'product_' . $planInterval->plan_id,
-                'stripe_price' => $planInterval->stripe_price_id ?? 'price_' . $planInterval->id,
+                'stripe_id' => 'item_'.uniqid(),
+                'stripe_product' => $planInterval->plan->stripe_product_id ?? 'product_'.$planInterval->plan_id,
+                'stripe_price' => $planInterval->stripe_price_id ?? 'price_'.$planInterval->id,
                 'quantity' => 1,
             ]);
 
@@ -504,7 +588,7 @@ class RegisterResponse implements RegisterResponseContract
             session([
                 'show_welcome_discount' => true,
                 'welcome_discount_type' => $appliedCoupon ? 'coupon_trial' : 'trial',
-                'welcome_discount_text' => "{$trialDays} " . ($trialDays === 1 ? 'dia grátis' : 'dias grátis'),
+                'welcome_discount_text' => "{$trialDays} ".($trialDays === 1 ? 'dia grátis' : 'dias grátis'),
                 'welcome_plan_name' => $planInterval->plan->name,
                 'welcome_coupon_code' => $appliedCoupon?->code,
             ]);
@@ -512,15 +596,15 @@ class RegisterResponse implements RegisterResponseContract
             // Garante que jornada de teste não herde cupom em sessão.
             session()->forget('applied_coupon');
 
-            $successMessage = "Teste de {$trialDays} " . ($trialDays === 1 ? 'dia' : 'dias') . ' ativado com sucesso!';
+            $successMessage = "Teste de {$trialDays} ".($trialDays === 1 ? 'dia' : 'dias').' ativado com sucesso!';
             if ($appliedCoupon) {
                 $successMessage .= " Cupom {$appliedCoupon->code} aplicado.";
             }
 
             return redirect()->route('dashboard')
                 ->with('success', $successMessage);
-        } catch (\Exception $e) {
-            \Log::error('Erro ao criar jornada de teste', [
+        } catch (Exception $e) {
+            Log::error('Erro ao criar jornada de teste', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
