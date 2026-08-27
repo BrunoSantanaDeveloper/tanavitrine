@@ -41,6 +41,7 @@ final class CreateNewUser implements CreatesNewUsers
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'user_phone' => [$isStoreRegistration ? 'required' : 'nullable', 'string', 'max:20'],
             'password' => Arr::get($input, 'password') ? $this->passwordRules() : 'sometimes',
             'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
             'journey' => ['nullable', 'in:trial,subscription'],
@@ -70,6 +71,7 @@ final class CreateNewUser implements CreatesNewUsers
         return DB::transaction(fn () => tap(User::query()->create([
             'name' => $input['name'],
             'email' => $input['email'],
+            'user_phone' => $input['user_phone'] ?? null,
             'password' => Arr::get($input, 'password') ? Hash::make($input['password']) : Str::random(12),
         ]), function (User $user) use ($input): void {
             $team = $this->createTeam($user, $input);
@@ -214,13 +216,7 @@ final class CreateNewUser implements CreatesNewUsers
         $journey = $input['journey'] ?? 'subscription';
         $initialStatus = $journey === 'trial' ? 'ativo' : 'pendente';
 
-        // Gerar slug único para a loja
-        $slug = Str::slug($input['store_name']);
-        $count = 1;
-        while (Team::where('slug', $slug)->where('id', '!=', $team->id)->exists()) {
-            $slug = Str::slug($input['store_name']) . '-' . $count;
-            $count++;
-        }
+        $slug = Team::generateUniqueSlug($input['store_name'], $team->id);
 
         // Processar endereço se presente
         $address = null;

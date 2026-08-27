@@ -12,7 +12,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Str;
 
 class DashboardStoreController extends Controller
 {
@@ -79,15 +78,7 @@ class DashboardStoreController extends Controller
             'video_url' => ['nullable', 'string', 'max:500'],
         ]);
 
-        // Generate unique slug
-        $slug = Str::slug($validated['name']);
-        $count = 1;
-        while (Team::where('slug', $slug)->exists()) {
-            $slug = Str::slug($validated['name']) . '-' . $count;
-            $count++;
-        }
-
-        $validated['slug'] = $slug;
+        $validated['slug'] = Team::generateUniqueSlug($validated['name']);
         $validated['user_id'] = auth()->id();
         $validated['personal_team'] = false;
         $validated['status'] = 'pendente'; // Needs approval

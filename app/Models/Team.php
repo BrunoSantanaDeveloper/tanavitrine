@@ -110,6 +110,27 @@ final class Team extends JetstreamTeam
     ];
 
     /**
+     * Generate a non-empty, URL-safe and unique slug for a store.
+     */
+    public static function generateUniqueSlug(string $value, ?int $ignoreId = null): string
+    {
+        $baseSlug = trim(Str::substr(Str::slug($value), 0, 240), '-');
+        $baseSlug = $baseSlug !== '' ? $baseSlug : 'loja';
+        $slug = $baseSlug;
+        $count = 1;
+
+        while (static::query()
+            ->when($ignoreId !== null, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->where('slug', $slug)
+            ->exists()) {
+            $slug = $baseSlug.'-'.$count;
+            $count++;
+        }
+
+        return $slug;
+    }
+
+    /**
      * {@inheritdoc}
      *
      * @return HasMany<TeamInvitation, covariant $this>
@@ -480,16 +501,13 @@ final class Team extends JetstreamTeam
     {
         parent::boot();
 
-        static::creating(function ($team) {
-            if (empty($team->slug)) {
-                $team->slug = Str::slug($team->name);
+        static::saving(function (Team $team): void {
+            $currentSlug = (string) $team->slug;
+            $normalizedSlug = Str::slug($currentSlug);
 
-                // Ensure unique slug
-                $count = 1;
-                while (static::where('slug', $team->slug)->exists()) {
-                    $team->slug = Str::slug($team->name) . '-' . $count;
-                    $count++;
-                }
+            if ($normalizedSlug === '' || $normalizedSlug !== $currentSlug) {
+                $source = $normalizedSlug !== '' ? $normalizedSlug : $team->name;
+                $team->slug = static::generateUniqueSlug($source, $team->exists ? $team->id : null);
             }
         });
     }

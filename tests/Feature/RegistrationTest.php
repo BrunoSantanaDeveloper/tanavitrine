@@ -12,9 +12,12 @@ test('registration screen can be rendered', function (): void {
 })->skip(fn (): bool => ! Features::enabled(Features::registration()), 'Registration support is not enabled.');
 
 test('new users can register', function (): void {
+    $phone = '(62) 99999-9999';
+
     $response = $this->post('/register', [
         'name' => fake()->name(),
         'email' => fake()->unique()->safeEmail(),
+        'user_phone' => $phone,
         'password' => 'password',
         'password_confirmation' => 'password',
         'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature(),
@@ -22,4 +25,5 @@ test('new users can register', function (): void {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
+    expect(auth()->user()->user_phone)->toBe($phone);
 });

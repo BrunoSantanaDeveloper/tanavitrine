@@ -15,7 +15,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Services\SubscriptionAccessRuleService;
@@ -212,13 +211,7 @@ final class OnboardingController extends Controller
         $user = Auth::user();
 
         return DB::transaction(function () use ($validated, $user, $request) {
-            // Gerar slug único para a loja
-            $slug = Str::slug($validated['name']);
-            $count = 1;
-            while (Team::where('slug', $slug)->exists()) {
-                $slug = Str::slug($validated['name']) . '-' . $count;
-                $count++;
-            }
+            $slug = Team::generateUniqueSlug($validated['name']);
 
             // Criar a vitrine do usuário
             $store = Team::create([

@@ -32,6 +32,7 @@ use function Illuminate\Events\queueable;
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property string|null $user_phone
  * @property CarbonImmutable|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
@@ -114,7 +115,7 @@ final class User extends Authenticatable implements FilamentUser
      * @var array<int, string>
      */
     protected $fillable = [
-        'name', 'email', 'password',
+        'name', 'email', 'user_phone', 'password',
         'stripe_id', 'pm_type', 'pm_last_four', 'trial_ends_at',
         'onboarding_completed', 'onboarding_data',
         'player_order_status', 'player_tracking_code', 'delivery_address',

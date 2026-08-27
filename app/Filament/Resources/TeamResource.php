@@ -20,7 +20,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Support\Enums\FontWeight;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 
 final class TeamResource extends Resource
@@ -71,7 +70,7 @@ final class TeamResource extends Resource
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) =>
-                                $operation === 'create' ? $set('slug', Str::slug($state)) : null
+                                $operation === 'create' ? $set('slug', Team::generateUniqueSlug((string) $state)) : null
                             ),
                         Forms\Components\TextInput::make('slug')
                             ->label('Slug (URL)')
@@ -777,7 +776,10 @@ final class TeamResource extends Resource
                         ->label('Ver Loja')
                         ->icon('heroicon-o-eye')
                         ->color('info')
-                        ->url(fn (Team $record): string => route('store.show', $record->slug))
+                        ->url(fn (Team $record): ?string => filled($record->slug)
+                            ? route('store.show', $record->slug)
+                            : null)
+                        ->visible(fn (Team $record): bool => filled($record->slug))
                         ->openUrlInNewTab(),
                     Tables\Actions\EditAction::make()
                         ->label('Editar')

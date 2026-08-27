@@ -26,7 +26,10 @@ final class EditTeam extends EditRecord
                 ->label('Ver Loja')
                 ->icon('heroicon-o-eye')
                 ->color('info')
-                ->url(fn (Team $record): string => route('store.show', $record->slug))
+                ->url(fn (Team $record): ?string => filled($record->slug)
+                    ? route('store.show', $record->slug)
+                    : null)
+                ->visible(fn (Team $record): bool => filled($record->slug))
                 ->openUrlInNewTab(),
             Actions\Action::make('toggle_featured')
                 ->label(fn (Team $record): string => $record->featured ? 'Remover Destaque' : 'Destacar Loja')

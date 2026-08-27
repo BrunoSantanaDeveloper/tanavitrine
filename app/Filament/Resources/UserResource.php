@@ -97,6 +97,11 @@ final class UserResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('user_phone')
+                    ->label('Telefone')
+                    ->searchable()
+                    ->placeholder('—'),
+
                 Tables\Columns\TextColumn::make('tipo_usuario')
                     ->label('Tipo')
                     ->badge()
