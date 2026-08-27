@@ -1,0 +1,6 @@
+Arquivo de diagnóstico removido da área pública por segurança.
+
+Conteúdo original dos arquivos public/phpinfo.php e public/test.php:
+
+<?php
+phpinfo();
