@@ -15,7 +15,9 @@ use Filament\Actions\Action;
 use App\Models\StoreInteraction;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Contracts\Pagination\Paginator;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class Reports extends Page implements HasTable
@@ -92,7 +94,8 @@ final class Reports extends Page implements HasTable
             ->columns($this->reportColumns())
             ->defaultSort('report_'.$this->sortMetric, $this->sortDirection)
             ->searchPlaceholder('Buscar loja, cidade ou UF')
-            ->paginated(false)
+            ->paginated([10, 25, 50, 100])
+            ->defaultPaginationPageOption(25)
             ->striped()
             ->emptyStateHeading('Nenhuma loja encontrada');
     }
@@ -219,6 +222,19 @@ final class Reports extends Page implements HasTable
                 ->color('success')
                 ->action(fn (): StreamedResponse => $this->exportCsv()),
         ];
+    }
+
+    /**
+     * Fetch only the selected page from the database. A simple paginator also
+     * avoids an extra COUNT(*) query and does not require PHP's intl extension.
+     */
+    protected function paginateTableQuery(Builder $query): Paginator|CursorPaginator
+    {
+        return $query->simplePaginate(
+            perPage: (int) $this->getTableRecordsPerPage(),
+            columns: ['*'],
+            pageName: $this->getTablePaginationPageName(),
+        );
     }
 
     private function reportQuery(): Builder

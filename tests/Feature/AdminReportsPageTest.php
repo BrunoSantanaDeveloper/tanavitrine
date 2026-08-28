@@ -63,3 +63,24 @@ test('reports combine dated views and clicks for a selected period', function ()
         ->and((int) $result->report_whatsapp)->toBe(1)
         ->and((int) $result->report_website)->toBe(0);
 });
+
+test('reports load only the configured number of stores per page', function (): void {
+    $admin = User::factory()->create(['is_superadmin' => true]);
+
+    foreach (range(1, 30) as $position) {
+        Team::factory()->create([
+            'name' => sprintf('Ranking-%03d-Item', $position),
+            'slug' => sprintf('ranking-%03d-item', $position),
+            'personal_team' => false,
+            'views_count' => 31 - $position,
+        ]);
+    }
+
+    $this->actingAs($admin)
+        ->get('/admin/relatorios')
+        ->assertOk()
+        ->assertSee('Ranking-001-Item')
+        ->assertSee('Ranking-025-Item')
+        ->assertDontSee('Ranking-026-Item')
+        ->assertSee('fi-pagination-next-btn', false);
+});
