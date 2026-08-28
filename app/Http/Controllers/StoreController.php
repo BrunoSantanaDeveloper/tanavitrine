@@ -176,10 +176,7 @@ class StoreController extends Controller
     {
         $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
 
-        // Only track if plan has analytics access for this metric
-        if ($this->hasAnalyticsAccess($store, 'whatsapp_clicks')) {
-            $store->incrementWhatsappClicks();
-        }
+        $store->incrementWhatsappClicks();
 
         return response()->json(['success' => true]);
     }
@@ -191,10 +188,7 @@ class StoreController extends Controller
     {
         $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
 
-        // Only track if plan has analytics access for this metric
-        if ($this->hasAnalyticsAccess($store, 'website_clicks')) {
-            $store->incrementWebsiteClicks();
-        }
+        $store->incrementWebsiteClicks();
 
         return response()->json(['success' => true]);
     }
@@ -206,10 +200,7 @@ class StoreController extends Controller
     {
         $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
 
-        // Only track if plan has analytics access for this metric
-        if ($this->hasAnalyticsAccess($store, 'phone_clicks')) {
-            $store->incrementPhoneClicks();
-        }
+        $store->incrementPhoneClicks();
 
         return response()->json(['success' => true]);
     }
@@ -221,10 +212,7 @@ class StoreController extends Controller
     {
         $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
 
-        // Only track if plan has analytics access for this metric
-        if ($this->hasAnalyticsAccess($store, 'map_clicks')) {
-            $store->incrementMapClicks();
-        }
+        $store->incrementMapClicks();
 
         return response()->json(['success' => true]);
     }
@@ -236,10 +224,7 @@ class StoreController extends Controller
     {
         $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
 
-        // Only track if plan has analytics access for this metric
-        if ($this->hasAnalyticsAccess($store, 'instagram_clicks')) {
-            $store->incrementInstagramClicks();
-        }
+        $store->incrementInstagramClicks();
 
         return response()->json(['success' => true]);
     }
@@ -251,10 +236,7 @@ class StoreController extends Controller
     {
         $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
 
-        // Only track if plan has analytics access for this metric
-        if ($this->hasAnalyticsAccess($store, 'facebook_clicks')) {
-            $store->incrementFacebookClicks();
-        }
+        $store->incrementFacebookClicks();
 
         return response()->json(['success' => true]);
     }
@@ -266,10 +248,7 @@ class StoreController extends Controller
     {
         $store = Team::where('slug', $slug)->with('plan')->firstOrFail();
 
-        // Only track if plan has analytics access for this metric
-        if ($this->hasAnalyticsAccess($store, 'tiktok_clicks')) {
-            $store->incrementTikTokClicks();
-        }
+        $store->incrementTikTokClicks();
 
         return response()->json(['success' => true]);
     }
@@ -308,15 +287,16 @@ class StoreController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        // Track clicks based on action if plan has analytics access for that metric
-        if ($validated['action'] === 'whatsapp' && $this->hasAnalyticsAccess($store, 'whatsapp_clicks')) {
+        // Track every interaction for administrative reports. Plan rules only
+        // control which analytics the store owner is allowed to see.
+        if ($validated['action'] === 'whatsapp') {
             $store->incrementWhatsappClicks();
-        } elseif ($validated['action'] === 'website' && $this->hasAnalyticsAccess($store, 'website_clicks')) {
+        } elseif ($validated['action'] === 'website') {
             $store->incrementWebsiteClicks();
-        } elseif ($validated['action'] === 'map' && $this->hasAnalyticsAccess($store, 'map_clicks')) {
-            $store->increment('map_clicks');
-        } elseif ($validated['action'] === 'phone' && $this->hasAnalyticsAccess($store, 'phone_clicks')) {
-            $store->increment('phone_clicks');
+        } elseif ($validated['action'] === 'map') {
+            $store->incrementMapClicks();
+        } elseif ($validated['action'] === 'phone') {
+            $store->incrementPhoneClicks();
         }
 
         return response()->json(['success' => true]);
