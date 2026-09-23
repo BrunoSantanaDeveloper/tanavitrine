@@ -15,9 +15,7 @@ const form = useForm({
   password: '',
 })
 
-useSeoMetaTags({
-  title: __('auth.confirm_password.title'),
-})
+useSeoMetaTags()
 
 const passwordInput = ref(null)
 

@@ -2,22 +2,24 @@
 
 declare(strict_types=1);
 
+use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatController;
-use App\Http\Controllers\WelcomeController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\User\OauthController;
-use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\User\LoginLinkController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\OnboardingController;
-use App\Http\Controllers\OnboardingProgressController;
-use App\Http\Controllers\SubscriptionSuccessController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TrafficController;
+use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\User\OauthController;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\DashboardStoreController;
+use App\Http\Controllers\User\LoginLinkController;
+use App\Http\Controllers\OnboardingProgressController;
+use App\Http\Controllers\SubscriptionSuccessController;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 // Health check endpoint
 Route::get('/health', function () {
@@ -26,9 +28,9 @@ Route::get('/health', function () {
 
 // Public storage route (no auth required)
 Route::get('/storage/{path}', function ($path) {
-    $filePath = storage_path('app/public/' . $path);
+    $filePath = storage_path('app/public/'.$path);
 
-    if (!file_exists($filePath)) {
+    if (! file_exists($filePath)) {
         abort(404);
     }
 
@@ -37,16 +39,16 @@ Route::get('/storage/{path}', function ($path) {
             'Content-Type' => mime_content_type($filePath),
             'Cache-Control' => 'public, max-age=31536000',
         ]);
-    } catch (\Exception $e) {
-        \Log::error('Error serving storage file', [
+    } catch (Exception $e) {
+        Log::error('Error serving storage file', [
             'path' => $path,
             'error' => $e->getMessage(),
         ]);
         abort(500, 'Error serving file');
     }
 })->where('path', '.*')->name('storage.local')->withoutMiddleware([
-    \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
-    \App\Http\Middleware\HandleInertiaRequests::class,
+    VerifyCsrfToken::class,
+    HandleInertiaRequests::class,
 ]);
 
 // Public routes
@@ -322,13 +324,14 @@ if (app()->environment('local')) {
     ];
 
     $previewStores2 = array_map(function (array $store) {
-        $store['url'] = '/dev/preview2-anuncios/' . $store['slug'];
-        $store['previewDetailUrl'] = '/dev/preview2-anuncios/' . $store['slug'];
+        $store['url'] = '/dev/preview2-anuncios/'.$store['slug'];
+        $store['previewDetailUrl'] = '/dev/preview2-anuncios/'.$store['slug'];
+
         return $store;
     }, $previewStores);
 
     Route::get('/dev/preview-anuncios', function () use ($previewStores) {
-        return \Inertia\Inertia::render('Varejo', [
+        return Inertia::render('Varejo', [
             'canLogin' => true,
             'canRegister' => true,
             'stores' => $previewStores,
@@ -350,7 +353,7 @@ if (app()->environment('local')) {
     Route::get('/dev/preview-anuncios/{slug}', function (string $slug) use ($previewStoreDetails) {
         abort_unless(isset($previewStoreDetails[$slug]), 404);
 
-        return \Inertia\Inertia::render('StoreDetail', [
+        return Inertia::render('StoreDetail', [
             'store' => $previewStoreDetails[$slug],
             'canLogin' => true,
             'canRegister' => true,
@@ -358,7 +361,7 @@ if (app()->environment('local')) {
     })->name('dev.preview-anuncios.show');
 
     Route::get('/dev/preview2-anuncios', function () use ($previewStores2) {
-        return \Inertia\Inertia::render('Dev/VarejoPreview2', [
+        return Inertia::render('Dev/VarejoPreview2', [
             'canLogin' => true,
             'canRegister' => true,
             'stores' => $previewStores2,
@@ -380,7 +383,7 @@ if (app()->environment('local')) {
     Route::get('/dev/preview2-anuncios/{slug}', function (string $slug) use ($previewStoreDetails) {
         abort_unless(isset($previewStoreDetails[$slug]), 404);
 
-        return \Inertia\Inertia::render('Dev/StoreDetailPreview2', [
+        return Inertia::render('Dev/StoreDetailPreview2', [
             'store' => $previewStoreDetails[$slug],
             'canLogin' => true,
             'canRegister' => true,
@@ -409,10 +412,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/favoritos', [StoreController::class, 'favorites'])->name('favorites');
 });
 
-// Category routes
-Route::get('/categorias', [CategoryController::class, 'index'])->name('categories.index');
-Route::get('/categoria/{slug}', [CategoryController::class, 'show'])->name('categories.show');
-
+// Category pages remain disabled until their missing frontend components are implemented.
+if (config('seo.category_pages_enabled', false)) {
+    Route::get('/categorias', [CategoryController::class, 'index'])->name('categories.index');
+    Route::get('/categoria/{slug}', [CategoryController::class, 'show'])->name('categories.show');
+}
 
 Route::prefix('auth')->group(
     function () {
@@ -490,6 +494,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
     Route::post('/user/complete-onboarding', function () {
         $user = auth()->user();
         $user->update(['onboarding_completed' => true]);
+
         return back();
     })->name('user.complete-onboarding');
 

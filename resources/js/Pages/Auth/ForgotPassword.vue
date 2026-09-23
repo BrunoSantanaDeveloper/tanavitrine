@@ -14,9 +14,7 @@ defineProps({
   status: String,
 })
 
-useSeoMetaTags({
-  title: __('auth.forgot_password.title'),
-})
+useSeoMetaTags()
 
 const route = inject('route')
 const form = useForm({

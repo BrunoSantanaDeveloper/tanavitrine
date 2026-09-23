@@ -8,32 +8,36 @@ use App\Models\Plan;
 use App\Models\Team;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\SeoMeta;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 final class WelcomeController extends Controller
 {
+    public function __construct(private readonly SeoMeta $seoMeta) {}
+
     public function home(): Response
     {
         // Get all featured stores and rotate the top store daily.
         $featuredStores = $this->rotateFeaturedStores(
             Team::active()
-            ->where('personal_team', false)
-            ->featured()
-            ->with(['category', 'plan', 'photos' => function ($query): void {
-                $query->where('type', 'image')
-                    ->where('media.is_active', true)
-                    ->whereNull('media.team_collection_id')
-                    ->where(function ($nestedQuery): void {
-                        $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo');
-                    })
-                    ->orderByDesc('team_media.is_primary')
-                    ->orderBy('team_media.order');
-            }])
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->get()
+                ->where('personal_team', false)
+                ->featured()
+                ->with(['category', 'plan', 'photos' => function ($query): void {
+                    $query->where('type', 'image')
+                        ->where('media.is_active', true)
+                        ->whereNull('media.team_collection_id')
+                        ->where(function ($nestedQuery): void {
+                            $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo');
+                        })
+                        ->orderByDesc('team_media.is_primary')
+                        ->orderBy('team_media.order');
+                }])
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->get()
         )
             ->map(function ($store) {
                 return $this->transformStore($store);
@@ -121,10 +125,12 @@ final class WelcomeController extends Controller
                         'metadata' => $plan->metadata,
                     ];
                 }),
-            'seo' => [
-                'title' => 'Tá na Vitrine - O maior catálogo de fornecedores de moda do Brasil',
-                'description' => 'Tá na Vitrine é o maior catálogo de fornecedores de moda do Brasil para quem busca fornecedor de moda, moda no atacado e varejo com contato direto.',
-            ],
+            'seo' => $this->seoMeta->make(
+                title: 'Tá na Vitrine - O maior catálogo de fornecedores de moda do Brasil',
+                description: 'Tá na Vitrine é o maior catálogo de fornecedores de moda do Brasil para quem busca fornecedor de moda, moda no atacado e varejo com contato direto.',
+                canonical: '/',
+                indexable: true,
+            ),
         ]);
     }
 
@@ -183,10 +189,12 @@ final class WelcomeController extends Controller
             'subcategories' => $subcategories,
             'states' => $states,
             'cities' => $cities,
-            'seo' => [
-                'title' => 'Atacado - Tá na Vitrine',
-                'description' => 'Encontre os melhores fornecedores atacadistas de moda do Brasil',
-            ],
+            'seo' => $this->seoMeta->make(
+                title: 'Atacado',
+                description: 'Encontre os melhores fornecedores atacadistas de moda do Brasil',
+                canonical: '/atacado',
+                indexable: true,
+            ),
         ]);
     }
 
@@ -245,10 +253,12 @@ final class WelcomeController extends Controller
             'subcategories' => $subcategories,
             'states' => $states,
             'cities' => $cities,
-            'seo' => [
-                'title' => 'Varejo - Tá na Vitrine',
-                'description' => 'Descubra as melhores lojas varejistas de moda',
-            ],
+            'seo' => $this->seoMeta->make(
+                title: 'Varejo',
+                description: 'Descubra as melhores lojas varejistas de moda',
+                canonical: '/varejo',
+                indexable: true,
+            ),
         ]);
     }
 
@@ -307,16 +317,18 @@ final class WelcomeController extends Controller
             'subcategories' => $subcategories,
             'states' => $states,
             'cities' => $cities,
-            'seo' => [
-                'title' => 'Fabricantes - Tá na Vitrine',
-                'description' => 'Encontre fabricantes de moda com produção própria na Tá na Vitrine. Compare fornecedores, descubra novos parceiros e fale direto com quem fabrica para atacado e varejo em todo o Brasil.',
-                'keywords' => 'fabricantes de moda, fábrica de roupas, fornecedores de moda, atacado de moda, fabricantes atacado, produção própria, fornecedores para lojistas, fabricantes no brasil',
-                'canonical' => '/fabricantes',
-                'ogTitle' => 'Fabricantes de Moda - Tá na Vitrine',
-                'ogDescription' => 'Descubra fabricantes de moda com produção própria e contato direto para compras no atacado e varejo.',
-                'twitterTitle' => 'Fabricantes de Moda - Tá na Vitrine',
-                'twitterDescription' => 'Encontre fabricantes e fornecedores de moda em um só lugar, com contato direto para negociar.',
-            ],
+            'seo' => $this->seoMeta->make(
+                title: 'Fabricantes',
+                description: 'Encontre fabricantes de moda com produção própria na Tá na Vitrine. Compare fornecedores, descubra novos parceiros e fale direto com quem fabrica para atacado e varejo em todo o Brasil.',
+                canonical: '/fabricantes',
+                indexable: true,
+                overrides: [
+                    'ogTitle' => 'Fabricantes de Moda | Tá na Vitrine',
+                    'ogDescription' => 'Descubra fabricantes de moda com produção própria e contato direto para compras no atacado e varejo.',
+                    'twitterTitle' => 'Fabricantes de Moda | Tá na Vitrine',
+                    'twitterDescription' => 'Encontre fabricantes e fornecedores de moda em um só lugar, com contato direto para negociar.',
+                ],
+            ),
         ]);
     }
 
@@ -385,10 +397,12 @@ final class WelcomeController extends Controller
                         'metadata' => $plan->metadata,
                     ];
                 }),
-            'seo' => [
-                'title' => 'Planos - Tá na Vitrine',
-                'description' => 'Escolha o plano ideal para anunciar seus produtos no Tá na Vitrine',
-            ],
+            'seo' => $this->seoMeta->make(
+                title: 'Planos',
+                description: 'Escolha o plano ideal para anunciar seus produtos no Tá na Vitrine',
+                canonical: '/prices',
+                indexable: true,
+            ),
         ]);
     }
 
@@ -447,17 +461,19 @@ final class WelcomeController extends Controller
             'canRegister' => Route::has('register'),
             'lastUpdated' => $aboutMetrics['updated_at'] ?? '',
             'metrics' => $aboutMetrics['items'] ?? [],
-            'seo' => [
-                'title' => 'Sobre a Tá na Vitrine',
-                'description' => 'Conheça a história, os diferenciais e os números atuais da Tá na Vitrine para atacado, varejo e fabricantes.',
-            ],
+            'seo' => $this->seoMeta->make(
+                title: 'Sobre a Tá na Vitrine',
+                description: 'Conheça a história, os diferenciais e os números atuais da Tá na Vitrine para atacado, varejo e fabricantes.',
+                canonical: '/about',
+                indexable: true,
+            ),
         ]);
     }
 
     /**
      * Load more stores for infinite scroll.
      */
-    public function loadMoreStores(): \Illuminate\Http\JsonResponse
+    public function loadMoreStores(): JsonResponse
     {
         $type = request('type', 'recentes'); // 'destaques' or 'recentes'
         $page = request('page', 1);
@@ -496,7 +512,7 @@ final class WelcomeController extends Controller
 
         $totalCount = Team::active()
             ->where('personal_team', false)
-            ->when($type === 'destaques', fn($q) => $q->featured())
+            ->when($type === 'destaques', fn ($q) => $q->featured())
             ->count();
 
         return response()->json([
@@ -518,7 +534,7 @@ final class WelcomeController extends Controller
 
         return [
             'id' => $store->id,
-            'code' => 'TV' . str_pad((string)$store->id, 4, '0', STR_PAD_LEFT),
+            'code' => 'TV'.mb_str_pad((string) $store->id, 4, '0', STR_PAD_LEFT),
             'slug' => $store->slug,
             'url' => route('store.show', $store->slug),
             'badge' => ucfirst($store->sale_type),
@@ -538,7 +554,7 @@ final class WelcomeController extends Controller
             'longitude' => $store->longitude ? (float) $store->longitude : null,
             'google_maps_embed_url' => $store->google_maps_embed_url,
             'whatsapp' => $store->whatsapp,
-            'logo' => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
+            'logo' => $store->logo_path ? asset('storage/'.$store->logo_path) : null,
             'image' => $photos[0] ?? null,
             'images' => $photos,
             'is_verified' => $store->isVerified(),

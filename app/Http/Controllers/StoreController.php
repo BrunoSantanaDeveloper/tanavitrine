@@ -5,34 +5,15 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Team;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\SeoMeta;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-class StoreController extends Controller
+final class StoreController extends Controller
 {
-    private function formatFullAddress(Team $store): ?string
-    {
-        $streetLine = trim(implode(', ', array_filter([
-            $store->address,
-            $store->address_number,
-        ])));
-
-        $cityState = trim(implode(' - ', array_filter([
-            $store->city,
-            $store->state,
-        ])));
-
-        $parts = array_filter([
-            $streetLine ?: null,
-            $store->address_complement ?: null,
-            $cityState ?: null,
-            $store->zip_code ? 'CEP: ' . $store->zip_code : null,
-        ]);
-
-        return !empty($parts) ? implode(', ', $parts) : null;
-    }
+    public function __construct(private readonly SeoMeta $seoMeta) {}
 
     /**
      * Display the specified store by slug.
@@ -60,7 +41,7 @@ class StoreController extends Controller
                     ->where('is_active', true)
                     ->values()
                     ->map(function ($photo) {
-                        return asset('storage/' . $photo->path);
+                        return asset('storage/'.$photo->path);
                     })
                     ->toArray();
 
@@ -83,7 +64,7 @@ class StoreController extends Controller
         // Transform data for frontend
         $storeData = [
             'id' => $store->id,
-            'code' => 'TV' . str_pad((string)$store->id, 4, '0', STR_PAD_LEFT),
+            'code' => 'TV'.mb_str_pad((string) $store->id, 4, '0', STR_PAD_LEFT),
             'slug' => $store->slug,
             'name' => $store->name,
             'description' => $store->description,
@@ -114,12 +95,12 @@ class StoreController extends Controller
             'tiktok' => $store->tiktok,
             'is_verified' => $store->isVerified(),
             'featured' => $store->isFeatured(),
-            'logo' => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
+            'logo' => $store->logo_path ? asset('storage/'.$store->logo_path) : null,
             'video_url' => $store->video_url,
             'images' => $featuredMedia->map(function ($photo) {
                 return [
                     'id' => $photo->id,
-                    'url' => asset('storage/' . $photo->path),
+                    'url' => asset('storage/'.$photo->path),
                 ];
             })->toArray(),
             'collections' => $collections->toArray(),
@@ -131,39 +112,26 @@ class StoreController extends Controller
                 : false,
         ];
 
-        $storePageUrl = url("/loja/{$store->slug}");
+        $storePagePath = "/loja/{$store->slug}";
         $fallbackDescription = "Conheça {$store->name} na Tá na Vitrine e entre em contato direto para atacado e varejo.";
         $normalizedDescription = trim((string) preg_replace('/\s+/', ' ', strip_tags($store->description ?: $fallbackDescription)));
         $seoDescription = mb_strlen($normalizedDescription) > 160
-            ? mb_substr($normalizedDescription, 0, 157) . '...'
+            ? mb_substr($normalizedDescription, 0, 157).'...'
             : $normalizedDescription;
         $seoImage = $storeData['logo'] ?: ($storeData['images'][0]['url'] ?? asset('images/og.png'));
 
         return Inertia::render('StoreDetail', [
             'store' => $storeData,
-            'seo' => [
-                'title' => "{$store->name} | Tá na Vitrine",
-                'description' => $seoDescription,
-                'keywords' => implode(', ', array_filter([
-                    $store->name,
-                    'loja de moda',
-                    $store->category?->name,
-                    $store->city,
-                    $store->state,
-                    'tá na vitrine',
-                ])),
-                'robots' => 'index, follow',
-                'canonical' => $storePageUrl,
-                'ogTitle' => "{$store->name} | Tá na Vitrine",
-                'ogDescription' => $seoDescription,
-                'ogType' => 'website',
-                'ogUrl' => $storePageUrl,
-                'ogImage' => $seoImage,
-                'twitterTitle' => "{$store->name} | Tá na Vitrine",
-                'twitterDescription' => $seoDescription,
-                'twitterCard' => 'summary_large_image',
-                'twitterImage' => $seoImage,
-            ],
+            'seo' => $this->seoMeta->make(
+                title: $store->name,
+                description: $seoDescription,
+                canonical: $storePagePath,
+                indexable: true,
+                overrides: [
+                    'ogImage' => $seoImage,
+                    'twitterImage' => $seoImage,
+                ],
+            ),
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
         ]);
@@ -251,18 +219,6 @@ class StoreController extends Controller
         $store->incrementTikTokClicks();
 
         return response()->json(['success' => true]);
-    }
-
-    /**
-     * Check if store has analytics access for a specific metric based on plan.
-     */
-    private function hasAnalyticsAccess(Team $store, string $metric): bool
-    {
-        if (!$store->plan) {
-            return false;
-        }
-
-        return $store->plan->hasAnalyticsMetric($metric);
     }
 
     /**
@@ -367,7 +323,7 @@ class StoreController extends Controller
 
                 return [
                     'id' => $store->id,
-                    'code' => 'TV' . str_pad((string)$store->id, 4, '0', STR_PAD_LEFT),
+                    'code' => 'TV'.mb_str_pad((string) $store->id, 4, '0', STR_PAD_LEFT),
                     'slug' => $store->slug,
                     'badge' => ucfirst($store->sale_type),
                     'name' => $store->name,
@@ -380,7 +336,7 @@ class StoreController extends Controller
                     'location' => $store->city && $store->state ? "{$store->city} - {$store->state}" : null,
                     'whatsapp' => $store->whatsapp,
                     'image' => $cardMedia?->path
-                        ? asset('storage/' . $cardMedia->path)
+                        ? asset('storage/'.$cardMedia->path)
                         : null,
                     'featured' => $store->isFeatured(),
                     'favorited_at' => $store->pivot->created_at->format('d/m/Y'),
@@ -391,10 +347,46 @@ class StoreController extends Controller
             'stores' => $favoriteStores,
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
-            'seo' => [
-                'title' => 'Meus Favoritos - ' . config('app.name'),
-                'description' => 'Suas lojas favoritas salvas',
-            ],
+            'seo' => $this->seoMeta->make(
+                title: 'Meus favoritos',
+                description: 'Suas lojas favoritas salvas',
+                canonical: '/favoritos',
+                indexable: false,
+            ),
         ]);
+    }
+
+    private function formatFullAddress(Team $store): ?string
+    {
+        $streetLine = trim(implode(', ', array_filter([
+            $store->address,
+            $store->address_number,
+        ])));
+
+        $cityState = trim(implode(' - ', array_filter([
+            $store->city,
+            $store->state,
+        ])));
+
+        $parts = array_filter([
+            $streetLine ?: null,
+            $store->address_complement ?: null,
+            $cityState ?: null,
+            $store->zip_code ? 'CEP: '.$store->zip_code : null,
+        ]);
+
+        return ! empty($parts) ? implode(', ', $parts) : null;
+    }
+
+    /**
+     * Check if store has analytics access for a specific metric based on plan.
+     */
+    private function hasAnalyticsAccess(Team $store, string $metric): bool
+    {
+        if (! $store->plan) {
+            return false;
+        }
+
+        return $store->plan->hasAnalyticsMetric($metric);
     }
 }

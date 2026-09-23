@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { Head, Link, useForm } from '@inertiajs/vue3'
+import { Link, useForm } from '@inertiajs/vue3'
 import { Button } from '@/Components/shadcn/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/shadcn/ui/card'
 import { Input } from '@/Components/shadcn/ui/input'
@@ -281,8 +281,6 @@ function submit() {
 </script>
 
 <template>
-  <Head :title="`Editar ${store.name}`" />
-
   <AppLayout :title="`Editar ${store.name}`">
     <div class="min-h-screen bg-gray-50 p-6">
       <div class="max-w-6xl mx-auto">

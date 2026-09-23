@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Models\Subscription;
-use App\Services\SubscriptionAccessRuleService;
+use App\Models\Team;
 use Inertia\Middleware;
+use App\Support\SeoMeta;
+use App\Models\Subscription;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Facades\Config;
+use App\Services\SubscriptionAccessRuleService;
 
 final class HandleInertiaRequests extends Middleware
 {
@@ -34,33 +36,6 @@ final class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Get all translation files from the current locale directory.
-     */
-    private function getAllTranslations(): array
-    {
-        $locale = Lang::locale();
-        $path = lang_path($locale);
-
-        if (!File::isDirectory($path)) {
-            return [];
-        }
-
-        $translations = [];
-        $files = File::files($path);
-
-        foreach ($files as $file) {
-            $filename = $file->getFilenameWithoutExtension();
-            // Skip filament translations or any other you want to exclude
-            if (str_starts_with($filename, 'filament')) {
-                continue;
-            }
-            $translations[$filename] = Lang::get($filename);
-        }
-
-        return $translations;
-    }
-
-    /**
      * Define the props that are shared by default.
      *
      * @see https://inertiajs.com/shared-data
@@ -75,7 +50,7 @@ final class HandleInertiaRequests extends Middleware
 
         if ($user) {
             // Get user's store (only 1 allowed per user)
-            $store = \App\Models\Team::where('user_id', $user->id)
+            $store = Team::where('user_id', $user->id)
                 ->where('personal_team', false)
                 ->with('plan:id,name')
                 ->first();
@@ -112,7 +87,8 @@ final class HandleInertiaRequests extends Middleware
 
         /** @var array<string, mixed> */
         return array_merge(parent::share($request), [
-            'name' => Config::get('app.name', 'Tá na Vitrine'),
+            'name' => Config::get('seo.site_name', 'Tá na Vitrine'),
+            'seo' => app(SeoMeta::class)->forRequest($request),
             'currentStore' => $currentStore,
             'subscriptionNav' => $subscriptionNav,
             'flash' => [
@@ -122,5 +98,32 @@ final class HandleInertiaRequests extends Middleware
             ],
             'translations' => $this->getAllTranslations(),
         ]);
+    }
+
+    /**
+     * Get all translation files from the current locale directory.
+     */
+    private function getAllTranslations(): array
+    {
+        $locale = Lang::locale();
+        $path = lang_path($locale);
+
+        if (! File::isDirectory($path)) {
+            return [];
+        }
+
+        $translations = [];
+        $files = File::files($path);
+
+        foreach ($files as $file) {
+            $filename = $file->getFilenameWithoutExtension();
+            // Skip filament translations or any other you want to exclude
+            if (str_starts_with($filename, 'filament')) {
+                continue;
+            }
+            $translations[$filename] = Lang::get($filename);
+        }
+
+        return $translations;
     }
 }

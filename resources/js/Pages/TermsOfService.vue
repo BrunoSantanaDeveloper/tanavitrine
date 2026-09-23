@@ -3,15 +3,12 @@ import AuthenticationCardLogo from '@/Components/LogoRedirect.vue'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags'
 import WebLayout from '@/Layouts/WebLayout.vue'
 
-useSeoMetaTags({
-  title: 'Termos de Serviço - Tá na Vitrine',
-  description: 'Leia os Termos de Serviço da Tá na Vitrine e entenda as regras de uso da plataforma para lojistas e compradores.',
-})
+useSeoMetaTags()
 
 const currentDate = new Date().toLocaleDateString('pt-BR', {
   day: '2-digit',
   month: '2-digit',
-  year: 'numeric'
+  year: 'numeric',
 })
 </script>
 

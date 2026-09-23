@@ -5,11 +5,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @php
-        $appName = 'Tá na Vitrine';
-        $appUrl = rtrim(config('app.url', url('/')), '/');
-        $defaultDescription = 'Tá na Vitrine conecta fornecedores e lojistas de moda em todo o Brasil. Encontre lojas de atacado e varejo com contato direto.';
-        $defaultKeywords = 'tá na vitrine, tanavitrine, tana vitrine, ta na vitrine, fornecedor de moda, fornecedores de moda, atacado de moda, moda atacado, atacado moda, moda no atacado, fornecedores atacado, varejo de moda, catálogo de fornecedores, catalogo de fornecedores';
-        $defaultOgImage = $appUrl . '/images/og.png';
+        $appName = trim((string) config('seo.site_name', 'Tá na Vitrine')) ?: 'Tá na Vitrine';
+        $appUrl = rtrim((string) config('seo.site_url', config('app.url', url('/'))), '/');
+        $defaultDescription = (string) config('seo.default_description');
+        $defaultOgImage = $appUrl . '/' . ltrim((string) config('seo.default_image', '/images/og.png'), '/');
         $pageProps = is_array($page['props'] ?? null) ? $page['props'] : [];
         $seo = is_array($pageProps['seo'] ?? null) ? $pageProps['seo'] : [];
 
@@ -28,8 +27,8 @@
 
         $seoTitle = trim((string) ($seo['title'] ?? '')) ?: $appName;
         $seoDescription = trim((string) ($seo['description'] ?? '')) ?: $defaultDescription;
-        $seoKeywords = trim((string) ($seo['keywords'] ?? '')) ?: $defaultKeywords;
-        $seoRobots = trim((string) ($seo['robots'] ?? '')) ?: 'index, follow';
+        $seoKeywords = trim((string) ($seo['keywords'] ?? ''));
+        $seoRobots = trim((string) ($seo['robots'] ?? '')) ?: 'noindex, nofollow';
         $canonicalUrl = $toAbsoluteUrl($seo['canonical'] ?? null)
             ?? $toAbsoluteUrl($seo['ogUrl'] ?? null)
             ?? url()->current();
@@ -42,6 +41,8 @@
         $twitterTitle = trim((string) ($seo['twitterTitle'] ?? '')) ?: $ogTitle;
         $twitterDescription = trim((string) ($seo['twitterDescription'] ?? '')) ?: $ogDescription;
         $twitterImage = $toAbsoluteUrl($seo['twitterImage'] ?? null) ?? $ogImage;
+        $twitterSite = trim((string) ($seo['twitterSite'] ?? '')) ?: (string) config('seo.twitter_site', '@tanavitrine');
+        $themeColor = trim((string) ($seo['themeColor'] ?? '')) ?: (string) config('seo.theme_color', '#0f766e');
         $googleAdsTagId = trim((string) (config('services.google_ads.tag_id') ?: 'AW-17767970269'));
 
         $schema = [
@@ -115,8 +116,11 @@
 
     <title>{{ $seoTitle }}</title>
     <meta name="description" content="{{ $seoDescription }}">
-    <meta name="keywords" content="{{ $seoKeywords }}">
+    @if ($seoKeywords !== '')
+        <meta name="keywords" content="{{ $seoKeywords }}">
+    @endif
     <meta name="robots" content="{{ $seoRobots }}">
+    <meta name="theme-color" content="{{ $themeColor }}">
     <link rel="canonical" href="{{ $canonicalUrl }}">
 
     <!-- Favicon & App Icons -->
@@ -137,6 +141,7 @@
     <meta name="twitter:title" content="{{ $twitterTitle }}">
     <meta name="twitter:description" content="{{ $twitterDescription }}">
     <meta name="twitter:image" content="{{ $twitterImage }}">
+    <meta name="twitter:site" content="{{ $twitterSite }}">
 
     <!-- Structured Data -->
     <script type="application/ld+json">

@@ -88,10 +88,7 @@ onMounted(() => {
   }
 })
 
-// SEO
-useSeoMetaTags({
-  title: __('login.title'),
-})
+useSeoMetaTags()
 </script>
 
 <template>

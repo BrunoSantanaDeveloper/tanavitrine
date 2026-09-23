@@ -9,9 +9,9 @@ return [
 
     /*
      * Base URL used when generating absolute URLs in sitemap entries.
-     * Prefer setting SITEMAP_BASE_URL in production.
+     * SITEMAP_BASE_URL may override the canonical SEO origin when needed.
      */
-    'base_url' => env('SITEMAP_BASE_URL', env('APP_URL', '')),
+    'base_url' => env('SITEMAP_BASE_URL', env('SEO_SITE_URL', env('APP_URL', ''))),
 
     /*
      * These options will be passed to GuzzleHttp\Client when it is created.

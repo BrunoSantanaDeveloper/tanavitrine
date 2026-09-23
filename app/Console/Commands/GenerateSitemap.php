@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Team;
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Schema;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 
 final class GenerateSitemap extends Command
 {
@@ -84,7 +84,7 @@ final class GenerateSitemap extends Command
         $configuredBaseUrl = trim((string) config('sitemap.base_url', ''));
 
         if ($configuredBaseUrl === '') {
-            $configuredBaseUrl = trim((string) config('app.url', ''));
+            $configuredBaseUrl = trim((string) config('seo.site_url', config('app.url', '')));
         }
 
         $normalizedBaseUrl = $this->normalizeBaseUrl($configuredBaseUrl);
@@ -101,16 +101,16 @@ final class GenerateSitemap extends Command
     private function normalizeBaseUrl(string $baseUrl): ?string
     {
         $trimmed = rtrim(trim($baseUrl), '/');
-        if ($trimmed === '' || !filter_var($trimmed, FILTER_VALIDATE_URL)) {
+        if ($trimmed === '' || ! filter_var($trimmed, FILTER_VALIDATE_URL)) {
             return null;
         }
 
         $host = parse_url($trimmed, PHP_URL_HOST);
-        if (!is_string($host) || $host === '') {
+        if (! is_string($host) || $host === '') {
             return null;
         }
 
-        if (in_array(strtolower($host), ['localhost', '127.0.0.1', '0.0.0.0'], true)) {
+        if (in_array(mb_strtolower($host), ['localhost', '127.0.0.1', '0.0.0.0'], true)) {
             return null;
         }
 
@@ -125,6 +125,6 @@ final class GenerateSitemap extends Command
             return $baseUrl;
         }
 
-        return $baseUrl . '/' . ltrim($path, '/');
+        return $baseUrl.'/'.ltrim($path, '/');
     }
 }

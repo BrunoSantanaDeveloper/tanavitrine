@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { router, useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Link } from '@inertiajs/vue3'
 import { Button } from '@/Components/shadcn/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/shadcn/ui/card'
 import { Icon } from '@iconify/vue'
@@ -424,8 +424,6 @@ function submitVideo() {
 </script>
 
 <template>
-  <Head :title="`Galeria - ${store.name}`" />
-
   <AppLayout :title="`Galeria - ${store.name}`">
     <div class="min-h-screen bg-gray-50 p-6">
       <div class="max-w-6xl mx-auto">

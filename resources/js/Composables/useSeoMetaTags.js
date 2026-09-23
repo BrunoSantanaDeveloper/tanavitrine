@@ -1,95 +1,75 @@
+import { usePage } from '@inertiajs/vue3'
 import { useHead, useSeoMeta } from '@unhead/vue'
+import { unref } from 'vue'
 
-const fallbackSiteUrl = 'https://tanavitrine.com.br'
+function getCurrentPageUrl() {
+  if (typeof window === 'undefined')
+    return 'https://tanavitrine.com.br'
 
-function getSiteUrl() {
-  if (typeof window !== 'undefined' && window.location?.origin)
-    return window.location.origin
-
-  return fallbackSiteUrl
+  return `${window.location.origin}${window.location.pathname}`
 }
 
-function toAbsoluteUrl(path) {
-  if (!path)
-    return `${getSiteUrl()}/images/og.png`
-
-  if (path.startsWith('http://') || path.startsWith('https://'))
-    return path
-
-  const baseUrl = getSiteUrl()
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  return `${baseUrl}${normalizedPath}`
-}
-
-function getDefaultSeoMeta() {
-  const siteUrl = getSiteUrl()
-  const defaultOgImage = toAbsoluteUrl('/images/og.png')
+function getFallbackMeta(pageProps) {
+  const currentPageUrl = getCurrentPageUrl()
+  const siteName = pageProps?.name || 'Tá na Vitrine'
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://tanavitrine.com.br'
+  const description = 'Tá na Vitrine conecta fornecedores e lojistas de moda em todo o Brasil. Encontre lojas de atacado e varejo com contato direto.'
 
   return {
-    title: 'Home',
-    titleTemplate: '%s | Tá na Vitrine',
-    description: 'Tá na Vitrine conecta fornecedores e lojistas de moda em todo o Brasil. Também conhecida como Tanavitrine, reúne lojas de atacado e varejo com contato direto.',
-    keywords: 'tá na vitrine, tanavitrine, tana vitrine, ta na vitrine, fornecedor de moda, fornecedores de moda, atacado de moda, moda atacado, atacado moda, moda no atacado, fornecedores atacado, varejo de moda, catálogo de fornecedores, catalogo de fornecedores, catálogo de lojas, marketplace de moda, lojas atacadistas, lojas varejistas',
-    robots: 'index, follow',
+    title: siteName,
+    description,
+    robots: 'noindex, nofollow',
+    canonical: currentPageUrl,
     themeColor: '#0f766e',
-
-    // Open Graph
-    ogTitle: '%s | Tá na Vitrine',
-    ogDescription: 'Descubra fornecedores e lojas de moda em um só lugar. Tá na Vitrine (Tanavitrine) conecta atacado e varejo com contato direto.',
-    ogUrl: siteUrl,
+    ogTitle: siteName,
+    ogDescription: description,
+    ogUrl: currentPageUrl,
     ogType: 'website',
-    ogImage: defaultOgImage,
-    ogSiteName: 'Tá na Vitrine',
+    ogImage: `${origin}/images/og.png`,
+    ogSiteName: siteName,
     ogLocale: 'pt_BR',
-
-    // Twitter
-    twitterTitle: '%s | Tá na Vitrine',
-    twitterDescription: 'Conecte-se com lojas e fornecedores de moda no maior catálogo de atacado e varejo do Brasil. Tá na Vitrine (Tanavitrine).',
+    twitterTitle: siteName,
+    twitterDescription: description,
     twitterCard: 'summary_large_image',
-    twitterImage: defaultOgImage,
+    twitterImage: `${origin}/images/og.png`,
     twitterSite: '@tanavitrine',
   }
 }
 
 /**
- * Composable for managing SEO meta tags
- * @param {object|null} seoMeta - Custom SEO meta tags to apply
- * @param {object} options - Configuration options
- * @param {boolean} options.merge - When true, merges custom meta tags with defaults.
- *                                 When false, only uses custom meta tags.
- *                                 Useful for pages that need completely custom SEO
- *                                 without inheriting defaults.
- * @returns {void}
+ * Publish the final SEO payload supplied by Laravel without altering its title.
+ * Missing social fields inherit from the final title, description, URL and image.
  */
-export function useSeoMetaTags(seoMeta, options = { merge: true }) {
-  const defaultSeoMeta = getDefaultSeoMeta()
-  const currentPageUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}${window.location.pathname}`
-    : defaultSeoMeta.ogUrl
-
-  if (!seoMeta) {
-    useHead({
-      link: [{ rel: 'canonical', href: currentPageUrl }],
-    })
-    return useSeoMeta({ ...defaultSeoMeta, ogUrl: currentPageUrl })
-  }
+export function useSeoMetaTags(seoMeta = null, options = { merge: true }) {
+  const page = usePage()
+  const sharedSeo = page.props.seo || {}
+  const suppliedSeo = unref(seoMeta) || sharedSeo
+  const fallbackMeta = getFallbackMeta(page.props)
 
   const mergedSeoMeta = options.merge
-    ? { ...defaultSeoMeta, ...seoMeta }
-    : seoMeta
+    ? { ...fallbackMeta, ...sharedSeo, ...suppliedSeo }
+    : { ...suppliedSeo }
 
-  if (options.merge) {
-    if (!('ogUrl' in seoMeta))
-      mergedSeoMeta.ogUrl = currentPageUrl
+  if (!Object.prototype.hasOwnProperty.call(suppliedSeo, 'ogTitle'))
+    mergedSeoMeta.ogTitle = mergedSeoMeta.title
 
-    if (!('ogImage' in seoMeta))
-      mergedSeoMeta.ogImage = defaultSeoMeta.ogImage
+  if (!Object.prototype.hasOwnProperty.call(suppliedSeo, 'ogDescription'))
+    mergedSeoMeta.ogDescription = mergedSeoMeta.description
 
-    if (!('twitterImage' in seoMeta))
-      mergedSeoMeta.twitterImage = mergedSeoMeta.ogImage
-  }
+  if (!Object.prototype.hasOwnProperty.call(suppliedSeo, 'ogUrl'))
+    mergedSeoMeta.ogUrl = mergedSeoMeta.canonical || getCurrentPageUrl()
 
-  const canonicalUrl = mergedSeoMeta.canonical || mergedSeoMeta.ogUrl || currentPageUrl
+  if (!Object.prototype.hasOwnProperty.call(suppliedSeo, 'twitterTitle'))
+    mergedSeoMeta.twitterTitle = mergedSeoMeta.ogTitle
+
+  if (!Object.prototype.hasOwnProperty.call(suppliedSeo, 'twitterDescription'))
+    mergedSeoMeta.twitterDescription = mergedSeoMeta.ogDescription
+
+  if (!Object.prototype.hasOwnProperty.call(suppliedSeo, 'twitterImage'))
+    mergedSeoMeta.twitterImage = mergedSeoMeta.ogImage
+
+  const canonicalUrl = mergedSeoMeta.canonical || mergedSeoMeta.ogUrl || getCurrentPageUrl()
+
   useHead({
     link: [{ rel: 'canonical', href: canonicalUrl }],
   })

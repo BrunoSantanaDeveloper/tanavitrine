@@ -1,5 +1,4 @@
 <script setup>
-import { Head } from '@inertiajs/vue3'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/shadcn/ui/tabs'
 import { Card, CardContent } from '@/Components/shadcn/ui/card'
 import { Button } from '@/Components/shadcn/ui/button'
@@ -56,7 +55,6 @@ defineProps({
 </script>
 
 <template>
-  <Head title="Configurações" />
   <AppLayout title="Configurações">
     <div class="p-6">
       <div class="max-w-5xl mx-auto">

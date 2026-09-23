@@ -3,6 +3,7 @@ import AppNavbar from '@/Components/AppNavbar.vue'
 import AppSidebarContent from '@/Components/AppSidebarContent.vue'
 import AppTeamManager from '@/Components/AppTeamManager.vue'
 import AppUserManager from '@/Components/AppUserManager.vue'
+import OnboardingDialog from '@/Components/OnboardingDialog.vue'
 import { Sidebar, SidebarFooter, SidebarHeader, SidebarInset } from '@/Components/shadcn/ui/sidebar'
 import SidebarMenu from '@/Components/shadcn/ui/sidebar/SidebarMenu.vue'
 import SidebarMenuItem from '@/Components/shadcn/ui/sidebar/SidebarMenuItem.vue'
@@ -10,10 +11,10 @@ import SidebarProvider from '@/Components/shadcn/ui/sidebar/SidebarProvider.vue'
 import Sonner from '@/Components/shadcn/ui/sonner/Sonner.vue'
 import Toast from '@/Components/shadcn/ui/toast/Toast.vue'
 import ToastProvider from '@/Components/shadcn/ui/toast/ToastProvider.vue'
-import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
-import { useColorMode } from '@vueuse/core'
-import OnboardingDialog from '@/Components/OnboardingDialog.vue'
 import { useOnboarding } from '@/Composables/useOnboarding.js'
+import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
+import { usePage } from '@inertiajs/vue3'
+import { useColorMode } from '@vueuse/core'
 import { onMounted } from 'vue'
 
 const props = defineProps({
@@ -23,8 +24,11 @@ const props = defineProps({
   },
 })
 
+const page = usePage()
+
 useSeoMetaTags({
-  title: props.title,
+  title: `${props.title} | ${page.props.name || 'Tá na Vitrine'}`,
+  robots: 'noindex, nofollow',
 })
 
 // Definir modo claro como padrão

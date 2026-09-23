@@ -73,11 +73,15 @@ services:
       - WWWUSER=1000
       - WWWGROUP=1000
       # APLICAÇÃO BASE
-      - APP_NAME=Tanavitrine
+      - APP_NAME=Tá na Vitrine
       - APP_ENV=production
       - APP_DEBUG=false
       - APP_URL=https://tanavitrine.com.br
       - SITEMAP_BASE_URL=https://tanavitrine.com.br
+      - SEO_SITE_NAME=Tá na Vitrine
+      - SEO_SITE_URL=https://tanavitrine.com.br
+      - SEO_INDEXING_ENABLED=true
+      - SEO_CATEGORY_PAGES_ENABLED=false
       - APP_LOCALE=pt_BR
       - APP_FALLBACK_LOCALE=pt_BR
       # CACHE, SESSIONS E QUEUE NO DATABASE (Redis está read-only)
@@ -125,7 +129,7 @@ services:
       - WWWUSER=1000
       - WWWGROUP=1000
       # MESMAS CONFIGURAÇÕES DO APP
-      - APP_NAME=Tanavitrine
+      - APP_NAME=Tá na Vitrine
       - APP_ENV=production
       - APP_DEBUG=false
       - APP_LOCALE=pt_BR
@@ -169,11 +173,15 @@ services:
       - CONTAINER_ROLE=scheduler_tanavitrine
       - WWWUSER=1000
       - WWWGROUP=1000
-      - APP_NAME=Tanavitrine
+      - APP_NAME=Tá na Vitrine
       - APP_ENV=production
       - APP_DEBUG=false
       - APP_URL=https://tanavitrine.com.br
       - SITEMAP_BASE_URL=https://tanavitrine.com.br
+      - SEO_SITE_NAME=Tá na Vitrine
+      - SEO_SITE_URL=https://tanavitrine.com.br
+      - SEO_INDEXING_ENABLED=true
+      - SEO_CATEGORY_PAGES_ENABLED=false
       - APP_LOCALE=pt_BR
       - APP_FALLBACK_LOCALE=pt_BR
       - CACHE_STORE=database

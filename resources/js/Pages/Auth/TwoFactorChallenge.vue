@@ -11,9 +11,7 @@ import { __ } from '@/Composables/useTranslations.js'
 import { useForm } from '@inertiajs/vue3'
 import { inject, nextTick, ref } from 'vue'
 
-useSeoMetaTags({
-  title: __('auth.two_factor.title'),
-})
+useSeoMetaTags()
 
 const route = inject('route')
 const recovery = ref(false)

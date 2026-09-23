@@ -80,7 +80,7 @@ const storePageUrl = computed(() => {
 const storeSeoMeta = props.seo || {
   title: storePageTitle,
   description: storePageDescription,
-  robots: 'index, follow',
+  robots: 'noindex, nofollow',
   ogTitle: storePageTitle,
   ogDescription: storePageDescription,
   ogType: 'website',

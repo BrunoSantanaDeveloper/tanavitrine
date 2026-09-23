@@ -4,7 +4,7 @@ import { Button } from '@/Components/shadcn/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/shadcn/ui/card'
 import { Badge } from '@/Components/shadcn/ui/badge'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import { computed, inject, ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import {
@@ -181,8 +181,6 @@ const showDashboardPlanCta = computed(() => {
 </script>
 
 <template>
-  <Head title="Dashboard" />
-
   <AppLayout title="Dashboard">
     <div class="min-h-screen bg-gray-50">
       <div class="flex flex-1 flex-col gap-6 p-6">

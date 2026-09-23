@@ -21,9 +21,7 @@ useColorMode({
   initialValue: 'light',
 })
 
-useSeoMetaTags({
-  title: __('auth.verification.title'),
-})
+useSeoMetaTags()
 
 const route = inject('route')
 

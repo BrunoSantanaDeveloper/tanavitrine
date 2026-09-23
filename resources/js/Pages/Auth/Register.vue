@@ -27,9 +27,7 @@ useColorMode({
   initialValue: 'light',
 })
 
-useSeoMetaTags({
-  title: __('register.title'),
-})
+useSeoMetaTags()
 
 const route = inject('route')
 

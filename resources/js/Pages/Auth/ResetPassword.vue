@@ -18,9 +18,7 @@ const props = defineProps({
   token: String,
 })
 
-useSeoMetaTags({
-  title: 'Register',
-})
+useSeoMetaTags()
 
 const route = inject('route')
 const form = useForm({
