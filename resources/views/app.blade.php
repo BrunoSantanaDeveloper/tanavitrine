@@ -73,44 +73,9 @@
             ],
         ];
 
-        $store = is_array($pageProps['store'] ?? null) ? $pageProps['store'] : null;
-        if ($store) {
-            $addressLine = trim(implode(', ', array_filter([
-                $store['address'] ?? null,
-                $store['address_number'] ?? null,
-            ])));
-
-            $storeSchema = array_filter([
-                '@type' => 'Store',
-                '@id' => $ogUrl . '#store',
-                'name' => $store['name'] ?? null,
-                'description' => $seoDescription,
-                'url' => $ogUrl,
-                'image' => $ogImage,
-                'telephone' => $store['phone'] ?? null,
-                'email' => $store['email'] ?? null,
-                'sameAs' => array_values(array_filter([
-                    $store['website'] ?? null,
-                    $store['instagram'] ?? null,
-                    $store['facebook'] ?? null,
-                    $store['tiktok'] ?? null,
-                ])),
-            ], fn ($value) => $value !== null && $value !== '' && $value !== []);
-
-            $postalAddress = array_filter([
-                '@type' => 'PostalAddress',
-                'streetAddress' => $addressLine ?: null,
-                'addressLocality' => $store['city'] ?? null,
-                'addressRegion' => $store['state'] ?? null,
-                'postalCode' => $store['zip_code'] ?? null,
-                'addressCountry' => 'BR',
-            ], fn ($value) => $value !== null && $value !== '');
-
-            if (count($postalAddress) > 2) {
-                $storeSchema['address'] = $postalAddress;
-            }
-
-            $schema['@graph'][] = $storeSchema;
+        $structuredData = $pageProps['structuredData'] ?? null;
+        if (is_array($structuredData) && $structuredData !== []) {
+            $schema['@graph'][] = $structuredData;
         }
     @endphp
 
@@ -145,7 +110,7 @@
 
     <!-- Structured Data -->
     <script type="application/ld+json">
-        {!! json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+        {!! json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}
     </script>
 
     @if ($googleAdsTagId !== '')

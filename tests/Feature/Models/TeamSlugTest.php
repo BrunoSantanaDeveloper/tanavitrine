@@ -32,6 +32,16 @@ test('unsafe slugs are normalized when a store is saved', function (): void {
     expect($store->slug)->toBe('loja-especial');
 });
 
+test('published store slugs remain stable after creation', function (): void {
+    $store = Team::factory()->create([
+        'slug' => 'url-original',
+    ]);
+
+    $store->update(['slug' => 'url-alterada']);
+
+    expect($store->fresh()->slug)->toBe('url-original');
+});
+
 test('the repair migration restores stores with empty slugs', function (): void {
     $store = Team::factory()->create(['name' => 'Loja com problema']);
     $store->newQuery()->whereKey($store->id)->update(['slug' => '']);

@@ -946,7 +946,7 @@ function scrollToSection(sectionId) {
 
               <!-- Description -->
               <Card id="store-section-sobre" class="p-6 scroll-mt-28">
-                <h2 class="text-2xl font-bold mb-4">Sobre o Fornecedor</h2>
+                <h2 class="text-2xl font-bold mb-4">Sobre a loja</h2>
                 <p class="text-muted-foreground leading-relaxed whitespace-pre-line">
                   {{ store.description }}
                 </p>
@@ -1150,7 +1150,7 @@ function scrollToSection(sectionId) {
                   <div v-if="hasMinOrder" class="flex items-start gap-3">
                     <Icon icon="lucide:check-circle" class="size-5 text-primary mt-1" />
                     <div>
-                      <p class="font-medium">Pedido Mínimo</p>
+                      <p class="font-medium">Pedido mínimo no atacado</p>
                       <p class="text-sm text-muted-foreground">{{ store.minOrder }}</p>
                     </div>
                   </div>
@@ -1226,8 +1226,9 @@ function scrollToSection(sectionId) {
                   <div class="flex gap-2">
                     <a
                       v-if="store.instagram"
-                      :href="`https://instagram.com/${store.instagram}`"
+                      :href="store.instagram"
                       target="_blank"
+                      rel="noopener noreferrer"
                       class="p-2 rounded-lg hover:bg-muted transition-colors"
                       aria-label="Instagram"
                       title="Instagram"
@@ -1237,8 +1238,9 @@ function scrollToSection(sectionId) {
                     </a>
                     <a
                       v-if="store.facebook"
-                      :href="`https://facebook.com/${store.facebook}`"
+                      :href="store.facebook"
                       target="_blank"
+                      rel="noopener noreferrer"
                       class="p-2 rounded-lg hover:bg-muted transition-colors"
                       aria-label="Facebook"
                       title="Facebook"
@@ -1248,8 +1250,9 @@ function scrollToSection(sectionId) {
                     </a>
                     <a
                       v-if="store.tiktok"
-                      :href="`https://tiktok.com/@${store.tiktok}`"
+                      :href="store.tiktok"
                       target="_blank"
+                      rel="noopener noreferrer"
                       class="p-2 rounded-lg hover:bg-muted transition-colors"
                       aria-label="TikTok"
                       title="TikTok"

@@ -325,11 +325,14 @@ const isStepValid = computed(() => {
                 </div>
 
                 <div v-if="form.sale_type === 'atacado' || form.sale_type === 'ambos'">
-                  <Label for="min_order">Pedido Mínimo</Label>
+                  <Label for="min_order">Pedido mínimo no atacado (peças)</Label>
                   <Input
                     id="min_order"
                     v-model="form.min_order"
-                    placeholder="Ex: 50 peças"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="Ex: 50"
                   />
                 </div>
               </div>

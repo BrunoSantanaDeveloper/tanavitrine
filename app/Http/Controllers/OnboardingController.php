@@ -191,7 +191,7 @@ final class OnboardingController extends Controller
             'description' => ['required', 'string', 'min:50'],
             'store_type' => ['required', 'in:fisica,virtual,ambos'],
             'is_manufacturer' => ['nullable', 'boolean'],
-            'min_order' => ['nullable', 'string', 'max:255'],
+            'min_order' => ['nullable', 'integer', 'min:1'],
 
             // Logo e Fotos
             'logo' => ['required', 'image', 'max:2048'], // 2MB max
@@ -220,10 +220,12 @@ final class OnboardingController extends Controller
                 'slug' => $slug,
                 'sale_type' => $validated['sale_type'],
                 'category_id' => $validated['category_id'],
-                'subcategory' => $validated['subcategory'],
+                'subcategory' => [$validated['subcategory']],
                 'gender' => $validated['gender'],
                 'description' => $validated['description'],
-                'min_order' => $validated['min_order'],
+                'min_order' => in_array($validated['sale_type'], ['atacado', 'ambos'], true)
+                    ? ($validated['min_order'] ?? null)
+                    : null,
                 'store_type' => $validated['store_type'],
                 'is_manufacturer' => (bool) ($validated['is_manufacturer'] ?? false),
                 'city' => $validated['city'],

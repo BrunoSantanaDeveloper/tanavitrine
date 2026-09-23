@@ -32,7 +32,6 @@ final class GenerateSitemap extends Command
     public function handle(): void
     {
         $sitemap = Sitemap::create();
-        $now = now();
         $baseUrl = $this->resolveBaseUrl();
 
         $staticPages = [
@@ -49,7 +48,6 @@ final class GenerateSitemap extends Command
         foreach ($staticPages as $page) {
             $sitemap->add(
                 Url::create($this->absoluteUrl($baseUrl, $page['path']))
-                    ->setLastModificationDate($now)
                     ->setChangeFrequency($page['frequency'])
                     ->setPriority($page['priority'])
             );
@@ -67,12 +65,15 @@ final class GenerateSitemap extends Command
                 ->get();
 
             foreach ($stores as $store) {
-                $sitemap->add(
-                    Url::create($this->absoluteUrl($baseUrl, "/loja/{$store->slug}"))
-                        ->setLastModificationDate($store->updated_at ?? $now)
-                        ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
-                        ->setPriority(0.8)
-                );
+                $url = Url::create($this->absoluteUrl($baseUrl, "/loja/{$store->slug}"))
+                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
+                    ->setPriority(0.8);
+
+                if ($store->updated_at !== null) {
+                    $url->setLastModificationDate($store->updated_at);
+                }
+
+                $sitemap->add($url);
             }
         }
 

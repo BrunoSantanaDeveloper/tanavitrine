@@ -463,9 +463,9 @@ function submit() {
                   </Select>
                 </div>
 
-                <div>
-                  <Label for="min_order">Pedido Mínimo</Label>
-                  <Input id="min_order" v-model="form.min_order" placeholder="Ex: 6 peças" />
+                <div v-if="form.sale_type === 'atacado' || form.sale_type === 'ambos'">
+                  <Label for="min_order">Pedido mínimo no atacado (peças)</Label>
+                  <Input id="min_order" v-model="form.min_order" type="number" min="1" step="1" placeholder="Ex: 6" />
                 </div>
               </div>
             </CardContent>

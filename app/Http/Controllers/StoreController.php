@@ -8,12 +8,20 @@ use App\Models\Team;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Support\SeoMeta;
+use App\Support\StoreMinimumOrder;
+use App\Support\StoreSeoBuilder;
+use App\Support\StoreSocialUrl;
+use App\Support\StoreStructuredDataBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 final class StoreController extends Controller
 {
-    public function __construct(private readonly SeoMeta $seoMeta) {}
+    public function __construct(
+        private readonly SeoMeta $seoMeta,
+        private readonly StoreSeoBuilder $storeSeoBuilder,
+        private readonly StoreStructuredDataBuilder $structuredDataBuilder,
+    ) {}
 
     /**
      * Display the specified store by slug.
@@ -34,6 +42,14 @@ final class StoreController extends Controller
             ->where('team_collection_id', null)
             ->where('category', '!=', 'logo')
             ->values();
+        $primaryFeaturedMedia = $featuredMedia->first(
+            static fn ($photo): bool => (bool) ($photo->pivot?->is_primary ?? false)
+        );
+        $logoMedia = $store->photos
+            ->where('type', 'image')
+            ->where('is_active', true)
+            ->where('category', 'logo')
+            ->first();
         $collections = $store->collections
             ->map(function ($collection) {
                 $photos = $collection->media
@@ -41,7 +57,7 @@ final class StoreController extends Controller
                     ->where('is_active', true)
                     ->values()
                     ->map(function ($photo) {
-                        return asset('storage/'.$photo->path);
+                        return $this->mediaUrl($photo->path);
                     })
                     ->toArray();
 
@@ -62,6 +78,17 @@ final class StoreController extends Controller
         $store->incrementViews();
 
         // Transform data for frontend
+        $logoUrl = $store->logo_path
+            ? $this->mediaUrl($store->logo_path)
+            : ($logoMedia?->path ? $this->mediaUrl($logoMedia->path) : null);
+        $minimumOrder = in_array($store->sale_type, ['atacado', 'ambos'], true)
+            ? StoreMinimumOrder::label($store->min_order)
+            : null;
+        $websiteUrl = StoreSocialUrl::website($store->website);
+        $instagramUrl = StoreSocialUrl::instagram($store->instagram);
+        $facebookUrl = StoreSocialUrl::facebook($store->facebook);
+        $tiktokUrl = StoreSocialUrl::tiktok($store->tiktok);
+
         $storeData = [
             'id' => $store->id,
             'code' => 'TV'.mb_str_pad((string) $store->id, 4, '0', STR_PAD_LEFT),
@@ -75,8 +102,10 @@ final class StoreController extends Controller
             'is_manufacturer' => (bool) $store->is_manufacturer,
             'saleType' => ucfirst($store->sale_type),
             'storeType' => ucfirst($store->store_type),
-            'minOrder' => $store->min_order,
+            'minOrder' => $minimumOrder,
             'location' => $store->city && $store->state ? "{$store->city} - {$store->state}" : null,
+            'city' => $store->city,
+            'state' => $store->state,
             'full_address' => $this->formatFullAddress($store),
             'address' => $store->address,
             'address_number' => $store->address_number,
@@ -89,18 +118,19 @@ final class StoreController extends Controller
             'whatsapp' => $store->whatsapp,
             'phone' => $store->phone,
             'email' => $store->email,
-            'website' => $store->website,
-            'instagram' => $store->instagram,
-            'facebook' => $store->facebook,
-            'tiktok' => $store->tiktok,
+            'website' => $websiteUrl,
+            'instagram' => $instagramUrl,
+            'facebook' => $facebookUrl,
+            'tiktok' => $tiktokUrl,
             'is_verified' => $store->isVerified(),
             'featured' => $store->isFeatured(),
-            'logo' => $store->logo_path ? asset('storage/'.$store->logo_path) : null,
+            'logo' => $logoUrl,
             'video_url' => $store->video_url,
             'images' => $featuredMedia->map(function ($photo) {
                 return [
                     'id' => $photo->id,
-                    'url' => asset('storage/'.$photo->path),
+                    'url' => $this->mediaUrl($photo->path),
+                    'is_primary' => (bool) ($photo->pivot?->is_primary ?? false),
                 ];
             })->toArray(),
             'collections' => $collections->toArray(),
@@ -112,26 +142,29 @@ final class StoreController extends Controller
                 : false,
         ];
 
-        $storePagePath = "/loja/{$store->slug}";
-        $fallbackDescription = "Conheça {$store->name} na Tá na Vitrine e entre em contato direto para atacado e varejo.";
-        $normalizedDescription = trim((string) preg_replace('/\s+/', ' ', strip_tags($store->description ?: $fallbackDescription)));
-        $seoDescription = mb_strlen($normalizedDescription) > 160
-            ? mb_substr($normalizedDescription, 0, 157).'...'
-            : $normalizedDescription;
-        $seoImage = $storeData['logo'] ?: ($storeData['images'][0]['url'] ?? asset('images/og.png'));
+        $seoImage = $primaryFeaturedMedia?->path
+            ? $this->mediaUrl($primaryFeaturedMedia->path)
+            : ($logoUrl ?: ($featuredMedia->first()?->path
+                ? $this->mediaUrl($featuredMedia->first()->path)
+                : asset('images/og.png')));
+        $seo = $this->storeSeoBuilder->build($store, $seoImage);
+        $structuredData = $this->structuredDataBuilder->build(
+            store: $store,
+            canonical: $seo['canonical'],
+            description: $seo['description'],
+            image: $seo['ogImage'],
+            sameAs: array_values(array_filter([
+                $websiteUrl,
+                $instagramUrl,
+                $facebookUrl,
+                $tiktokUrl,
+            ])),
+        );
 
         return Inertia::render('StoreDetail', [
             'store' => $storeData,
-            'seo' => $this->seoMeta->make(
-                title: $store->name,
-                description: $seoDescription,
-                canonical: $storePagePath,
-                indexable: true,
-                overrides: [
-                    'ogImage' => $seoImage,
-                    'twitterImage' => $seoImage,
-                ],
-            ),
+            'seo' => $seo,
+            'structuredData' => $structuredData,
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
         ]);
@@ -376,6 +409,13 @@ final class StoreController extends Controller
         ]);
 
         return ! empty($parts) ? implode(', ', $parts) : null;
+    }
+
+    private function mediaUrl(string $path): string
+    {
+        return filter_var($path, FILTER_VALIDATE_URL)
+            ? $path
+            : asset('storage/'.$path);
     }
 
     /**

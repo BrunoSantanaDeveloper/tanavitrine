@@ -389,7 +389,7 @@ final class Team extends JetstreamTeam
      */
     public function incrementViews(): void
     {
-        $this->increment('views_count');
+        $this->incrementMetricWithoutTimestamps('views_count');
 
         try {
             $this->viewEvents()->create([
@@ -405,7 +405,7 @@ final class Team extends JetstreamTeam
      */
     public function incrementWhatsappClicks(): void
     {
-        $this->increment('whatsapp_clicks');
+        $this->incrementMetricWithoutTimestamps('whatsapp_clicks');
         $this->recordInteraction(StoreInteraction::TYPE_WHATSAPP);
     }
 
@@ -414,7 +414,7 @@ final class Team extends JetstreamTeam
      */
     public function incrementWebsiteClicks(): void
     {
-        $this->increment('website_clicks');
+        $this->incrementMetricWithoutTimestamps('website_clicks');
         $this->recordInteraction(StoreInteraction::TYPE_WEBSITE);
     }
 
@@ -423,7 +423,7 @@ final class Team extends JetstreamTeam
      */
     public function incrementPhoneClicks(): void
     {
-        $this->increment('phone_clicks');
+        $this->incrementMetricWithoutTimestamps('phone_clicks');
         $this->recordInteraction(StoreInteraction::TYPE_PHONE);
     }
 
@@ -432,7 +432,7 @@ final class Team extends JetstreamTeam
      */
     public function incrementMapClicks(): void
     {
-        $this->increment('map_clicks');
+        $this->incrementMetricWithoutTimestamps('map_clicks');
         $this->recordInteraction(StoreInteraction::TYPE_MAP);
     }
 
@@ -441,7 +441,7 @@ final class Team extends JetstreamTeam
      */
     public function incrementShares(): void
     {
-        $this->increment('shares_count');
+        $this->incrementMetricWithoutTimestamps('shares_count');
     }
 
     /**
@@ -449,7 +449,7 @@ final class Team extends JetstreamTeam
      */
     public function incrementInstagramClicks(): void
     {
-        $this->increment('instagram_clicks');
+        $this->incrementMetricWithoutTimestamps('instagram_clicks');
         $this->recordInteraction(StoreInteraction::TYPE_INSTAGRAM);
     }
 
@@ -458,7 +458,7 @@ final class Team extends JetstreamTeam
      */
     public function incrementFacebookClicks(): void
     {
-        $this->increment('facebook_clicks');
+        $this->incrementMetricWithoutTimestamps('facebook_clicks');
         $this->recordInteraction(StoreInteraction::TYPE_FACEBOOK);
     }
 
@@ -467,7 +467,7 @@ final class Team extends JetstreamTeam
      */
     public function incrementTikTokClicks(): void
     {
-        $this->increment('tiktok_clicks');
+        $this->incrementMetricWithoutTimestamps('tiktok_clicks');
         $this->recordInteraction(StoreInteraction::TYPE_TIKTOK);
     }
 
@@ -482,6 +482,18 @@ final class Team extends JetstreamTeam
             // Keep the cumulative counter working during a rolling deployment.
             report($exception);
         }
+    }
+
+    private function incrementMetricWithoutTimestamps(string $column): void
+    {
+        $this->newQueryWithoutScopes()
+            ->whereKey($this->getKey())
+            ->toBase()
+            ->increment($column);
+
+        $currentValue = $this->getAttribute($column);
+        $this->setAttribute($column, (is_numeric($currentValue) ? (int) $currentValue : 0) + 1);
+        $this->syncOriginalAttribute($column);
     }
 
     /**
@@ -531,6 +543,11 @@ final class Team extends JetstreamTeam
         parent::boot();
 
         static::saving(function (Team $team): void {
+            $originalSlug = $team->getOriginal('slug');
+            if ($team->exists && $team->isDirty('slug') && is_string($originalSlug) && $originalSlug !== '') {
+                $team->slug = $originalSlug;
+            }
+
             $currentSlug = (string) $team->slug;
             $normalizedSlug = Str::slug($currentSlug);
 

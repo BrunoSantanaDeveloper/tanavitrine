@@ -12,6 +12,7 @@ use App\Models\Plan;
 use App\Models\Coupon;
 use App\Models\User;
 use App\Services\AdminStoreAccessService;
+use App\Support\StoreMinimumOrder;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -77,7 +78,9 @@ final class TeamResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
-                            ->helperText('URL amigável para a loja'),
+                            ->disabledOn('edit')
+                            ->dehydrated(fn (string $operation): bool => $operation === 'create')
+                            ->helperText('A URL é definida na criação e permanece estável para preservar o SEO.'),
                         Forms\Components\Textarea::make('description')
                             ->label('Descrição')
                             ->rows(3)
@@ -95,6 +98,7 @@ final class TeamResource extends Resource
                                 'varejo' => 'Varejo',
                                 'ambos' => 'Ambos',
                             ])
+                            ->live()
                             ->required()
                             ->default('varejo'),
                         Forms\Components\Select::make('store_type')
@@ -160,9 +164,24 @@ final class TeamResource extends Resource
                             ->helperText('Ative quando a loja tiver fabricação própria.')
                             ->default(false),
                         Forms\Components\TextInput::make('min_order')
-                            ->label('Pedido Mínimo')
+                            ->label('Pedido mínimo no atacado')
                             ->numeric()
-                            ->prefix('R$'),
+                            ->minValue(1)
+                            ->step(1)
+                            ->suffix('peças')
+                            ->afterStateHydrated(
+                                fn (Forms\Components\TextInput $component, mixed $state) =>
+                                    $component->state(StoreMinimumOrder::pieces($state))
+                            )
+                            ->visible(fn (Forms\Get $get): bool => in_array($get('sale_type'), ['atacado', 'ambos'], true))
+                            ->dehydratedWhenHidden()
+                            ->dehydrateStateUsing(
+                                fn (mixed $state, Forms\Get $get): ?int =>
+                                    in_array($get('sale_type'), ['atacado', 'ambos'], true)
+                                        ? StoreMinimumOrder::pieces($state)
+                                        : null
+                            )
+                            ->helperText('Informe somente a quantidade mínima de peças.'),
                     ])
                     ->columns(2),
 

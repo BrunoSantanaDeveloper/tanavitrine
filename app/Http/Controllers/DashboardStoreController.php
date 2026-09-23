@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Team;
 use App\Models\Category;
 use App\Support\GoogleMapsEmbed;
+use App\Support\StoreMinimumOrder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -59,7 +60,7 @@ class DashboardStoreController extends Controller
             'subcategory.*' => ['string', 'max:255'],
             'gender' => ['nullable', 'in:masculino,feminino,unissex'],
             'is_manufacturer' => ['nullable', 'boolean'],
-            'min_order' => ['nullable', 'string', 'max:255'],
+            'min_order' => ['nullable', 'integer', 'min:1'],
             'whatsapp' => ['required', 'string', 'max:20'],
             'phone' => ['nullable', 'string', 'max:20'],
             'email' => ['required', 'email', 'max:255'],
@@ -83,6 +84,9 @@ class DashboardStoreController extends Controller
         $validated['personal_team'] = false;
         $validated['status'] = 'pendente'; // Needs approval
         $validated['is_manufacturer'] = (bool) ($validated['is_manufacturer'] ?? false);
+        $validated['min_order'] = in_array($validated['sale_type'], ['atacado', 'ambos'], true)
+            ? ($validated['min_order'] ?? null)
+            : null;
         $validated['google_maps_embed_url'] = GoogleMapsEmbed::sanitize($validated['google_maps_embed_url'] ?? null);
 
         $store = Team::create($validated);
@@ -156,7 +160,7 @@ class DashboardStoreController extends Controller
                 'subcategory' => $store->subcategory,
                 'gender' => $store->gender,
                 'is_manufacturer' => (bool) $store->is_manufacturer,
-                'min_order' => $store->min_order,
+                'min_order' => StoreMinimumOrder::pieces($store->min_order),
                 'whatsapp' => $store->whatsapp,
                 'phone' => $store->phone,
                 'email' => $store->email,
@@ -206,7 +210,7 @@ class DashboardStoreController extends Controller
             'subcategory.*' => ['string', 'max:255'],
             'gender' => ['nullable', 'in:masculino,feminino,unissex'],
             'is_manufacturer' => ['nullable', 'boolean'],
-            'min_order' => ['nullable', 'string', 'max:255'],
+            'min_order' => ['nullable', 'integer', 'min:1'],
             'whatsapp' => ['nullable', 'string', 'max:20'],
             'phone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -241,6 +245,9 @@ class DashboardStoreController extends Controller
         unset($validated['logo']);
 
         $validated['is_manufacturer'] = (bool) ($validated['is_manufacturer'] ?? false);
+        $validated['min_order'] = in_array($validated['sale_type'], ['atacado', 'ambos'], true)
+            ? ($validated['min_order'] ?? null)
+            : null;
         $validated['google_maps_embed_url'] = GoogleMapsEmbed::sanitize($validated['google_maps_embed_url'] ?? null);
 
         $store->update($validated);
