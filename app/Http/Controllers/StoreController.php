@@ -8,17 +8,19 @@ use App\Models\Team;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Support\SeoMeta;
-use App\Support\StoreMinimumOrder;
-use App\Support\StoreSeoBuilder;
-use App\Support\StoreSocialUrl;
-use App\Support\StoreStructuredDataBuilder;
 use Illuminate\Http\Request;
+use App\Support\StoreSocialUrl;
+use App\Support\StoreSeoBuilder;
+use App\Support\StoreMinimumOrder;
 use Illuminate\Support\Facades\Route;
+use App\Support\StoreBreadcrumbBuilder;
+use App\Support\StoreStructuredDataBuilder;
 
 final class StoreController extends Controller
 {
     public function __construct(
         private readonly SeoMeta $seoMeta,
+        private readonly StoreBreadcrumbBuilder $breadcrumbBuilder,
         private readonly StoreSeoBuilder $storeSeoBuilder,
         private readonly StoreStructuredDataBuilder $structuredDataBuilder,
     ) {}
@@ -148,23 +150,28 @@ final class StoreController extends Controller
                 ? $this->mediaUrl($featuredMedia->first()->path)
                 : asset('images/og.png')));
         $seo = $this->storeSeoBuilder->build($store, $seoImage);
+        $breadcrumbs = $this->breadcrumbBuilder->build($store, $seo['canonical']);
         $structuredData = $this->structuredDataBuilder->build(
             store: $store,
             canonical: $seo['canonical'],
+            title: $seo['title'],
             description: $seo['description'],
             image: $seo['ogImage'],
+            logo: $logoUrl,
             sameAs: array_values(array_filter([
                 $websiteUrl,
                 $instagramUrl,
                 $facebookUrl,
                 $tiktokUrl,
             ])),
+            breadcrumbs: $breadcrumbs,
         );
 
         return Inertia::render('StoreDetail', [
             'store' => $storeData,
             'seo' => $seo,
             'structuredData' => $structuredData,
+            'breadcrumbs' => $breadcrumbs,
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
         ]);

@@ -75,7 +75,15 @@
 
         $structuredData = $pageProps['structuredData'] ?? null;
         if (is_array($structuredData) && $structuredData !== []) {
-            $schema['@graph'][] = $structuredData;
+            if (array_is_list($structuredData)) {
+                foreach ($structuredData as $structuredDataItem) {
+                    if (is_array($structuredDataItem) && $structuredDataItem !== []) {
+                        $schema['@graph'][] = $structuredDataItem;
+                    }
+                }
+            } else {
+                $schema['@graph'][] = $structuredData;
+            }
         }
     @endphp
 

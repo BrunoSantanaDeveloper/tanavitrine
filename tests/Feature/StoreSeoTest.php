@@ -45,6 +45,7 @@ it('renders automatic store metadata and safe structured data in the initial htm
         ->assertSee('<title>Letrevinho: Moda Feminina no Atacado em Goiânia | Tá na Vitrine</title>', false)
         ->assertSee('<meta name="robots" content="index, follow">', false)
         ->assertSee('https://instagram.com/letrevinho', false)
+        ->assertSee('Fabricantes', false)
         ->assertSee('Pedido mínimo de 10 peças.', false)
         ->assertDontSee('R$', false);
 
@@ -93,9 +94,59 @@ it('emits valid json ld without allowing script tag breakout', function (): void
 
     $schema = json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
 
+    $storeSchema = collect($schema['@graph'])->first(
+        static fn (array $item): bool => str_ends_with((string) ($item['@id'] ?? ''), '#store')
+    );
+
     expect($schema)->toBeArray()
         ->and($matches[1])->not->toContain('</script>')
-        ->and($schema['@graph'][2]['name'])->toBe('Loja alert(1)');
+        ->and($storeSchema['name'])->toBe('Loja alert(1)');
+});
+
+it('connects webpage breadcrumbs and physical store data in json ld', function (): void {
+    $store = Team::factory()->create([
+        'name' => 'Loja Física SEO',
+        'slug' => 'loja-fisica-estrutura-seo',
+        'personal_team' => false,
+        'status' => 'ativo',
+        'sale_type' => 'atacado',
+        'store_type' => 'fisica',
+        'address' => 'Rua da Moda',
+        'address_number' => '123',
+        'city' => 'Goiânia',
+        'state' => 'GO',
+        'zip_code' => '74000-000',
+        'latitude' => '-16.68690000',
+        'longitude' => '-49.26480000',
+        'google_maps_url' => 'https://maps.google.com/?q=-16.6869,-49.2648',
+    ]);
+
+    $content = $this->get("/loja/{$store->slug}")
+        ->assertOk()
+        ->assertSee('Atacado', false)
+        ->getContent();
+
+    preg_match(
+        '#<script type="application/ld\+json">\s*(.*?)\s*</script>#s',
+        $content,
+        $matches,
+    );
+    $schema = json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
+    $webPage = collect($schema['@graph'])->firstWhere('@type', 'WebPage');
+    $breadcrumb = collect($schema['@graph'])->firstWhere('@type', 'BreadcrumbList');
+    $storeSchema = collect($schema['@graph'])->firstWhere('@type', 'Store');
+
+    expect($webPage['mainEntity']['@id'])->toBe($storeSchema['@id'])
+        ->and($webPage['breadcrumb']['@id'])->toBe($breadcrumb['@id'])
+        ->and(array_column($breadcrumb['itemListElement'], 'name'))->toBe([
+            'Início',
+            'Atacado',
+            'Loja Física SEO',
+        ])
+        ->and($storeSchema['identifier'])->toBe('TV'.mb_str_pad((string) $store->id, 4, '0', STR_PAD_LEFT))
+        ->and($storeSchema['address']['streetAddress'])->toBe('Rua da Moda, 123')
+        ->and($storeSchema['geo']['latitude'])->toBe(-16.6869)
+        ->and($storeSchema['hasMap'])->toBe('https://maps.google.com/?q=-16.6869,-49.2648');
 });
 
 it('does not change content updated_at when interactions are tracked', function (): void {

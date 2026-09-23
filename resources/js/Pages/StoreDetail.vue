@@ -1,16 +1,24 @@
 <script setup>
 import Badge from '@/Components/shadcn/ui/badge/Badge.vue'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/Components/shadcn/ui/breadcrumb'
 import Button from '@/Components/shadcn/ui/button/Button.vue'
 import Card from '@/Components/shadcn/ui/card/Card.vue'
-import { useSeoMetaTags } from '@/Composables/useSeoMetaTags'
 import { Dialog, DialogContent } from '@/Components/shadcn/ui/dialog'
+import { useSeoMetaTags } from '@/Composables/useSeoMetaTags'
 import WebLayout from '@/Layouts/WebLayout.vue'
+import { trackWhatsAppAdsConversion } from '@/services/googleAnalytics'
 import { formatWhatsAppNumber } from '@/utils/formatters'
 import { Icon } from '@iconify/vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
-import { trackWhatsAppAdsConversion } from '@/services/googleAnalytics'
-import { computed, ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const props = defineProps({
   store: {
@@ -20,6 +28,10 @@ const props = defineProps({
   seo: {
     type: Object,
     default: () => null,
+  },
+  breadcrumbs: {
+    type: Array,
+    default: () => [],
   },
   canLogin: {
     type: Boolean,
@@ -707,6 +719,26 @@ function scrollToSection(sectionId) {
 <template>
   <WebLayout :can-login="canLogin" :can-register="canRegister" :showFloatingWhatsApp="false">
     <div class="min-h-screen bg-background">
+      <section v-if="breadcrumbs.length" class="border-b bg-background">
+        <div class="container mx-auto px-4 py-3">
+          <Breadcrumb aria-label="Navegação estrutural">
+            <BreadcrumbList>
+              <template v-for="(breadcrumb, index) in breadcrumbs" :key="`${breadcrumb.url}-${index}`">
+                <BreadcrumbSeparator v-if="index > 0" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage v-if="breadcrumb.current">
+                    {{ breadcrumb.name }}
+                  </BreadcrumbPage>
+                  <BreadcrumbLink v-else :href="breadcrumb.url">
+                    {{ breadcrumb.name }}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </template>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      </section>
+
       <!-- Photo Carousel Section -->
       <section class="bg-muted/30 py-2">
         <div class="w-full">
