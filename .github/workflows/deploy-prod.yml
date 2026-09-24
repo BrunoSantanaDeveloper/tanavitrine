@@ -76,7 +76,7 @@ jobs:
             export VITE_GOOGLE_ADS_ID='${{ secrets.VITE_GOOGLE_ADS_ID }}'
             export VITE_GOOGLE_ADS_WHATSAPP_CONVERSION_ID='${{ secrets.VITE_GOOGLE_ADS_WHATSAPP_CONVERSION_ID }}'
             export SEO_CATEGORY_PAGES_ENABLED='true'
-            export SEO_CATEGORY_INDEXING_ENABLED='false'
+            export SEO_CATEGORY_INDEXING_ENABLED='true'
             export SEO_CATEGORY_MIN_STORES='3'
 
             if [ -z "$STRIPE_KEY" ] || [ -z "$STRIPE_SECRET" ] || [ -z "$STRIPE_WEBHOOK_SECRET" ] || [ -z "$VITE_GA_MEASUREMENT_ID" ]; then

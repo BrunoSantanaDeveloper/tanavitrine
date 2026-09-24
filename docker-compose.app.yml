@@ -134,6 +134,9 @@ services:
       - APP_NAME=Tá na Vitrine
       - APP_ENV=production
       - APP_DEBUG=false
+      - SEO_CATEGORY_PAGES_ENABLED=${SEO_CATEGORY_PAGES_ENABLED:-false}
+      - SEO_CATEGORY_INDEXING_ENABLED=${SEO_CATEGORY_INDEXING_ENABLED:-false}
+      - SEO_CATEGORY_MIN_STORES=${SEO_CATEGORY_MIN_STORES:-3}
       - APP_LOCALE=pt_BR
       - APP_FALLBACK_LOCALE=pt_BR
       - CACHE_STORE=database
