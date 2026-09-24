@@ -91,6 +91,9 @@ final class HandleInertiaRequests extends Middleware
             'seo' => app(SeoMeta::class)->forRequest($request),
             'currentStore' => $currentStore,
             'subscriptionNav' => $subscriptionNav,
+            'features' => [
+                'categoryPages' => (bool) config('seo.category_pages_enabled', false),
+            ],
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),
                 'success' => fn () => $request->session()->get('success'),

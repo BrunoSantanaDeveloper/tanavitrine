@@ -412,11 +412,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/favoritos', [StoreController::class, 'favorites'])->name('favorites');
 });
 
-// Category pages remain disabled until their missing frontend components are implemented.
-if (config('seo.category_pages_enabled', false)) {
-    Route::get('/categorias', [CategoryController::class, 'index'])->name('categories.index');
-    Route::get('/categoria/{slug}', [CategoryController::class, 'show'])->name('categories.show');
-}
+// Runtime gates inside the controller allow a safe rollout without rebuilding the route cache.
+Route::get('/categorias', [CategoryController::class, 'index'])->name('categories.index');
+Route::get('/categoria/{slug}', [CategoryController::class, 'show'])->name('categories.show');
 
 Route::prefix('auth')->group(
     function () {

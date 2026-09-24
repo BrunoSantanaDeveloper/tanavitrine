@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Team;
+use App\Models\Category;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
 use Illuminate\Console\Command;
@@ -53,6 +54,8 @@ final class GenerateSitemap extends Command
             );
         }
 
+        $this->addCategoryPages($sitemap, $baseUrl);
+
         // Generate store detail URLs dynamically from active stores.
         if (Schema::hasTable('teams')) {
             $stores = Team::query()
@@ -78,6 +81,63 @@ final class GenerateSitemap extends Command
         }
 
         $sitemap->writeToFile(public_path('sitemap.xml'));
+    }
+
+    private function addCategoryPages(Sitemap $sitemap, string $baseUrl): void
+    {
+        if (
+            ! (bool) config('seo.category_pages_enabled', false)
+            || ! (bool) config('seo.category_indexing_enabled', false)
+            || ! Schema::hasTable('categories')
+            || ! Schema::hasTable('teams')
+        ) {
+            return;
+        }
+
+        $configuredMinimum = config('seo.category_min_stores', 3);
+        $minimumStores = max(1, is_numeric($configuredMinimum) ? (int) $configuredMinimum : 3);
+        $storeCounts = Team::query()
+            ->active()
+            ->where('personal_team', false)
+            ->whereNotNull('category_id')
+            ->select('category_id')
+            ->selectRaw('COUNT(*) as aggregate')
+            ->groupBy('category_id')
+            ->get()
+            ->mapWithKeys(static function (Team $store): array {
+                $count = $store->getAttribute('aggregate');
+
+                return [(int) $store->category_id => is_numeric($count) ? (int) $count : 0];
+            });
+
+        $categories = Category::query()
+            ->active()
+            ->parents()
+            ->orderBy('sort_order')
+            ->get()
+            ->filter(static fn (Category $category): bool => ($storeCounts[$category->id] ?? 0) >= $minimumStores);
+
+        if ($categories->isEmpty()) {
+            return;
+        }
+
+        $sitemap->add(
+            Url::create($this->absoluteUrl($baseUrl, '/categorias'))
+                ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
+                ->setPriority(0.8)
+        );
+
+        foreach ($categories as $category) {
+            $url = Url::create($this->absoluteUrl($baseUrl, "/categoria/{$category->slug}"))
+                ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
+                ->setPriority(0.8);
+
+            if ($category->updated_at !== null) {
+                $url->setLastModificationDate($category->updated_at);
+            }
+
+            $sitemap->add($url);
+        }
     }
 
     private function resolveBaseUrl(): string

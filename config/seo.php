@@ -26,13 +26,17 @@ return [
         'policy.show',
         'terms.show',
         'store.show',
+        'categories.index',
+        'categories.show',
     ],
 
     /*
-     * Category pages are intentionally disabled until their frontend pages are
-     * implemented. This prevents public routes from returning an HTTP 500.
+     * Category pages can be published and indexed independently. Keep both
+     * switches off until the local/staging validation has been completed.
      */
     'category_pages_enabled' => (bool) env('SEO_CATEGORY_PAGES_ENABLED', false),
+    'category_indexing_enabled' => (bool) env('SEO_CATEGORY_INDEXING_ENABLED', false),
+    'category_min_stores' => max(1, (int) env('SEO_CATEGORY_MIN_STORES', 3)),
 
     /*
      * Metadata for framework-owned pages that do not have an application

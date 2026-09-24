@@ -358,7 +358,7 @@ const faqItems = [
 </script>
 
 <template>
-  <WebLayout :can-login="canLogin" :can-register="canRegister">
+  <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="true">
     <!-- Hero Section -->
     <section class="relative overflow-hidden border-b border-orange-200 py-10 sm:py-20">
       <div class="absolute inset-0 z-0 overflow-hidden">

@@ -12,6 +12,7 @@ final class SeoMeta
      * Build the final SEO payload consumed by Blade and the Vue application.
      *
      * @param  array<string, mixed>  $overrides
+     * @param  array<string, bool|float|int|string>  $canonicalQuery
      * @return array<string, string>
      */
     public function make(
@@ -20,11 +21,12 @@ final class SeoMeta
         ?string $canonical = null,
         bool $indexable = false,
         array $overrides = [],
+        array $canonicalQuery = [],
     ): array {
         $siteName = $this->siteName();
         $finalTitle = $this->withSiteName($this->cleanText($title), $siteName);
         $finalDescription = $this->cleanText($description ?: (string) config('seo.default_description'));
-        $canonicalUrl = $this->canonicalUrl($canonical ?: '/');
+        $canonicalUrl = $this->canonicalUrl($canonical ?: '/', $canonicalQuery);
         $defaultImage = $this->absoluteUrl((string) config('seo.default_image', '/images/og.png'));
         $canIndex = (bool) config('seo.indexing_enabled', false) && $indexable;
 
@@ -58,8 +60,8 @@ final class SeoMeta
 
         // Indexing cannot be enabled by an override when the environment gate is off.
         $seo['robots'] = $canIndex ? (string) ($overrides['robots'] ?? 'index, follow') : 'noindex, nofollow';
-        $seo['canonical'] = $this->canonicalUrl((string) ($seo['canonical'] ?? $canonicalUrl));
-        $seo['ogUrl'] = $this->canonicalUrl((string) ($seo['ogUrl'] ?? $seo['canonical']));
+        $seo['canonical'] = $this->canonicalUrl((string) ($seo['canonical'] ?? $canonicalUrl), $canonicalQuery);
+        $seo['ogUrl'] = $this->canonicalUrl((string) ($seo['ogUrl'] ?? $seo['canonical']), $canonicalQuery);
         $seo['ogImage'] = $this->absoluteUrl((string) ($seo['ogImage'] ?? $defaultImage));
         $seo['twitterImage'] = $this->absoluteUrl((string) ($seo['twitterImage'] ?? $seo['ogImage']));
 
@@ -101,6 +103,13 @@ final class SeoMeta
         }
 
         $routeName = $request->route()?->getName();
+
+        if (
+            in_array($routeName, ['categories.index', 'categories.show'], true)
+            && ! (bool) config('seo.category_indexing_enabled', false)
+        ) {
+            return false;
+        }
 
         return is_string($routeName)
             && in_array($routeName, (array) config('seo.indexable_routes', []), true);
@@ -144,7 +153,8 @@ final class SeoMeta
         return trim((string) preg_replace('/\s+/u', ' ', strip_tags($value)));
     }
 
-    private function canonicalUrl(string $value): string
+    /** @param array<string, scalar> $query */
+    private function canonicalUrl(string $value, array $query = []): string
     {
         $value = trim($value);
         $path = parse_url($value, PHP_URL_PATH);
@@ -152,9 +162,13 @@ final class SeoMeta
             $path = '/';
         }
 
-        $url = $this->siteUrl().'/'.ltrim($path, '/');
+        $url = rtrim($this->siteUrl().'/'.ltrim($path, '/'), '/') ?: $this->siteUrl();
 
-        return rtrim($url, '/') ?: $this->siteUrl();
+        if ($query !== []) {
+            $url .= '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+        }
+
+        return $url;
     }
 
     private function absoluteUrl(string $value): string

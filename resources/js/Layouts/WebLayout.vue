@@ -3,7 +3,7 @@ import Button from '@/Components/shadcn/ui/button/Button.vue'
 import { Icon } from '@iconify/vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import { useColorMode } from '@vueuse/core'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { trackWhatsAppAdsConversion } from '@/services/googleAnalytics'
 
 const props = defineProps({
@@ -15,7 +15,7 @@ const props = defineProps({
   },
   showFloatingWhatsApp: {
     type: Boolean,
-    default: true,
+    default: false,
   },
 })
 
@@ -26,14 +26,17 @@ const mode = useColorMode({
 })
 const page = usePage()
 
-const navLinks = [
+const navLinks = computed(() => [
   { label: 'Atacado', href: '/atacado', external: false },
   { label: 'Varejo', href: '/varejo', external: false },
   { label: 'Fabricantes', href: '/fabricantes', external: false },
+  ...(page.props.features?.categoryPages
+    ? [{ label: 'Categorias', href: '/categorias', external: false }]
+    : []),
   { label: 'Sobre', href: '/about', external: false },
   { label: 'Planos', href: '/prices', external: false },
   { label: 'Contato', href: '#', external: false, action: 'whatsapp' },
-]
+])
 const mobileBottomLinks = [
   { label: 'Início', href: '/', icon: 'lucide:house' },
   { label: 'Atacado', href: '/atacado', icon: 'lucide:shopping-cart' },
@@ -46,6 +49,8 @@ function getNavIcon(href) {
   if (href === '/atacado') return 'lucide:shopping-cart'
   if (href === '/varejo') return 'lucide:store'
   if (href === '/fabricantes') return 'lucide:factory'
+  if (href === '/categorias')
+    return 'lucide:layout-grid'
   if (href === '/about') return 'lucide:info'
   if (href === '/prices') return 'lucide:badge-dollar-sign'
   return 'lucide:circle'
@@ -296,6 +301,11 @@ function sendWhatsApp() {
               <li>
                 <a href="/fabricantes" class="text-muted-foreground hover:text-foreground transition-colors">
                   Fabricantes
+                </a>
+              </li>
+              <li v-if="$page.props.features?.categoryPages">
+                <a href="/categorias" class="text-muted-foreground hover:text-foreground transition-colors">
+                  Categorias
                 </a>
               </li>
               <li>

@@ -79,6 +79,9 @@ jobs:
             export VITE_GA_MEASUREMENT_ID='${{ secrets.VITE_GA_MEASUREMENT_ID }}'
             export VITE_GOOGLE_ADS_ID='${{ secrets.VITE_GOOGLE_ADS_ID }}'
             export VITE_GOOGLE_ADS_WHATSAPP_CONVERSION_ID='${{ secrets.VITE_GOOGLE_ADS_WHATSAPP_CONVERSION_ID }}'
+            export SEO_CATEGORY_PAGES_ENABLED='true'
+            export SEO_CATEGORY_INDEXING_ENABLED='false'
+            export SEO_CATEGORY_MIN_STORES='3'
 
             if [ -z "$STRIPE_KEY" ] || [ -z "$STRIPE_SECRET" ] || [ -z "$STRIPE_WEBHOOK_SECRET" ] || [ -z "$VITE_GA_MEASUREMENT_ID" ]; then
               echo "❌ Secrets ausentes no GitHub (STRIPE_KEY / STRIPE_SECRET / STRIPE_WEBHOOK_SECRET / VITE_GA_MEASUREMENT_ID)."

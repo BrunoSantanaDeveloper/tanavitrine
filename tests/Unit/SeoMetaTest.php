@@ -66,3 +66,15 @@ it('forces canonical URLs onto the configured site origin', function (): void {
 
     expect($seo['canonical'])->toBe('https://tanavitrine.com.br/prices');
 });
+
+it('keeps an explicit page number in paginated canonical URLs', function (): void {
+    $seo = app(SeoMeta::class)->make(
+        title: 'Roupas',
+        canonical: '/categoria/roupas?ignored=value',
+        indexable: true,
+        canonicalQuery: ['page' => 2],
+    );
+
+    expect($seo['canonical'])->toBe('https://tanavitrine.com.br/categoria/roupas?page=2')
+        ->and($seo['ogUrl'])->toBe($seo['canonical']);
+});
