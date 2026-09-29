@@ -122,6 +122,21 @@ const getMetricValue = (metric) => {
 
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <Card>
+            <CardHeader class="flex flex-row items-center justify-between pb-2">
+              <CardTitle class="text-sm font-medium text-muted-foreground">
+                Cliques para abrir a loja
+              </CardTitle>
+              <Icon icon="lucide:mouse-pointer-click" class="h-5 w-5 text-teal-600" />
+            </CardHeader>
+            <CardContent>
+              <div class="text-3xl font-bold">{{ store.store_open_clicks || 0 }}</div>
+              <p class="text-xs text-muted-foreground mt-1">
+                Cliques no card, no nome ou em Detalhes
+              </p>
+            </CardContent>
+          </Card>
+
           <!-- Views -->
           <Card v-if="showViews">
             <CardHeader class="flex flex-row items-center justify-between pb-2">

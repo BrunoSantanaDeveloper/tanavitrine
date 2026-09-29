@@ -26,6 +26,7 @@ final class Reports extends Page implements HasTable
 
     /** @var array<string, string> */
     private const METRICS = [
+        'store_open' => 'Cliques para abrir a loja',
         'views' => 'Visualizações',
         'whatsapp' => 'Cliques no WhatsApp',
         'website' => 'Cliques no site',
@@ -37,6 +38,7 @@ final class Reports extends Page implements HasTable
 
     /** @var array<string, string> */
     private const CUMULATIVE_COLUMNS = [
+        'store_open' => 'store_open_clicks',
         'views' => 'views_count',
         'whatsapp' => 'whatsapp_clicks',
         'website' => 'website_clicks',
@@ -48,6 +50,7 @@ final class Reports extends Page implements HasTable
 
     /** @var array<string, string> */
     private const INTERACTION_TYPES = [
+        'store_open' => StoreInteraction::TYPE_STORE_OPEN,
         'whatsapp' => StoreInteraction::TYPE_WHATSAPP,
         'website' => StoreInteraction::TYPE_WEBSITE,
         'instagram' => StoreInteraction::TYPE_INSTAGRAM,
@@ -58,6 +61,7 @@ final class Reports extends Page implements HasTable
 
     /** @var list<string> */
     public array $selectedMetrics = [
+        'store_open',
         'views',
         'whatsapp',
         'website',

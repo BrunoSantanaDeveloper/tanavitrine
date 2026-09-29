@@ -397,6 +397,7 @@ Route::get('/api/stores/load-more', [WelcomeController::class, 'loadMoreStores']
 // Store routes
 Route::get('/loja/{slug}', [StoreController::class, 'show'])->name('store.show');
 Route::post('/loja/{slug}/lead', [StoreController::class, 'captureLead'])->name('store.lead');
+Route::post('/loja/{slug}/track/open', [StoreController::class, 'trackStoreOpenClick'])->name('store.track.open');
 Route::post('/loja/{slug}/track/whatsapp', [StoreController::class, 'trackWhatsAppClick'])->name('store.track.whatsapp');
 Route::post('/loja/{slug}/track/website', [StoreController::class, 'trackWebsiteClick'])->name('store.track.website');
 Route::post('/loja/{slug}/track/phone', [StoreController::class, 'trackPhoneClick'])->name('store.track.phone');

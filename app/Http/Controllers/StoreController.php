@@ -396,6 +396,18 @@ final class StoreController extends Controller
         ]);
     }
 
+    public function trackStoreOpenClick(string $slug)
+    {
+        $store = Team::where('slug', $slug)
+            ->where('personal_team', false)
+            ->active()
+            ->firstOrFail();
+
+        $store->incrementStoreOpenClicks();
+
+        return response()->json(['success' => true]);
+    }
+
     private function formatFullAddress(Team $store): ?string
     {
         $streetLine = trim(implode(', ', array_filter([

@@ -23,6 +23,7 @@ test('super administrator can open the store reports page', function (): void {
         ->get('/admin/relatorios')
         ->assertOk()
         ->assertSee('Relatórios de lojas')
+        ->assertSee('Cliques para abrir a loja')
         ->assertSee('Loja com métricas');
 });
 

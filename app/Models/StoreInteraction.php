@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class StoreInteraction extends Model
 {
+    public const TYPE_STORE_OPEN = 'store_open';
+
     public const TYPE_WHATSAPP = 'whatsapp';
 
     public const TYPE_WEBSITE = 'website';

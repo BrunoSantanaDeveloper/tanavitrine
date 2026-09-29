@@ -150,9 +150,24 @@ function prevImage() {
   }
 }
 
+let lastStoreOpenClickAt = 0
+
+function trackStoreOpenClick() {
+  if (props.store.previewDetailUrl) return
+
+  const now = Date.now()
+  if (now - lastStoreOpenClickAt < 750) return
+  lastStoreOpenClickAt = now
+
+  axios.post(`/loja/${props.store.slug}/track/open`).catch(() => {
+    // Tracking failures must not prevent opening the store.
+  })
+}
+
 function openStoreDetails() {
   if (isNavigatingToDetails.value) return
   isNavigatingToDetails.value = true
+  trackStoreOpenClick()
 
   router.visit(storeDetailHref.value, {
     onFinish: () => {
@@ -388,7 +403,7 @@ async function shareStore() {
                   </Badge>
                 </div>
                 <h3 class="text-xl font-bold text-foreground mb-2 line-clamp-2 min-h-[3.5rem]">
-                  <Link :href="storeDetailHref" class="hover:underline" @click.stop>
+                  <Link :href="storeDetailHref" class="hover:underline" @click.stop="trackStoreOpenClick">
                     {{ store.name }}
                   </Link>
                 </h3>
@@ -457,7 +472,7 @@ async function shareStore() {
               class="flex-1 cursor-pointer"
               :as="Link"
               :href="storeDetailHref"
-              @click.stop
+              @click.stop="trackStoreOpenClick"
             >
               <Icon icon="lucide:eye" class="size-4 mr-1" />
               Detalhes

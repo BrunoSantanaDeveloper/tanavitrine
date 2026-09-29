@@ -455,6 +455,12 @@ final class TeamResource extends Resource
                 Forms\Components\Section::make('Analytics')
                     ->description('Métricas de desempenho da loja (somente leitura)')
                     ->schema([
+                        Forms\Components\TextInput::make('store_open_clicks')
+                            ->label('Cliques para abrir a loja')
+                            ->helperText('Total de cliques no card, no nome ou no botão Detalhes.')
+                            ->numeric()
+                            ->disabled()
+                            ->dehydrated(false),
                         Forms\Components\TextInput::make('views_count')
                             ->label('Visualizações')
                             ->numeric()

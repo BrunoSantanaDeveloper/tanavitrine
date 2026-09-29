@@ -74,7 +74,12 @@ const props = defineProps({
 
             <CardContent class="space-y-4">
               <!-- Stats -->
-              <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div class="p-2 bg-muted rounded-lg">
+                  <Icon icon="lucide:mouse-pointer-click" class="size-4 mx-auto mb-1 text-muted-foreground" />
+                  <p class="text-xs text-muted-foreground">Cliques para abrir a loja</p>
+                  <p class="font-semibold">{{ store.store_open_clicks || 0 }}</p>
+                </div>
                 <div class="p-2 bg-muted rounded-lg">
                   <Icon icon="lucide:eye" class="size-4 mx-auto mb-1 text-muted-foreground" />
                   <p class="text-xs text-muted-foreground">Visualizações</p>

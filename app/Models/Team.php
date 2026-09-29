@@ -157,6 +157,7 @@ final class Team extends JetstreamTeam
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
             'views_count' => 'integer',
+            'store_open_clicks' => 'integer',
             'whatsapp_clicks' => 'integer',
             'website_clicks' => 'integer',
             'phone_clicks' => 'integer',
@@ -469,6 +470,12 @@ final class Team extends JetstreamTeam
     {
         $this->incrementMetricWithoutTimestamps('tiktok_clicks');
         $this->recordInteraction(StoreInteraction::TYPE_TIKTOK);
+    }
+
+    public function incrementStoreOpenClicks(): void
+    {
+        $this->incrementMetricWithoutTimestamps('store_open_clicks');
+        $this->recordInteraction(StoreInteraction::TYPE_STORE_OPEN);
     }
 
     private function recordInteraction(string $type): void
