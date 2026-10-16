@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Laravel\Fortify\Fortify;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Fortify\CreateStoreUser;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use App\Actions\Fortify\ResetUserPassword;
@@ -36,7 +36,7 @@ final class FortifyServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::createUsersUsing(CreateStoreUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
@@ -64,10 +64,6 @@ final class FortifyServiceProvider extends ServiceProvider
 
     private function configureRegisterView(): void
     {
-        Fortify::registerView(function (Request $request) {
-            return Inertia::render('Auth/Register', [
-                'plan' => $request->query('plan'),
-            ]);
-        });
+        Fortify::registerView(fn () => redirect()->route('prices'));
     }
 }

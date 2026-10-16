@@ -310,7 +310,7 @@ class PlanResource extends Resource
                         return $intervals->map(function ($interval) use ($record) {
                             $pivotId = $interval->pivot->id;
 
-                            $url = route('register', [
+                            $url = route('onboarding.start', [
                                 'plan' => $pivotId,
                             ]);
                             return [

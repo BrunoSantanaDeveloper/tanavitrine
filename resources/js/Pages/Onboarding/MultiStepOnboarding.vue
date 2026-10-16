@@ -365,7 +365,7 @@ function submitForm() {
           currentStep.value = 2 // Step 2: Category
         } else if (errors.logo || errors.photos || errors.video) {
           currentStep.value = 3 // Step 3: Media
-        } else if (errors.whatsapp || errors.address || errors.social_media) {
+        } else if (errors.whatsapp || errors.address || errors.social_media || Object.keys(errors).some(key => key.startsWith('address.'))) {
           currentStep.value = 4 // Step 4: Contact
         }
       },

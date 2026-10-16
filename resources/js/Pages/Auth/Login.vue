@@ -272,13 +272,13 @@ useSeoMetaTags()
           </div>
 
           <!-- Sign Up Link -->
-          <div class="mt-4 text-center text-xs text-cyan-100/85">
-            {{ isSupplierProfile ? 'Ainda não anuncia na plataforma?' : __('login.dont_have_account') }}
+          <div v-if="isSupplierProfile" class="mt-4 text-center text-xs text-cyan-100/85">
+            Ainda não anuncia na plataforma?
             <Link
-              :href="isSupplierProfile ? '/prices/#pricing' : route('register')"
+              href="/prices/#pricing"
               class="font-semibold text-yellow-300 hover:text-yellow-200 hover:underline underline-offset-4"
             >
-              {{ isSupplierProfile ? 'Começar agora' : 'Criar conta de comprador' }}
+              Começar agora
             </Link>
           </div>
         </CardContent>
