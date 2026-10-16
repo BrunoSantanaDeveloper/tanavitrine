@@ -2,6 +2,7 @@
 import FeaturesCard from '@/Components/FeaturesCard.vue'
 import PricingCard from '@/Components/PricingCard.vue'
 import StoreCard from '@/Components/StoreCard.vue'
+import WeeklyFeaturedStores from '@/Components/WeeklyFeaturedStores.vue'
 import Accordion from '@/Components/shadcn/ui/accordion/Accordion.vue'
 import AccordionContent from '@/Components/shadcn/ui/accordion/AccordionContent.vue'
 import AccordionItem from '@/Components/shadcn/ui/accordion/AccordionItem.vue'
@@ -39,6 +40,10 @@ const props = defineProps({
     default: () => [],
   },
   recentStores: {
+    type: Array,
+    default: () => [],
+  },
+  weeklyFeaturedStores: {
     type: Array,
     default: () => [],
   },
@@ -313,7 +318,10 @@ onBeforeUnmount(() => {
     </template>
 
     <!-- Hero Section -->
-    <section class="relative overflow-hidden border-b border-orange-200 py-10 sm:py-14 lg:flex lg:min-h-screen lg:items-center">
+    <section
+      class="relative overflow-hidden border-b border-orange-200 py-10 sm:py-14 lg:flex lg:items-center"
+      :class="weeklyFeaturedStores.length ? 'lg:min-h-[560px]' : 'lg:min-h-screen'"
+    >
       <!-- Background Image -->
       <div class="absolute inset-0 -z-10">
         <img
@@ -407,6 +415,8 @@ onBeforeUnmount(() => {
       </div>
 
     </section>
+
+    <WeeklyFeaturedStores :stores="weeklyFeaturedStores" />
 
         <!-- Selector Section -->
         <section id="selector-section" class="relative">

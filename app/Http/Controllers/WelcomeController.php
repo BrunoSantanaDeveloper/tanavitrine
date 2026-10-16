@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Models\Team;
+use App\Models\StorePromotion;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Support\SeoMeta;
@@ -20,12 +21,29 @@ final class WelcomeController extends Controller
 
     public function home(): Response
     {
+        $weeklyFeaturedStores = StorePromotion::query()
+            ->current()
+            ->whereHas('team', fn ($query) => $query->active()->where('personal_team', false))
+            ->with(['team.category', 'team.plan', 'team.owner.subscriptions', 'team.photos' => function ($query): void {
+                $query->where('type', 'image')
+                    ->where('media.is_active', true)
+                    ->whereNull('media.team_collection_id')
+                    ->where(fn ($nestedQuery) => $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo'))
+                    ->orderByDesc('team_media.is_primary')
+                    ->orderBy('team_media.order');
+            }])
+            ->orderBy('position')
+            ->orderBy('id')
+            ->limit(3)
+            ->get()
+            ->map(fn (StorePromotion $promotion): array => $this->transformStore($promotion->team));
+
         // Get all featured stores and rotate the top store daily.
         $featuredStores = $this->rotateFeaturedStores(
             Team::active()
                 ->where('personal_team', false)
                 ->featured()
-                ->with(['category', 'plan', 'photos' => function ($query): void {
+                ->with(['category', 'plan', 'owner.subscriptions', 'photos' => function ($query): void {
                     $query->where('type', 'image')
                         ->where('media.is_active', true)
                         ->whereNull('media.team_collection_id')
@@ -46,7 +64,7 @@ final class WelcomeController extends Controller
         // Get recent stores (including featured ones)
         $recentStores = Team::active()
             ->where('personal_team', false)
-            ->with(['category', 'plan', 'photos' => function ($query): void {
+            ->with(['category', 'plan', 'owner.subscriptions', 'photos' => function ($query): void {
                 $query->where('type', 'image')
                     ->where('media.is_active', true)
                     ->whereNull('media.team_collection_id')
@@ -96,6 +114,7 @@ final class WelcomeController extends Controller
             'canRegister' => Route::has('register'),
             'featuredStores' => $featuredStores,
             'recentStores' => $recentStores,
+            'weeklyFeaturedStores' => $weeklyFeaturedStores,
             'categoriesAtacado' => $categoriesAtacado,
             'categoriesVarejo' => $categoriesVarejo,
             'states' => $states,
