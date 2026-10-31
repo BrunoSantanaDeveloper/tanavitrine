@@ -36,7 +36,7 @@ final class StorePromotionResource extends Resource
     {
         return $form->schema([
             Forms\Components\Section::make('Vitrine da semana')
-                ->description('Reserve uma das três posições na página inicial. Horários de Brasília. A exibição começa e termina automaticamente nas datas escolhidas.')
+                ->description('Reserve uma das quatro posições na página inicial. Horários de Brasília. A exibição começa e termina automaticamente nas datas escolhidas.')
                 ->schema([
                     Forms\Components\Select::make('team_id')
                         ->label('Loja / Vitrine')
@@ -46,7 +46,7 @@ final class StorePromotionResource extends Resource
                         ->required(),
                     Forms\Components\Select::make('position')
                         ->label('Posição na home')
-                        ->options([1 => '1 — Primeira', 2 => '2 — Segunda', 3 => '3 — Terceira'])
+                        ->options([1 => '1 — Primeira', 2 => '2 — Segunda', 3 => '3 — Terceira', 4 => '4 — Quarta'])
                         ->required()
                         ->default(1),
                     Forms\Components\DateTimePicker::make('starts_at')

@@ -65,6 +65,9 @@ onMounted(() => {
   if (urlParams.has('categorias[]')) {
     filters.value.categorias = urlParams.getAll('categorias[]')
   }
+  if (urlParams.has('subcategorias[]')) {
+    filters.value.subcategorias = urlParams.getAll('subcategorias[]')
+  }
   if (urlParams.has('tipoLoja')) filters.value.tipoLoja = urlParams.get('tipoLoja')
   const fabricanteParam = urlParams.get('fabricante') ?? urlParams.get('manufacturer')
   if (fabricanteParam) filters.value.fabricante = normalizeManufacturerFilter(fabricanteParam)
@@ -254,6 +257,7 @@ const alternatedListings = computed(() => {
         store.category,
         store.gender,
         store.saleType,
+        normalizeText(store.saleType) === 'ambos' ? 'atacado e varejo' : null,
         ...(Array.isArray(store.subcategory) ? store.subcategory : [store.subcategory]),
       ].filter(Boolean).join(' '))
 
@@ -442,7 +446,7 @@ onBeforeUnmount(() => {
   <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="false">
     <!-- Sticky Filter Section -->
     <section class="sticky top-16 z-30 bg-background border-b border-border shadow-md">
-      <div class="container mx-auto px-4 py-4">
+      <div class="site-shell py-4">
         <!-- Header -->
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-3">
@@ -700,8 +704,8 @@ onBeforeUnmount(() => {
 
     <!-- Store Listings Section -->
     <section class="py-8 bg-muted/30">
-      <div class="container mx-auto px-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
+      <div class="site-shell">
+        <div class="store-grid">
           <div
             v-for="store in alternatedListings"
             :key="store.id"

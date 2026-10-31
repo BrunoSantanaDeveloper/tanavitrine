@@ -69,6 +69,44 @@ it('does not substitute normal plan highlights when there are no campaigns', fun
         ->has('featuredStores', 1));
 });
 
+it('lets an administrator reserve a fourth storefront and shows all four on the home page', function (): void {
+    $this->actingAs(User::factory()->create(['is_superadmin' => true]));
+    Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+    $stores = [];
+    foreach (range(1, 3) as $position) {
+        $stores[] = $store = promotionStore();
+        reservePromotion($store, ['position' => $position]);
+    }
+    $stores[] = $fourth = promotionStore();
+
+    Livewire::test(CreateStorePromotion::class)
+        ->fillForm([
+            'team_id' => $fourth->id,
+            'position' => 4,
+            'starts_at' => '2026-10-15 12:00:00',
+            'ends_at' => '2026-10-22 12:00:00',
+            'is_active' => true,
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(StorePromotion::where('team_id', $fourth->id)->firstOrFail()->position)->toBe(4);
+
+    $this->get('/')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->component('Welcome')
+        ->has('weeklyFeaturedStores', 4)
+        ->where('weeklyFeaturedStores.0.id', $stores[0]->id)
+        ->where('weeklyFeaturedStores.1.id', $stores[1]->id)
+        ->where('weeklyFeaturedStores.2.id', $stores[2]->id)
+        ->where('weeklyFeaturedStores.3.id', $fourth->id));
+});
+
+it('rejects positions outside the four available slots', function (int $position): void {
+    expect(fn () => reservePromotion(promotionStore(), ['position' => $position]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+})->with([0, 5]);
+
 it('returns to an empty weekly section when no reservation is eligible', function (string $state): void {
     $store = promotionStore(['featured' => true]);
     $attributes = match ($state) {
@@ -149,29 +187,29 @@ it('lets an administrator create and edit a campaign using Brasilia time', funct
         ->and($store->fresh()->featured_until)->toBeNull();
 
     Livewire::test(EditStorePromotion::class, ['record' => $promotion->id])
-        ->fillForm(['position' => 2])
+        ->fillForm(['position' => 4])
         ->call('save')
         ->assertHasNoFormErrors();
 
-    expect($promotion->fresh()->position)->toBe(2);
+    expect($promotion->fresh()->position)->toBe(4);
 });
 
-it('shows a form error when the position is already reserved', function (): void {
+it('shows a form error when the position is already reserved', function (int $position): void {
     $this->actingAs(User::factory()->create(['is_superadmin' => true]));
     Filament::setCurrentPanel(Filament::getPanel('admin'));
-    reservePromotion(promotionStore());
+    reservePromotion(promotionStore(), ['position' => $position]);
 
     Livewire::test(CreateStorePromotion::class)
         ->fillForm([
             'team_id' => promotionStore()->id,
-            'position' => 1,
+            'position' => $position,
             'starts_at' => '2026-10-16 10:00:00',
             'ends_at' => '2026-10-23 10:00:00',
             'is_active' => true,
         ])->call('create')->assertHasFormErrors(['position']);
 
     expect(StorePromotion::count())->toBe(1);
-});
+})->with([1, 4]);
 
 it('rejects an edit that would occupy another reserved position', function (): void {
     $this->actingAs(User::factory()->create(['is_superadmin' => true]));

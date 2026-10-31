@@ -373,7 +373,7 @@ const faqItems = [
       </div>
       <div class="absolute inset-0 z-0 bg-linear-to-r from-teal-950/70 via-teal-900/62 to-teal-800/68" />
 
-      <div class="relative z-10 container mx-auto px-4 text-center">
+      <div class="relative z-10 site-shell text-center">
         <!-- Main Heading -->
         <div class="mx-auto max-w-4xl">
           <h1
@@ -409,7 +409,7 @@ const faqItems = [
     </section>
 
     <section id="pricing" class="border-t border-orange-200 bg-linear-to-b from-orange-50/70 via-amber-50/30 to-white">
-      <div class="container mx-auto px-4 py-16 sm:px-6 lg:px-8">
+      <div class="site-shell py-16">
         <!-- Header -->
         <div class="mx-auto mb-12 max-w-4xl text-center">
           <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">
@@ -583,7 +583,7 @@ const faqItems = [
     </section>
 
     <!-- Features Grid -->
-    <section id="features" class="container mx-auto px-4 py-25 sm:px-6 lg:px-8">
+    <section id="features" class="site-shell py-25">
       <h2 class="text-center text-2xl font-bold tracking-tight sm:text-4xl">
         Foco em visibilidade e conexão
       </h2>
@@ -610,7 +610,7 @@ const faqItems = [
 
     <!-- FAQ Section -->
     <section id="faq" class="border-t border-orange-200">
-      <div class="container mx-auto px-4 pt-16 sm:px-6 lg:px-8">
+      <div class="site-shell pt-16">
         <div class="mx-auto max-w-3xl">
           <div class="text-center mb-12">
             <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -637,7 +637,7 @@ const faqItems = [
 
     <!-- CTA Section -->
     <section id="cta" class="relative overflow-hidden">
-      <div class="container relative z-10 mx-auto px-4 py-16 sm:py-24 sm:px-6 lg:px-8">
+      <div class="site-shell relative z-10 py-16 sm:py-24">
         <div class="relative overflow-hidden rounded-3xl bg-white/10 backdrop-blur-sm px-6 py-16 shadow-2xl sm:px-16 border border-white/20">
           <!-- Background Image -->
           <div class="absolute inset-0 -z-10 overflow-hidden">

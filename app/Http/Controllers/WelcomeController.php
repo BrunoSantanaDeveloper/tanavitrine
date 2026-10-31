@@ -10,6 +10,7 @@ use App\Models\StorePromotion;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Support\SeoMeta;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -34,7 +35,7 @@ final class WelcomeController extends Controller
             }])
             ->orderBy('position')
             ->orderBy('id')
-            ->limit(3)
+            ->limit(StorePromotion::MAX_POSITIONS)
             ->get()
             ->map(fn (StorePromotion $promotion): array => $this->transformStore($promotion->team));
 
@@ -57,27 +58,6 @@ final class WelcomeController extends Controller
                 ->orderByDesc('id')
                 ->get()
         )
-            ->map(function ($store) {
-                return $this->transformStore($store);
-            });
-
-        // Get recent stores (including featured ones)
-        $recentStores = Team::active()
-            ->where('personal_team', false)
-            ->with(['category', 'plan', 'owner.subscriptions', 'photos' => function ($query): void {
-                $query->where('type', 'image')
-                    ->where('media.is_active', true)
-                    ->whereNull('media.team_collection_id')
-                    ->where(function ($nestedQuery): void {
-                        $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo');
-                    })
-                    ->orderByDesc('team_media.is_primary')
-                    ->orderBy('team_media.order');
-            }])
-            ->orderBy('created_at', 'desc')
-            ->orderByDesc('id')
-            ->limit(6)
-            ->get()
             ->map(function ($store) {
                 return $this->transformStore($store);
             });
@@ -109,12 +89,31 @@ final class WelcomeController extends Controller
             ->sort()
             ->values();
 
+        $quickSearchSubcategories = Team::active()
+            ->where('personal_team', false)
+            ->get(['subcategory'])
+            ->flatMap(function (Team $store): Collection {
+                $names = is_array($store->subcategory) ? $store->subcategory : [$store->subcategory];
+
+                return collect($names)
+                    ->filter(fn ($name): bool => is_string($name))
+                    ->map(fn (string $name): string => trim($name))
+                    ->filter()
+                    ->unique(fn (string $name): string => mb_strtolower($name));
+            })
+            ->groupBy(fn (string $name): string => mb_strtolower($name))
+            ->map(fn (Collection $names): array => ['name' => $names->first(), 'count' => $names->count()])
+            ->sortBy([['count', 'desc'], ['name', 'asc']])
+            ->take(6)
+            ->pluck('name')
+            ->values();
+
         return Inertia::render('Welcome', [
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'featuredStores' => $featuredStores,
-            'recentStores' => $recentStores,
             'weeklyFeaturedStores' => $weeklyFeaturedStores,
+            'quickSearchSubcategories' => $quickSearchSubcategories,
             'categoriesAtacado' => $categoriesAtacado,
             'categoriesVarejo' => $categoriesVarejo,
             'states' => $states,
@@ -149,6 +148,55 @@ final class WelcomeController extends Controller
                 description: 'Tá na Vitrine é o maior catálogo de fornecedores de moda do Brasil para quem busca fornecedor de moda, moda no atacado e varejo com contato direto.',
                 canonical: '/',
                 indexable: true,
+            ),
+        ]);
+    }
+
+    public function search(Request $request): Response
+    {
+        $filters = $request->validate([
+            'busca' => ['nullable', 'string', 'max:150'],
+            'subcategorias' => ['sometimes', 'array', 'max:20'],
+            'subcategorias.*' => ['string', 'max:150'],
+        ]);
+
+        $stores = Team::active()
+            ->where('personal_team', false)
+            ->with(['category', 'plan', 'owner.subscriptions', 'photos' => function ($query): void {
+                $query->where('type', 'image')
+                    ->where('media.is_active', true)
+                    ->whereNull('media.team_collection_id')
+                    ->where(fn ($nestedQuery) => $nestedQuery->whereNull('category')->orWhere('category', '!=', 'logo'))
+                    ->orderByDesc('team_media.is_primary')
+                    ->orderBy('team_media.order');
+            }])
+            ->orderByDesc('featured')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $allStores = $stores->map(fn (Team $store): array => $this->transformStore($store));
+        [$categories, $subcategories] = $this->buildFilterOptionsFromStores($allStores);
+        $physicalStores = $stores->whereIn('store_type', ['ambos', 'fisica']);
+
+        return Inertia::render('Varejo', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+            'isSearchPage' => true,
+            'initialSearchFilters' => [
+                'busca' => $filters['busca'] ?? '',
+                'subcategorias' => $filters['subcategorias'] ?? [],
+            ],
+            'stores' => $allStores,
+            'categories' => $categories,
+            'subcategories' => $subcategories,
+            'states' => $physicalStores->pluck('state')->filter()->unique()->sort()->values(),
+            'cities' => $physicalStores->pluck('city')->filter()->unique()->sort()->values(),
+            'seo' => $this->seoMeta->make(
+                title: 'Buscar lojas e fornecedores',
+                description: 'Encontre lojas e fornecedores de atacado e varejo por nome, categoria ou subcategoria.',
+                canonical: '/buscar',
+                indexable: false,
             ),
         ]);
     }

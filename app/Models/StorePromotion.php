@@ -11,6 +11,8 @@ use Illuminate\Validation\ValidationException;
 
 final class StorePromotion extends Model
 {
+    public const MAX_POSITIONS = 4;
+
     protected $attributes = ['is_active' => true];
 
     protected $fillable = ['team_id', 'position', 'starts_at', 'ends_at', 'is_active', 'notes'];
@@ -61,8 +63,8 @@ final class StorePromotion extends Model
                 throw ValidationException::withMessages(['ends_at' => 'O término deve ser posterior ao início.']);
             }
 
-            if (! in_array($promotion->position, [1, 2, 3], true)) {
-                throw ValidationException::withMessages(['position' => 'Escolha uma posição de 1 a 3.']);
+            if (! in_array($promotion->position, range(1, self::MAX_POSITIONS), true)) {
+                throw ValidationException::withMessages(['position' => 'Escolha uma posição de 1 a '.self::MAX_POSITIONS.'.']);
             }
 
             if (! $promotion->is_active) {

@@ -364,7 +364,7 @@ onBeforeUnmount(() => {
   <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="false">
     <!-- Sticky Filter Section -->
     <section class="sticky top-16 z-30 bg-background border-b border-border shadow-md">
-      <div class="container mx-auto px-4 py-4">
+      <div class="site-shell py-4">
         <!-- Header -->
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-3">
@@ -583,8 +583,8 @@ onBeforeUnmount(() => {
 
     <!-- Store Listings Section -->
     <section class="py-8 bg-muted/30">
-      <div class="container mx-auto px-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
+      <div class="site-shell">
+        <div class="store-grid">
           <div
             v-for="store in alternatedListings"
             :key="store.id"

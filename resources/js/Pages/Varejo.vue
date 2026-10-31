@@ -41,6 +41,14 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  isSearchPage: {
+    type: Boolean,
+    default: false,
+  },
+  initialSearchFilters: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
 useSeoMetaTags(props.seo)
@@ -48,14 +56,14 @@ useSeoMetaTags(props.seo)
 // Search filters state (more detailed than hero)
 const filters = ref({
   categorias: [], // Changed to array for multiple selection
-  subcategorias: [], // Changed to array for multiple selection
+  subcategorias: [...(props.initialSearchFilters.subcategorias || [])],
   tipoLoja: '',
   fabricante: '',
   estado: '',
   cidade: '',
   genero: '',
   faixaPreco: '',
-  busca: ''
+  busca: props.initialSearchFilters.busca || ''
 })
 
 // Apply query parameters from URL on mount
@@ -64,6 +72,9 @@ onMounted(() => {
   // Handle multiple categories
   if (urlParams.has('categorias[]')) {
     filters.value.categorias = urlParams.getAll('categorias[]')
+  }
+  if (urlParams.has('subcategorias[]')) {
+    filters.value.subcategorias = urlParams.getAll('subcategorias[]')
   }
   if (urlParams.has('tipoLoja')) filters.value.tipoLoja = urlParams.get('tipoLoja')
   const fabricanteParam = urlParams.get('fabricante') ?? urlParams.get('manufacturer')
@@ -254,6 +265,7 @@ const alternatedListings = computed(() => {
         store.category,
         store.gender,
         store.saleType,
+        normalizeText(store.saleType) === 'ambos' ? 'atacado e varejo' : null,
         ...(Array.isArray(store.subcategory) ? store.subcategory : [store.subcategory]),
       ].filter(Boolean).join(' '))
 
@@ -442,15 +454,15 @@ onBeforeUnmount(() => {
   <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="false">
     <!-- Sticky Filter Section -->
     <section class="sticky top-16 z-30 bg-background border-b border-border shadow-md">
-      <div class="container mx-auto px-4 py-4">
+      <div class="site-shell py-4">
         <!-- Header -->
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Icon icon="lucide:store" class="size-5 text-primary-foreground" />
+              <Icon :icon="isSearchPage ? 'lucide:search' : 'lucide:store'" class="size-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 class="text-xl font-bold">Varejo</h1>
+              <h1 class="text-xl font-bold">{{ isSearchPage ? 'Buscar lojas e fornecedores' : 'Varejo' }}</h1>
               <p class="text-sm text-muted-foreground">
                 {{ alternatedListings.length }} lojas encontradas
               </p>
@@ -700,8 +712,8 @@ onBeforeUnmount(() => {
 
     <!-- Store Listings Section -->
     <section class="py-8 bg-muted/30">
-      <div class="container mx-auto px-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
+      <div class="site-shell">
+        <div class="store-grid">
           <div
             v-for="store in alternatedListings"
             :key="store.id"

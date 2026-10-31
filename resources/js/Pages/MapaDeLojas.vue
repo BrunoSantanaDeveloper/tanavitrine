@@ -22,7 +22,7 @@ const props = defineProps({
 <template>
   <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="false">
     <section class="py-12 sm:py-16">
-      <div class="container mx-auto px-4">
+      <div class="site-shell">
         <div class="mx-auto mb-8 max-w-5xl text-center">
           <div class="mb-4 flex justify-center">
             <Badge class="bg-primary text-primary-foreground shadow-lg">
@@ -36,7 +36,7 @@ const props = defineProps({
           </p>
         </div>
 
-        <Card class="mx-auto max-w-6xl p-4 sm:p-6">
+        <Card class="p-4 sm:p-6">
           <div class="h-[65vh] min-h-[420px]">
             <StoreMap :stores="stores" />
           </div>

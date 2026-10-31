@@ -720,7 +720,7 @@ function scrollToSection(sectionId) {
   <WebLayout :can-login="canLogin" :can-register="canRegister" :showFloatingWhatsApp="false">
     <div class="min-h-screen bg-background">
       <section v-if="breadcrumbs.length" class="border-b bg-background">
-        <div class="container mx-auto px-4 py-3">
+        <div class="site-shell py-3">
           <Breadcrumb aria-label="Navegação estrutural">
             <BreadcrumbList>
               <template v-for="(breadcrumb, index) in breadcrumbs" :key="`${breadcrumb.url}-${index}`">
@@ -876,7 +876,7 @@ function scrollToSection(sectionId) {
 
       <!-- Store Details Section -->
       <section class="py-12">
-        <div class="container mx-auto px-4">
+        <div class="site-shell">
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Main Content (Left) -->
             <div class="lg:col-span-2 space-y-6">

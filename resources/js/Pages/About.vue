@@ -163,7 +163,7 @@ const brandPillars = [
         <div class="absolute inset-0 bg-black/30" />
         <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:24px_24px] opacity-15" />
 
-        <div class="container relative z-10 mx-auto px-4">
+        <div class="site-shell relative z-10">
           <div class="mx-auto max-w-4xl text-center">
             <Badge variant="outline" class="mb-8 rounded-full border-teal-700/70 bg-teal-900/40 px-4 py-1 text-zinc-200">
               <span class="mr-2 inline-flex h-2 w-2 rounded-full bg-orange-500" />
@@ -196,7 +196,7 @@ const brandPillars = [
       </section>
 
       <section class="border-y border-teal-100 bg-[#eef6f4] py-20">
-        <div class="container mx-auto px-4">
+        <div class="site-shell">
           <div class="grid items-center gap-12 lg:grid-cols-2">
             <div>
               <h2 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
@@ -244,7 +244,7 @@ const brandPillars = [
       </section>
 
       <section class="border-y border-teal-800/60 bg-gradient-to-b from-teal-900 to-teal-950 py-24">
-        <div class="container mx-auto px-4">
+        <div class="site-shell">
           <div class="mx-auto mb-14 max-w-2xl text-center">
             <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">Como funciona</h2>
             <p class="mt-4 text-lg text-teal-100">Três passos simples para conectar oferta e demanda com velocidade.</p>
@@ -270,7 +270,7 @@ const brandPillars = [
       </section>
 
       <section class="border-y border-orange-100/80 bg-[#f7f2eb] py-24">
-        <div class="container mx-auto px-4">
+        <div class="site-shell">
           <div class="grid gap-6 lg:grid-cols-2">
             <article class="rounded-[2rem] border border-zinc-200 bg-zinc-100 p-8 sm:p-10 shadow-sm">
               <Badge class="mb-6 rounded-full bg-emerald-500/10 text-emerald-700">Para quem anuncia</Badge>
@@ -304,7 +304,7 @@ const brandPillars = [
       </section>
 
       <section class="bg-gradient-to-b from-[#ecf4f3] to-[#f6fbfa] py-24">
-        <div class="container mx-auto px-4">
+        <div class="site-shell">
           <div class="mx-auto mb-14 max-w-2xl text-center">
             <h2 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">Por que Tá na Vitrine</h2>
             <p class="mt-4 text-lg text-zinc-600">Diferenciais para aumentar resultado sem complicar sua operação.</p>
@@ -322,7 +322,7 @@ const brandPillars = [
 
       <section class="relative overflow-hidden border-y border-teal-800/60 bg-teal-950/85 py-16">
         <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:24px_24px]" />
-        <div class="container relative mx-auto px-4">
+        <div class="site-shell relative">
           <p class="mb-4 text-center text-sm text-zinc-400">
             Dados da plataforma atualizados em {{ lastUpdated || 'processamento' }}.
           </p>
@@ -354,7 +354,7 @@ const brandPillars = [
       </section>
 
       <section class="bg-[#f2f4f6] py-24">
-        <div class="container mx-auto px-4">
+        <div class="site-shell">
           <div class="mx-auto mb-12 max-w-3xl text-center">
             <Badge class="rounded-full bg-teal-100 text-teal-800">Nossa essência</Badge>
             <h2 class="mt-5 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">Uma marca construída para fortalecer o atacado de moda</h2>
@@ -399,7 +399,7 @@ const brandPillars = [
         <div class="absolute inset-0 bg-orange-500/5" />
         <div class="absolute left-1/2 top-1/2 h-[340px] w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500/15 blur-[120px]" />
 
-        <div class="container relative mx-auto max-w-4xl px-4 text-center">
+        <div class="site-shell relative max-w-4xl text-center">
           <h2 class="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
             Sua loja já está na
             <span class="text-orange-500"> vitrine certa? </span>

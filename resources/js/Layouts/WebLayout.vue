@@ -102,11 +102,11 @@ function sendWhatsApp() {
 <template>
   <div class="min-h-screen overflow-x-hidden">
     <header
-      class="fixed top-0 left-0 right-0 z-50 w-full border-b border-teal-200/20 bg-linear-to-r from-teal-900/95 via-teal-700/95 to-teal-900/95 backdrop-blur-sm"
+      class="fixed top-0 left-0 right-0 z-50 w-full bg-white"
     >
-      <div class="container flex h-16 items-center justify-between">
-        <div class="flex items-center">
-          <a class="flex items-center text-white text-2xl font-bold " href="/" :aria-label="$page.props.name">
+      <div class="site-shell flex h-16 items-center gap-6 lg:gap-10">
+        <div class="flex shrink-0 items-center">
+          <a class="flex items-center text-teal-900 text-2xl font-bold" href="/" :aria-label="$page.props.name">
             <img src="/tanavitrine_light_icon1.png" alt="tanavitrine" class="h-12">
             <div class="">
                 <span class="block mt-2">Tá na</span>
@@ -115,13 +115,12 @@ function sendWhatsApp() {
 
           </a>
         </div>
-        <div class="flex items-center">
-          <nav class="hidden md:flex items-center space-x-6 text-md font-medium sm:ml-4">
+        <div class="hidden min-w-0 flex-1 items-center md:flex md:self-end md:pb-2">
+          <nav class="flex items-center gap-4 text-md font-medium lg:gap-6">
             <a
               v-for="link in navLinks" :key="link.href" :href="link.href"
-              class="transition-colors hover:text-yellow-500 cursor-pointer" :class="[
-                link.href.startsWith('http') ? '' : 'text-white',
-              ]" :target="link.href.startsWith('http') ? '_blank' : undefined"
+              class="cursor-pointer text-teal-800 transition-colors hover:text-teal-600"
+              :target="link.href.startsWith('http') ? '_blank' : undefined"
               :rel="link.href.startsWith('http') ? 'noreferrer' : undefined"
               @click="handleNavClick(link, $event)"
             >
@@ -129,17 +128,17 @@ function sendWhatsApp() {
             </a>
           </nav>
         </div>
-        <div class="flex items-center space-x-4">
+        <div class="ml-auto flex shrink-0 items-center space-x-4 md:self-end md:pb-2">
           <div class="hidden sm:flex space-x-2">
             <template v-if="!$page.props.auth.user">
-              <Button variant="outline" :as="Link" href="/login" prefetch="mount">
+              <Button variant="outline" :as="Link" href="/login" prefetch="mount" class="md:border md:border-teal-200 md:bg-white md:text-teal-800 md:hover:bg-teal-50">
                 Entrar
               </Button>
-              <Button :as="Link" href="/prices/#pricing" prefetch="mount">
+              <Button :as="Link" href="/prices/#pricing" prefetch="mount" class="md:bg-teal-800 md:text-white md:hover:bg-teal-900">
                 Anunciar
               </Button>
             </template>
-            <Button v-else variant="outline" :as="Link" href="/dashboard" prefetch="mount">
+            <Button v-else variant="outline" :as="Link" href="/dashboard" prefetch="mount" class="md:border md:border-teal-200 md:bg-white md:text-teal-800 md:hover:bg-teal-50">
               Acessar Painel
             </Button>
           </div>
@@ -166,8 +165,8 @@ function sendWhatsApp() {
               :icon="mode === 'dark' ? 'lucide:sun' : 'lucide:moon'"
             />
           </Button>
-          <Button class="md:hidden text-white hover:text-yellow-500" variant="ghost" size="icon" aria-label="Toggle menu" @click="toggleMenu">
-            <Icon :icon="isMenuOpen ? 'lucide:x' : 'lucide:menu'" class="h-6 w-6 text-white" aria-hidden="true" />
+          <Button class="md:hidden text-teal-800 hover:bg-teal-50 hover:text-teal-600" variant="ghost" size="icon" aria-label="Toggle menu" @click="toggleMenu">
+            <Icon :icon="isMenuOpen ? 'lucide:x' : 'lucide:menu'" class="h-6 w-6" aria-hidden="true" />
           </Button>
         </div>
       </div>
@@ -180,36 +179,36 @@ function sendWhatsApp() {
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-show="isMenuOpen" class="md:hidden border-t border-teal-200/20 bg-gradient-to-b from-teal-900/95 via-teal-800/95 to-teal-900/95 backdrop-blur-md shadow-2xl">
+        <div v-show="isMenuOpen" class="md:hidden border-t border-teal-100 bg-white shadow-lg">
           <nav class="flex flex-col p-4 space-y-3">
             <div class="px-1 pt-1 pb-2">
-              <p class="text-xs font-semibold tracking-wider text-teal-100/80 uppercase">Navegação</p>
+              <p class="text-xs font-semibold tracking-wider text-teal-900 uppercase">Navegação</p>
             </div>
             <a
               v-for="link in navLinks" :key="link.href" :href="link.href"
-              class="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10 cursor-pointer"
+              class="flex items-center justify-between rounded-xl border border-teal-100 bg-white px-4 py-3 text-sm font-medium text-teal-900 transition-colors hover:bg-teal-50 cursor-pointer"
               :target="link.href.startsWith('http') ? '_blank' : undefined"
               :rel="link.href.startsWith('http') ? 'noreferrer' : undefined"
               @click="handleNavClick(link, $event)"
             >
               <span class="flex items-center gap-3">
-                <Icon :icon="getNavIcon(link.href)" class="size-4 text-yellow-300" aria-hidden="true" />
+                <Icon :icon="getNavIcon(link.href)" class="size-4" aria-hidden="true" />
                 <span>{{ link.label }}</span>
               </span>
-              <Icon icon="lucide:chevron-right" class="size-4 text-white/60" aria-hidden="true" />
+              <Icon icon="lucide:chevron-right" class="size-4 text-teal-900/60" aria-hidden="true" />
             </a>
 
-            <div class="pt-3 border-t border-white/15 space-y-2">
+            <div class="pt-3 border-t border-teal-100 space-y-2">
               <template v-if="!$page.props.auth.user">
                 <Button
-                  variant="outline" :as="Link" href="/login" class="w-full border-white/30 bg-transparent text-white hover:bg-white/10" prefetch="mount"
+                  variant="outline" :as="Link" href="/login" class="w-full border-teal-200 bg-white text-teal-900 hover:bg-teal-50 hover:text-teal-900" prefetch="mount"
                   @click="toggleMenu"
                 >
                   <Icon icon="lucide:log-in" class="size-4 mr-2" aria-hidden="true" />
                   Entrar
                 </Button>
                 <Button
-                  :as="Link" href="/prices" class="w-full bg-yellow-400 text-teal-900 hover:bg-yellow-300" prefetch="mount"
+                  variant="outline" :as="Link" href="/prices" class="w-full border-teal-200 bg-white text-teal-900 hover:bg-teal-50 hover:text-teal-900" prefetch="mount"
                   @click="toggleMenu"
                 >
                   <Icon icon="lucide:rocket" class="size-4 mr-2" aria-hidden="true" />
@@ -217,7 +216,7 @@ function sendWhatsApp() {
                 </Button>
               </template>
               <Button
-                v-else :as="Link" href="/dashboard" class="w-full border-white/30 bg-transparent text-white hover:bg-white/10"
+                v-else variant="outline" :as="Link" href="/dashboard" class="w-full border-teal-200 bg-white text-teal-900 hover:bg-teal-50 hover:text-teal-900"
                 prefetch="mount" @click="toggleMenu"
               >
                 <Icon icon="lucide:layout-dashboard" class="size-4 mr-2" aria-hidden="true" />
@@ -241,7 +240,7 @@ function sendWhatsApp() {
     </div>
 
     <nav
-      class="fixed inset-x-0 bottom-0 z-50 border-t border-teal-200/20 bg-teal-800 shadow-[0_-6px_14px_rgba(15,23,42,0.18)] md:hidden"
+      class="fixed inset-x-0 bottom-0 z-50 border-t border-teal-100 bg-white shadow-[0_-6px_14px_rgba(15,23,42,0.06)] md:hidden"
       style="padding-bottom: env(safe-area-inset-bottom); transform: translate3d(0, 0, 0); -webkit-transform: translate3d(0, 0, 0); backface-visibility: hidden; -webkit-backface-visibility: hidden;"
     >
       <div class="grid min-h-[64px] grid-cols-5">
@@ -249,8 +248,9 @@ function sendWhatsApp() {
           v-for="link in mobileBottomLinks"
           :key="link.href"
           :href="link.href"
-          class="mx-1 my-1.5 flex min-h-[44px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-medium transition-colors"
-          :class="isMobileBottomActive(link.href) ? 'bg-yellow-400/20 text-yellow-300' : 'text-white/85'"
+          class="mx-1 my-1.5 flex min-h-[44px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-medium text-teal-900 transition-colors hover:bg-teal-50"
+          :class="isMobileBottomActive(link.href) ? 'bg-teal-50 font-semibold' : ''"
+          :aria-current="isMobileBottomActive(link.href) ? 'page' : undefined"
           prefetch="mount"
         >
           <Icon :icon="link.icon" class="size-4" aria-hidden="true" />
@@ -261,7 +261,7 @@ function sendWhatsApp() {
 
     <!-- Footer -->
     <footer class="border-t bg-muted/30">
-      <div class="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+      <div class="site-shell py-12">
         <!-- Main Footer Content -->
         <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 mb-8">
           <!-- Brand Column -->
@@ -367,6 +367,18 @@ function sendWhatsApp() {
                   rel="noopener noreferrer"
                   class="hover:text-foreground transition-colors"
                   aria-label="Instagram"
+                >
+                  tanavitrineoficial
+                </a>
+              </li>
+              <li class="flex items-center gap-2">
+                <Icon icon="ri:tiktok-line" class="size-4 text-muted-foreground" aria-hidden="true" />
+                <a
+                  href="https://www.tiktok.com/@tanavitrineoficial"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="hover:text-foreground transition-colors"
+                  aria-label="TikTok da Tá na Vitrine"
                 >
                   tanavitrineoficial
                 </a>

@@ -9,6 +9,7 @@ import { ref, computed } from 'vue'
 import axios from 'axios'
 import { trackWhatsAppAdsConversion } from '@/services/googleAnalytics'
 import { formatWhatsAppNumber } from '@/utils/formatters'
+import { useImageAutoplay } from '@/Composables/useImageAutoplay'
 
 const props = defineProps({
   store: {
@@ -19,16 +20,22 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  weeklyFeatured: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const isFavorited = ref(props.store.is_favorited || false)
 const isFavoriting = ref(false)
 const currentImageIndex = ref(0)
+const imageContainer = ref(null)
 
 // Get all images from store (assuming store has an 'images' array, fallback to single 'image')
 const images = computed(() => {
   if (props.store.images && props.store.images.length > 0) {
-    return props.store.images
+    const photos = props.store.images.filter(Boolean)
+    if (photos.length) return photos
   }
   // Fallback to single image or placeholder
   if (props.store.image) {
@@ -60,10 +67,6 @@ const isManufacturerStore = computed(() => {
 
   return false
 })
-const showLocationTag = computed(() => {
-  const raw = normalizedStoreType.value
-  return raw !== 'virtual' && raw !== 'online'
-})
 const normalizedSubcategories = computed(() => {
   const raw = props.store.subcategory
 
@@ -78,10 +81,6 @@ const normalizedSubcategories = computed(() => {
   }
 
   return []
-})
-const showSubcategoryTag = computed(() => {
-  const raw = normalizedStoreType.value
-  return (raw === 'virtual' || raw === 'online' || raw === 'ambos') && normalizedSubcategories.value.length > 0
 })
 const subcategoriesLabel = computed(() => {
   const items = normalizedSubcategories.value
@@ -98,56 +97,25 @@ const subcategoriesLabel = computed(() => {
   return `${items.slice(0, 2).join(', ')} +${items.length - 2}`
 })
 
+const storeInfoLabel = computed(() => [
+  props.store.badge?.toLowerCase() === 'ambos' ? 'Atacado e varejo' : props.store.badge,
+  props.store.category,
+  subcategoriesLabel.value,
+].filter(Boolean).join(' · '))
+
 const hasMultipleImages = computed(() => images.value.length > 1)
+const { moveImage } = useImageAutoplay(imageContainer, images, currentImageIndex)
 const touchStartX = ref(0)
 const touchStartY = ref(0)
 const isNavigatingToDetails = ref(false)
-const imageAspectRatios = ref({})
-
-const currentImageAspectRatio = computed(() => {
-  const imageUrl = currentImage.value
-  if (!imageUrl)
-    return null
-
-  return imageAspectRatios.value[imageUrl] ?? null
-})
-
-const adaptiveImageScaleClass = computed(() => {
-  const aspectRatio = currentImageAspectRatio.value
-
-  if (aspectRatio === null) {
-    return 'scale-100 sm:scale-100 lg:scale-100'
-  }
-
-  // Wider images tend to expose bottom background more often, so apply stronger zoom.
-  if (aspectRatio >= 0.82) {
-    return 'scale-110 sm:scale-[1.18] lg:scale-[1.22]'
-  }
-
-  // Tall/near-card images already fill the frame; extra zoom causes unnecessary crop.
-  return 'scale-100 sm:scale-100 lg:scale-100'
-})
-
-const adaptiveImagePositionClass = computed(() => {
-  const aspectRatio = currentImageAspectRatio.value
-
-  if (aspectRatio === null) {
-    return 'object-center'
-  }
-
-  return aspectRatio >= 0.82 ? 'object-top' : 'object-center'
-})
+let lastImageSwipeAt = 0
 
 function nextImage() {
-  if (hasMultipleImages.value) {
-    currentImageIndex.value = (currentImageIndex.value + 1) % images.value.length
-  }
+  moveImage(1)
 }
 
 function prevImage() {
-  if (hasMultipleImages.value) {
-    currentImageIndex.value = (currentImageIndex.value - 1 + images.value.length) % images.value.length
-  }
+  moveImage(-1)
 }
 
 let lastStoreOpenClickAt = 0
@@ -179,19 +147,9 @@ function openStoreDetails() {
   })
 }
 
-function handleCardContentClick(event) {
-  const interactiveTarget = event.target?.closest?.('a, button, [role="button"]')
-  if (interactiveTarget) return
-  openStoreDetails()
-}
-
-function isMobileCardView() {
-  return typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
-}
-
 function handleImageTap() {
-  if (!hasMultipleImages.value || !isMobileCardView()) return
-  nextImage()
+  if (Date.now() - lastImageSwipeAt < 500) return
+  openStoreDetails()
 }
 
 function onImageTouchStart(event) {
@@ -214,26 +172,13 @@ function onImageTouchEnd(event) {
   // Only treat as swipe when horizontal gesture is dominant.
   if (Math.abs(deltaX) < minSwipe || Math.abs(deltaX) <= Math.abs(deltaY)) return
 
+  lastImageSwipeAt = Date.now()
+
   if (deltaX < 0) {
     nextImage()
   } else {
     prevImage()
   }
-}
-
-function onImageLoad(event) {
-  const imageUrl = currentImage.value
-  const target = event.target
-
-  if (!imageUrl || !(target instanceof HTMLImageElement)) {
-    return
-  }
-
-  if (!target.naturalWidth || !target.naturalHeight) {
-    return
-  }
-
-  imageAspectRatios.value[imageUrl] = target.naturalWidth / target.naturalHeight
 }
 
 async function toggleFavorite() {
@@ -271,224 +216,153 @@ async function openWhatsApp() {
   })
 }
 
-async function shareStore() {
-  try {
-    await axios.post(`/loja/${props.store.slug}/track/share`)
-  } catch (error) {
-    // Continue even if tracking fails
-  }
-
-  if (navigator.share) {
-    navigator.share({
-      title: props.store.name,
-      text: props.store.description,
-      url: `${window.location.origin}${storeDetailHref.value}`
-    }).catch(() => {})
-  } else {
-    // Fallback: copy to clipboard
-    const url = `${window.location.origin}${storeDetailHref.value}`
-    navigator.clipboard.writeText(url)
-    alert('Link copiado para a área de transferência!')
-  }
-}
 </script>
 
 <template>
-  <Card
-    class="h-full overflow-hidden hover:shadow-lg transition-shadow duration-300"
-    :class="{ 'ring-2 ring-primary/20': store.featured }"
-  >
-    <div class="grid h-full grid-cols-1 gap-0 sm:grid-cols-5 sm:items-stretch">
-      <!-- Image Section with Carousel -->
-      <div class="sm:col-span-2 relative group h-64 sm:h-auto sm:self-stretch sm:min-h-[320px] lg:min-h-[340px] overflow-hidden bg-muted">
-        <!-- Placeholder quando não houver imagem -->
-        <div
-          v-if="!currentImage"
-          class="absolute inset-0 w-full h-full bg-muted flex flex-col items-center justify-center"
-        >
-          <Icon icon="lucide:image-off" class="size-12 text-muted-foreground mb-2" />
-          <p class="text-muted-foreground text-sm">Sem imagem</p>
-        </div>
-
-        <!-- Main Image -->
-        <img
-          v-else
-          :src="currentImage"
-          :alt="store.name"
-          :class="[
-            'absolute inset-0 block w-full h-full object-cover origin-top transition-opacity duration-300',
-            adaptiveImagePositionClass,
-            adaptiveImageScaleClass,
-          ]"
-          @load="onImageLoad"
-          @click="handleImageTap"
-          @touchstart.passive="onImageTouchStart"
-          @touchend.passive="onImageTouchEnd"
-        />
-
-        <div class="absolute top-3 left-3 flex flex-wrap gap-2 z-10">
-          <Badge
-            v-if="store.featured"
-            class="bg-primary text-primary-foreground shadow-lg"
+  <Card class="flex h-full min-w-0 flex-col border-0 bg-transparent shadow-none">
+    <div
+      ref="imageContainer"
+      class="store-card-visual group relative aspect-[16/10] shrink-0 overflow-hidden rounded-xl bg-muted"
+      @touchstart.passive="onImageTouchStart"
+      @touchend.passive="onImageTouchEnd"
+    >
+      <button
+        type="button"
+        class="absolute inset-0 h-full w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-700"
+        :aria-label="`Ver vitrine de ${store.name}`"
+        @click="handleImageTap"
+      >
+        <Transition name="store-photo">
+          <img
+            v-if="currentImage"
+            :key="currentImage"
+            :src="currentImage"
+            :alt="store.name"
+            loading="lazy"
+            draggable="false"
+            class="store-card-photo absolute inset-0 h-full w-full object-cover object-center"
           >
-            <Icon icon="lucide:star" class="size-3 mr-1" />
-            Destaque
+          <span v-else class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+            <Icon icon="lucide:image-off" class="size-10" aria-hidden="true" />
+            <span class="text-xs">Sem imagem</span>
+          </span>
+        </Transition>
+      </button>
+
+      <div class="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+      <div class="pointer-events-none absolute left-3 right-3 top-3 flex items-start justify-between gap-2">
+        <div class="flex min-w-0 flex-wrap gap-1.5">
+          <Badge v-if="weeklyFeatured || store.featured" class="bg-primary text-primary-foreground text-[10px] shadow-sm">
+            <Icon icon="lucide:star" class="mr-1 size-3" aria-hidden="true" />
+            {{ weeklyFeatured ? 'Destaque da semana' : 'Destaque' }}
           </Badge>
-          <Badge
-            v-if="store.is_verified"
-            class="bg-teal-600 text-white shadow-lg"
-          >
-            <Icon icon="lucide:badge-check" class="size-3 mr-1" />
+          <Badge v-if="store.is_verified" class="bg-teal-700 text-white text-[10px] shadow-sm">
+            <Icon icon="lucide:badge-check" class="mr-1 size-3" aria-hidden="true" />
             Verificado
           </Badge>
         </div>
-
-        <!-- Navigation Arrows (only show if multiple images) -->
-        <template v-if="hasMultipleImages">
-          <button
-            @click.prevent.stop="prevImage"
-            class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-md transition-opacity z-10 bg-black/25 text-white backdrop-blur-sm opacity-90 sm:opacity-0 sm:bg-black/25 sm:text-white sm:backdrop-blur-sm sm:group-hover:opacity-100 sm:hover:bg-black/35"
-            aria-label="Imagem anterior"
-          >
-            <Icon icon="lucide:chevron-left" class="size-5" />
-          </button>
-          <button
-            @click.prevent.stop="nextImage"
-            class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-md transition-opacity z-10 bg-black/25 text-white backdrop-blur-sm opacity-90 sm:opacity-0 sm:bg-black/25 sm:text-white sm:backdrop-blur-sm sm:group-hover:opacity-100 sm:hover:bg-black/35"
-            aria-label="Próxima imagem"
-          >
-            <Icon icon="lucide:chevron-right" class="size-5" />
-          </button>
-
-          <!-- Image Indicators -->
-          <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-            <button
-              v-for="(_, index) in images"
-              :key="index"
-              @click.prevent.stop="currentImageIndex = index"
-              class="w-2 h-2 rounded-full transition-all"
-              :class="currentImageIndex === index ? 'bg-white w-6' : 'bg-white/60'"
-              :aria-label="`Ver imagem ${index + 1}`"
-            />
-          </div>
-        </template>
+        <Badge v-if="storeTypeTagLabel" class="shrink-0 border-0 bg-black/65 text-[10px] text-white shadow-sm backdrop-blur-sm">
+          {{ storeTypeTagLabel }}
+        </Badge>
       </div>
-      <!-- Content Section -->
-      <div class="sm:col-span-3 p-6 flex h-full flex-col justify-between sm:min-h-[320px] lg:min-h-[340px] cursor-pointer" @click="handleCardContentClick">
-        <!-- Header -->
-        <div>
-          <div class="flex items-start justify-between mb-3">
-            <div class="flex items-start gap-3 flex-1">
-              <!-- Logo Avatar -->
-              <Avatar v-if="store.logo" size="sm" shape="square" class="mt-1">
-                <AvatarImage :src="store.logo" :alt="store.name" />
-                <AvatarFallback>{{ store.name.substring(0, 2).toUpperCase() }}</AvatarFallback>
-              </Avatar>
-
-              <div class="flex-1">
-                <p class="text-xs text-muted-foreground mb-1">Cod.: {{ store.code }}</p>
-                <div class="flex flex-wrap gap-1 mb-2">
-                  <template v-if="store.badge?.toLowerCase() === 'ambos'">
-                    <Badge variant="secondary" class="text-xs">Atacado</Badge>
-                    <Badge variant="secondary" class="text-xs">Varejo</Badge>
-                  </template>
-                  <Badge v-else variant="secondary" class="text-xs">
-                    {{ store.badge }}
-                  </Badge>
-                  <Badge v-if="storeTypeTagLabel" variant="secondary" class="text-xs">
-                    {{ storeTypeTagLabel }}
-                  </Badge>
-                  <Badge v-if="isManufacturerStore" class="bg-emerald-600 text-white text-xs">
-                    Fabricação Própria
-                  </Badge>
-                </div>
-                <h3 class="text-xl font-bold text-foreground mb-2 line-clamp-2 min-h-[3.5rem]">
-                  <Link :href="storeDetailHref" class="hover:underline" @click.stop="trackStoreOpenClick">
-                    {{ store.name }}
-                  </Link>
-                </h3>
-              </div>
-            </div>
-            <!-- Action Icons -->
-            <div class="flex gap-2">
-              <!--<button
-                v-if="showFavoriteButton"
-                @click="toggleFavorite"
-                :disabled="isFavoriting"
-                class="p-2 hover:bg-muted rounded-lg transition-colors"
-                :class="{ 'opacity-50 cursor-not-allowed': isFavoriting }"
-                :aria-label="isFavorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'"
-                :title="isFavorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'"
-              >
-                <Icon
-                  :icon="isFavorited ? 'lucide:heart' : 'lucide:heart'"
-                  class="size-5"
-                  :class="isFavorited ? 'text-red-500 fill-current' : 'text-muted-foreground'"
-                />
-              </button>-->
-              <button
-                @click.stop="shareStore"
-                class="p-2 hover:bg-muted rounded-lg transition-colors"
-                aria-label="Compartilhar"
-                title="Compartilhar loja"
-              >
-                <Icon icon="lucide:share-2" class="size-5 text-muted-foreground" />
-              </button>
+      <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-3 text-white">
+        <Link
+          :href="storeDetailHref"
+          class="flex min-w-0 flex-1 items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+          @click.stop="trackStoreOpenClick"
+        >
+          <Avatar size="sm" shape="circle" class="size-9 shrink-0 border-2 border-white/90 bg-white shadow-sm">
+            <AvatarImage v-if="store.logo" :src="store.logo" :alt="store.name" />
+            <AvatarFallback class="flex h-full w-full items-center justify-center bg-white text-xs font-semibold text-teal-900">{{ store.name.substring(0, 2).toUpperCase() }}</AvatarFallback>
+          </Avatar>
+          <div class="min-w-0 flex-1 drop-shadow-sm">
+            <h3 class="truncate text-sm font-bold sm:text-base" :title="store.name">{{ store.name }}</h3>
+            <div v-if="storeInfoLabel || isManufacturerStore" class="mt-0.5 flex min-w-0 items-center gap-1.5">
+              <p v-if="storeInfoLabel" class="line-clamp-2 min-w-0 text-[10px] leading-snug text-white/90 sm:text-xs" :title="storeInfoLabel">{{ storeInfoLabel }}</p>
+              <Icon v-if="isManufacturerStore" icon="lucide:factory" class="size-3.5 shrink-0 text-white/90" aria-label="Fabricação própria" />
             </div>
           </div>
-
-          <!-- Info Tags -->
-          <div class="flex flex-wrap gap-2 mb-3 text-sm">
-            <div v-if="store.category" class="flex items-center gap-1 text-muted-foreground">
-              <Icon icon="lucide:tag" class="size-4" />
-              <span>{{ store.category }}</span>
-            </div>
-            <div v-if="showSubcategoryTag" class="flex items-center gap-1 text-muted-foreground">
-              <Icon icon="lucide:tags" class="size-4" />
-              <span>{{ subcategoriesLabel }}</span>
-            </div>
-            <div v-if="store.location && showLocationTag" class="flex items-center gap-1 text-muted-foreground">
-              <Icon icon="lucide:map-pin" class="size-4" />
-              <span>{{ store.location }}</span>
-            </div>
-            <div v-if="store.minOrder" class="flex items-center gap-1 text-muted-foreground">
-              <Icon icon="lucide:package" class="size-4" />
-              <span>{{ store.minOrder }}</span>
-            </div>
-          </div>
-
-          <!-- Description -->
-          <p class="text-sm text-muted-foreground line-clamp-3 mb-4">
-            {{ store.description }}
-          </p>
-        </div>
-
-        <!-- Footer -->
-        <div>
-          <div class="flex items-center gap-3 pt-4 border-t border-border">
-            <Button
-              size="sm"
-              variant="outline"
-              class="flex-1 cursor-pointer"
-              :as="Link"
-              :href="storeDetailHref"
-              @click.stop="trackStoreOpenClick"
-            >
-              <Icon icon="lucide:eye" class="size-4 mr-1" />
-              Detalhes
-            </Button>
-            <Button
-              size="sm"
-              class="flex-1 bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-              @click.stop="openWhatsApp"
-            >
-              <Icon icon="lucide:message-circle" class="size-4 mr-1" />
-              WhatsApp
-            </Button>
-          </div>
-        </div>
+        </Link>
+        <Button
+          v-if="store.whatsapp"
+          type="button"
+          size="sm"
+          class="h-10 shrink-0 cursor-pointer gap-1.5 rounded-lg bg-green-600 px-3 text-xs text-white shadow-sm hover:bg-green-700 focus-visible:ring-white"
+          :aria-label="`Falar com ${store.name} no WhatsApp`"
+          @click.stop="openWhatsApp"
+        >
+          <Icon icon="lucide:message-circle" class="size-3.5" aria-hidden="true" />
+          WhatsApp
+        </Button>
       </div>
+
+      <template v-if="hasMultipleImages">
+        <button
+          type="button"
+          class="absolute left-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          aria-label="Imagem anterior"
+          @click.prevent.stop="prevImage"
+        >
+          <Icon icon="lucide:chevron-left" class="size-5" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          class="absolute right-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          aria-label="Próxima imagem"
+          @click.prevent.stop="nextImage"
+        >
+          <Icon icon="lucide:chevron-right" class="size-5" aria-hidden="true" />
+        </button>
+      </template>
     </div>
-  </Card>
 
+  </Card>
 </template>
+
+<style scoped>
+.store-card-photo {
+  transition: transform 250ms ease-out;
+}
+
+.store-photo-enter-active,
+.store-photo-leave-active {
+  transition: opacity 350ms ease, transform 250ms ease-out;
+}
+
+.store-photo-enter-from,
+.store-photo-leave-to {
+  opacity: 0;
+}
+
+@media (min-width: 1024px) {
+  .store-card-visual {
+    transition: transform 250ms ease-out, box-shadow 250ms ease-out;
+  }
+
+  .store-card-visual:hover,
+  .store-card-visual:focus-within {
+    box-shadow: 0 12px 28px -8px rgb(15 118 110 / 35%), 0 0 0 2px rgb(15 118 110 / 30%);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .store-card-visual:hover,
+    .store-card-visual:focus-within {
+      transform: translateY(-4px);
+    }
+
+    .store-card-visual:hover .store-card-photo,
+    .store-card-visual:focus-within .store-card-photo {
+      transform: scale(1.06);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-card-visual,
+  .store-card-photo,
+  .store-photo-enter-active,
+  .store-photo-leave-active {
+    transition: none;
+  }
+}
+</style>

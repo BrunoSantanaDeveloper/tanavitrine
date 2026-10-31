@@ -28,7 +28,7 @@ useSeoMetaTags(props.seo)
   <WebLayout :can-login="canLogin" :can-register="canRegister" :show-floating-whats-app="true">
     <main class="bg-background">
       <section class="border-b bg-gradient-to-b from-teal-50 to-background">
-        <div class="container mx-auto px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div class="site-shell py-10 sm:py-14">
           <nav aria-label="Navegação estrutural" class="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <template v-for="(breadcrumb, index) in breadcrumbs" :key="breadcrumb.url">
               <Icon v-if="index > 0" icon="lucide:chevron-right" class="size-4" aria-hidden="true" />
@@ -47,10 +47,10 @@ useSeoMetaTags(props.seo)
         </div>
       </section>
 
-      <section class="container mx-auto px-4 py-10 sm:px-6 lg:px-8" aria-labelledby="categories-title">
+      <section class="site-shell py-10" aria-labelledby="categories-title">
         <h2 id="categories-title" class="sr-only">Categorias disponíveis</h2>
 
-        <div v-if="categories.length" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div v-if="categories.length" class="store-grid">
           <Link
             v-for="category in categories"
             :key="category.id"
