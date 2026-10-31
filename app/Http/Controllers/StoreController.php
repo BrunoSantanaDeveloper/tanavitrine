@@ -15,6 +15,7 @@ use App\Support\StoreMinimumOrder;
 use Illuminate\Support\Facades\Route;
 use App\Support\StoreBreadcrumbBuilder;
 use App\Support\StoreStructuredDataBuilder;
+use App\Support\StoreRecommendations;
 
 final class StoreController extends Controller
 {
@@ -23,6 +24,7 @@ final class StoreController extends Controller
         private readonly StoreBreadcrumbBuilder $breadcrumbBuilder,
         private readonly StoreSeoBuilder $storeSeoBuilder,
         private readonly StoreStructuredDataBuilder $structuredDataBuilder,
+        private readonly StoreRecommendations $storeRecommendations,
     ) {}
 
     /**
@@ -169,6 +171,7 @@ final class StoreController extends Controller
 
         return Inertia::render('StoreDetail', [
             'store' => $storeData,
+            'relatedStores' => $this->storeRecommendations->forStore($store),
             'seo' => $seo,
             'structuredData' => $structuredData,
             'breadcrumbs' => $breadcrumbs,

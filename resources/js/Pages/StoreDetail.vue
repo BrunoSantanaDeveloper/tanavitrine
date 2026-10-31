@@ -16,7 +16,7 @@ import WebLayout from '@/Layouts/WebLayout.vue'
 import { trackWhatsAppAdsConversion } from '@/services/googleAnalytics'
 import { formatWhatsAppNumber } from '@/utils/formatters'
 import { Icon } from '@iconify/vue'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import axios from 'axios'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
@@ -24,6 +24,10 @@ const props = defineProps({
   store: {
     type: Object,
     required: true,
+  },
+  relatedStores: {
+    type: Array,
+    default: () => [],
   },
   seo: {
     type: Object,
@@ -416,6 +420,12 @@ function openWhatsApp() {
 function openWebsite() {
   window.open(props.store.website, '_blank')
   trackWebsiteClick()
+}
+
+function trackRelatedStoreOpen(store) {
+  axios.post(`/loja/${store.slug}/track/open`).catch(() => {
+    // Tracking must not prevent opening a suggested storefront.
+  })
 }
 
 async function toggleFavorite() {
@@ -885,7 +895,7 @@ function scrollToSection(sectionId) {
                 <div class="flex items-start justify-between mb-4">
                   <div class="flex items-start gap-6">
                     <!-- Logo -->
-                    <div v-if="store.logo" class="flex-shrink-0">
+                    <div v-if="store.logo" class="flex shrink-0 flex-col items-center">
                       <div class="w-24 h-24 rounded-lg overflow-hidden border-2 border-border bg-white shadow-sm">
                         <img
                           :src="store.logo"
@@ -893,10 +903,20 @@ function scrollToSection(sectionId) {
                           class="w-full h-full object-contain p-2"
                         />
                       </div>
+                      <Badge
+                        v-if="store.featured"
+                        class="mt-1.5 bg-primary text-primary-foreground shadow-sm md:hidden"
+                      >
+                        <Icon icon="lucide:star" class="size-3 mr-1" />
+                        Destaque
+                      </Badge>
                     </div>
 
                     <!-- Store Info -->
                     <div>
+                      <h1 class="mb-2 text-2xl font-bold text-foreground md:text-4xl">
+                        {{ store.name }}
+                      </h1>
                       <div class="flex flex-wrap gap-1 mb-2">
                         <template v-if="store.badge?.toLowerCase() === 'ambos'">
                           <Badge variant="secondary">Atacado</Badge>
@@ -911,14 +931,10 @@ function scrollToSection(sectionId) {
                         <Badge v-if="isManufacturerStore" class="bg-emerald-600 text-white">
                           Fabricação Própria
                         </Badge>
-                      </div>
-                      <div class="mb-2 flex flex-wrap items-center gap-3">
-                        <h1 class="text-4xl font-bold text-foreground">
-                          {{ store.name }}
-                        </h1>
                         <Badge
                           v-if="store.featured"
                           class="bg-primary text-primary-foreground shadow-sm"
+                          :class="store.logo ? 'hidden md:inline-flex' : ''"
                         >
                           <Icon icon="lucide:star" class="size-3 mr-1" />
                           Destaque
@@ -931,7 +947,6 @@ function scrollToSection(sectionId) {
                           Fornecedor verificado
                         </Badge>
                       </div>
-                      <p class="text-muted-foreground">Cod: {{ store.code }}</p>
                     </div>
                   </div>
                 </div>
@@ -1205,8 +1220,8 @@ function scrollToSection(sectionId) {
             </div>
 
             <!-- Contact Sidebar (Right) -->
-            <div class="lg:col-span-1">
-              <Card class="p-6 sticky top-24">
+            <div class="space-y-6 lg:col-span-1">
+              <Card class="p-6" :class="{ 'sticky top-24': !relatedStores.length }">
                 <h3 class="text-xl font-bold mb-4">Entre em Contato</h3>
 
                 <!-- WhatsApp Button -->
@@ -1324,6 +1339,30 @@ function scrollToSection(sectionId) {
                       <Icon icon="lucide:link" class="size-5 text-muted-foreground hover:text-foreground" />
                     </button>
                   </div>
+                </div>
+              </Card>
+              <Card v-if="relatedStores.length" class="hidden p-5 lg:block" aria-labelledby="related-stores-heading">
+                <h3 id="related-stores-heading" class="text-lg font-bold text-foreground">Vitrines semelhantes</h3>
+                <p class="mt-1 text-sm text-muted-foreground">Outras lojas para você conhecer.</p>
+                <div class="mt-4 space-y-3">
+                  <Link
+                    v-for="suggestion in relatedStores"
+                    :key="suggestion.id"
+                    :href="`/loja/${suggestion.slug}`"
+                    class="group flex min-w-0 items-center gap-3 rounded-xl border border-border bg-white p-2 text-left transition-colors hover:border-teal-200 hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
+                    @click="trackRelatedStoreOpen(suggestion)"
+                  >
+                    <div class="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
+                      <img v-if="suggestion.image" :src="suggestion.image" :alt="suggestion.name" loading="lazy" class="h-full w-full object-cover">
+                      <Icon v-else icon="lucide:store" class="size-7 text-teal-700/50" aria-hidden="true" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="line-clamp-2 text-sm font-semibold text-teal-950">{{ suggestion.name }}</p>
+                      <p v-if="suggestion.subcategory || suggestion.category" class="mt-1 truncate text-xs text-muted-foreground">{{ suggestion.subcategory || suggestion.category }}</p>
+                      <p v-if="suggestion.saleType" class="mt-1 text-xs text-teal-700">{{ suggestion.saleType }}</p>
+                    </div>
+                    <Icon icon="lucide:chevron-right" class="size-4 shrink-0 text-teal-700" aria-hidden="true" />
+                  </Link>
                 </div>
               </Card>
             </div>
