@@ -2,7 +2,7 @@
 import Button from '@/Components/shadcn/ui/button/Button.vue'
 import { Icon } from '@iconify/vue'
 import { Link, usePage } from '@inertiajs/vue3'
-import { useColorMode } from '@vueuse/core'
+import { useColorMode, useWindowScroll } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { trackWhatsAppAdsConversion } from '@/services/googleAnalytics'
 
@@ -14,6 +14,10 @@ const props = defineProps({
     type: Boolean,
   },
   showFloatingWhatsApp: {
+    type: Boolean,
+    default: false,
+  },
+  overlayHeroHeader: {
     type: Boolean,
     default: false,
   },
@@ -75,6 +79,8 @@ const githubUrl = 'https://github.com/shipfastlabs/larasonic-vue'
 const twitterUrl = 'https://x.com/pushpak1300?ref=larasonic'
 
 const isMenuOpen = ref(false)
+const { y: scrollY } = useWindowScroll()
+const isHeaderTransparent = computed(() => props.overlayHeroHeader && scrollY.value <= 8 && !isMenuOpen.value)
 const isWhatsAppOpen = ref(false)
 const whatsappMessage = ref('')
 
@@ -102,7 +108,8 @@ function sendWhatsApp() {
 <template>
   <div class="min-h-screen overflow-x-hidden">
     <header
-      class="fixed top-0 left-0 right-0 z-50 w-full bg-white"
+      class="fixed top-0 left-0 right-0 z-50 w-full transition-colors duration-300 motion-reduce:transition-none"
+      :class="isHeaderTransparent ? 'bg-transparent' : 'bg-white'"
     >
       <div class="site-shell flex h-16 items-center gap-6 lg:gap-10">
         <div class="flex shrink-0 items-center">
@@ -228,7 +235,7 @@ function sendWhatsApp() {
       </Transition>
     </header>
 
-    <div class="h-16" />
+    <div v-if="!overlayHeroHeader" class="h-16" />
 
     <!-- Sticky Selector Slot (background only applied when content is visible) -->
     <div class="sticky top-16 z-40">

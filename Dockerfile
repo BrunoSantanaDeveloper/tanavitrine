@@ -14,6 +14,8 @@ RUN bun run build
 # Stage 2: Final image
 FROM dunglas/frankenphp:1.4.0-php8.3-alpine AS base
 
+RUN apk add --no-cache ffmpeg
+
 # Create required directories with proper permissions
 RUN mkdir -p /data/caddy /config/caddy /home/.local/share/caddy && \
     chmod -R 755 /data /config /home/.local && \

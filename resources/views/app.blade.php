@@ -96,6 +96,10 @@
     <meta name="theme-color" content="{{ $themeColor }}">
     <link rel="canonical" href="{{ $canonicalUrl }}">
 
+    @if (($pageProps['hero']['background_type'] ?? null) === 'video' && !empty($pageProps['hero']['poster_url']))
+        <link rel="preload" as="image" href="{{ $pageProps['hero']['poster_url'] }}" fetchpriority="high">
+    @endif
+
     <!-- Favicon & App Icons -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">

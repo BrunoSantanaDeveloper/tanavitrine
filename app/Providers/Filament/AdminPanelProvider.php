@@ -51,6 +51,7 @@ final class AdminPanelProvider extends PanelProvider
                 \App\Filament\Pages\Dashboard::class,
                 \App\Filament\Pages\Reports::class,
                 \App\Filament\Pages\SubscriptionRules::class,
+                \App\Filament\Pages\HomeHero::class,
             ])
             ->widgets([
                 \App\Filament\Widgets\StatsOverviewWidget::class,

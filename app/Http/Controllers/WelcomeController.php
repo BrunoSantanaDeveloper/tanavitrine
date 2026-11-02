@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Plan;
 use App\Models\Team;
 use App\Models\StorePromotion;
+use App\Services\HomeHeroSettings;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Support\SeoMeta;
@@ -20,7 +21,7 @@ final class WelcomeController extends Controller
 {
     public function __construct(private readonly SeoMeta $seoMeta) {}
 
-    public function home(): Response
+    public function home(HomeHeroSettings $heroSettings): Response
     {
         $weeklyFeaturedStores = StorePromotion::query()
             ->current()
@@ -109,6 +110,7 @@ final class WelcomeController extends Controller
             ->values();
 
         return Inertia::render('Welcome', [
+            'hero' => $heroSettings->forFrontend(),
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'featuredStores' => $featuredStores,
